@@ -105,7 +105,7 @@ func (k *Walker) Render(g *Game, s *Scene) {
 		shirt = rgba(72, 96, 128, 255)
 		shoe  = rgba(58, 44, 36, 255)
 		vest  = rgba(255, 116, 18, 255)
-		refl  = rgba(222, 226, 230, 255)
+		refl  = rgba(204, 210, 216, 255)
 		hair  = rgba(238, 204, 112, 255)
 		hat   = rgba(252, 206, 28, 255)
 		brown = rgba(104, 60, 28, 255)
@@ -122,21 +122,44 @@ func (k *Walker) Render(g *Game, s *Scene) {
 		limb(hip, foot, 1.4, 1.3, jeans)
 		s.addOBB2(foot.Add(fw.Scale(0.8)).Add(up.Scale(-0.2)), fw, up, 2, 0.8, 1.3, shoe)
 	}
-	// torso: shirt under an orange hi-vis vest with reflective bands
-	s.addBox(at(0, 0, 10.6), 1.8, 3, 2.9, k.Yaw, shirt)
-	s.addBox(at(0, 0, 10.9), 2.05, 2.6, 3.15, k.Yaw, vest)
+	// trunk: the hi-vis vest is the torso's outer shape (no nested shirt box,
+	// which would fight it in the depth sort), tapering to straps at the
+	// shoulders, with the shirt showing at the collar and a V-neck
+	o := at(0, 0, 0)
+	s.addPrism(o, k.Yaw, []ring{
+		{-1.75, 1.75, 2.6, 7.8, 0.6},
+		{-1.9, 1.9, 2.85, 9.5, 0.7},
+		{-1.9, 1.9, 2.9, 11.8, 0.7},
+		{-1.6, 1.6, 2.5, 13.2, 0.9},
+	}, vest)
+	s.addBox(at(0, 0, 13.5), 1.1, 0.35, 1.3, k.Yaw, shirt) // collar
 	s.detail(func() {
-		for _, y := range []float64{9.6, 11.6} {
-			s.addBox(at(0, 0, y), 2.12, 0.35, 3.22, k.Yaw, refl)
+		// V-neck: the shirt showing between the vest's front panels
+		s.addFaceOutward([]Vec3{at(1.67, -0.95, 13.15), at(1.67, 0.95, 13.15), at(1.95, 0, 11.9)}, at(0, 0, 10.5), shirt)
+		// two reflective tape bands hugging the vest
+		for _, b := range [][3]float64{{9.1, 1.86, 2.79}, {10.5, 1.9, 2.87}} {
+			s.addPrismCaps(o, k.Yaw, []ring{
+				{-b[1] - 0.05, b[1] + 0.05, b[2] + 0.05, b[0], 0.7},
+				{-b[1] - 0.05, b[1] + 0.05, b[2] + 0.05, b[0] + 0.42, 0.7},
+			}, refl, false, false)
+		}
+		// braces: tape running up over the shoulders, front and back
+		for _, z := range []float64{-1.45, 1.45} {
+			for _, sx := range []float64{1, -1} {
+				a, b := at(sx*1.95, z, 10.9), at(sx*1.66, z, 13.2)
+				d := b.Sub(a)
+				s.addOBB2(a.Add(d.Scale(0.5)), d, fw.Scale(sx), d.Len()/2, 0.04, 0.28, refl)
+			}
+			s.addBox(at(0, z, 13.22), 1.62, 0.04, 0.28, k.Yaw, refl)
 		}
 	})
 	// arms swing opposite the legs
-	for i, z := range []float64{-3.6, 3.6} {
+	for i, z := range []float64{-3.35, 3.35} {
 		a := -swing * 0.8
 		if i == 1 {
 			a = swing * 0.8
 		}
-		sh := at(0, z, 13)
+		sh := at(0, z, 12.9)
 		hand := sh.Add(fw.Scale(math.Sin(a) * 5.4)).Add(up.Scale(-math.Cos(a) * 5.4))
 		limb(sh, hand, 0.9, 0.9, shirt)
 		s.addOBB2(hand, fw, up, 0.8, 0.8, 0.8, skin)
