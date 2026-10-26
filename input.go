@@ -1,11 +1,14 @@
 package main
 
-import "github.com/hajimehoshi/ebiten/v2"
+import rl "github.com/gen2brain/raylib-go/raylib"
+
+// Key is a raylib key code.
+type Key = int32
 
 // handleInput reads the keyboard once per frame: each kid's four direction
-// keys, button and machine keys (see toddlerKeys), and F2 to pause.
+// keys, button, view and machine keys (see toddlerKeys), and F2 to pause.
 func (g *Game) handleInput() {
-	if inpTapped(ebiten.KeyF2) {
+	if inpTapped(rl.KeyF2) {
 		g.paused = !g.paused
 	}
 	for _, p := range g.players {
@@ -13,7 +16,7 @@ func (g *Game) handleInput() {
 	}
 }
 
-func axis(pos, neg []ebiten.Key) float64 {
+func axis(pos, neg []Key) float64 {
 	v := 0.0
 	if keyDown(pos...) {
 		v++
@@ -24,9 +27,9 @@ func axis(pos, neg []ebiten.Key) float64 {
 	return v
 }
 
-func keyDown(keys ...ebiten.Key) bool {
+func keyDown(keys ...Key) bool {
 	for _, k := range keys {
-		if ebiten.IsKeyPressed(k) {
+		if rl.IsKeyDown(k) {
 			return true
 		}
 	}
@@ -34,10 +37,10 @@ func keyDown(keys ...ebiten.Key) bool {
 }
 
 // --- simple edge-trigger tracking for taps (poll each key once per frame) ---
-var prevKeys = map[ebiten.Key]bool{}
+var prevKeys = map[Key]bool{}
 
-func inpTapped(k ebiten.Key) bool {
-	down := ebiten.IsKeyPressed(k)
+func inpTapped(k Key) bool {
+	down := rl.IsKeyDown(k)
 	was := prevKeys[k]
 	prevKeys[k] = down
 	return down && !was

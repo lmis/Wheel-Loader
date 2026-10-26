@@ -203,8 +203,7 @@ func (c *TowerCrane) attach(w *World) {
 }
 
 func (c *TowerCrane) Render(g *Game, s *Scene) {
-	g.shadow(s, c.Base, 70, 70, 0)
-	g.shadow(s, c.hook, 9, 9, c.Slew) // helps to aim the hook
+	g.blobShadow(s, c.hook, 7, 7, c.Slew) // helps to aim the hook
 	yellow := rgba(246, 192, 22, 255)
 	beam := func(a, b Vec3, r float64, col color.RGBA) {
 		d := b.Sub(a)

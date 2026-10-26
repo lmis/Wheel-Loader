@@ -173,7 +173,6 @@ func (g *Game) renderHelicopter(s *Scene, h *Helicopter) {
 		return
 	}
 	alt := heliAlt + math.Sin(h.t*1.3)*6
-	g.shadow(s, pos, 120, 50, yaw)
 	if !g.cam.inView(ground(pos, alt), 110) {
 		return
 	}

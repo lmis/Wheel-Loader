@@ -182,7 +182,6 @@ func (t *Truck) Effects(w *World) {
 // Render draws the truck: steering front wheels, cab, chassis and a dump
 // body that pivots about its rear hinge.
 func (t *Truck) Render(g *Game, s *Scene) {
-	g.shadow(s, t.Pos, 118, 74, t.Angle)
 	if !g.cam.inView(ground(t.Pos, 30), 110) {
 		return
 	}

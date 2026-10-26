@@ -3,8 +3,6 @@ package main
 import (
 	"image/color"
 	"math"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Player is one kid at the keyboard, in a machine or on foot walking over
@@ -19,7 +17,6 @@ type Player struct {
 	distWalker, distVehicle float64 // chase-camera distances per mode
 	ctl                     Controls
 	scriptCtl               *Controls // scripted controls (screenshot scenes)
-	view                    *ebiten.Image
 	marker                  color.RGBA
 	td                      *toddlerState
 	trail                   []Vec // where the kid walked, for the animals to follow

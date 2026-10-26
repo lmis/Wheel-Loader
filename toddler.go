@@ -4,8 +4,7 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // Toddler mode, the whole game: two players, each with their own wheel
@@ -23,29 +22,29 @@ import (
 
 // toddlerKeys is one player's tiny control set.
 type toddlerKeys struct {
-	fwd, back, left, right, button []ebiten.Key
-	view                           []ebiten.Key    // cab view / chase camera
-	pick                           [3][]ebiten.Key // loader, truck, crane
+	fwd, back, left, right, button []Key
+	view                           []Key    // cab view / chase camera
+	pick                           [3][]Key // loader, truck, crane
 	label                          string
 	pickLabels                     [3]string
 }
 
 var (
 	toddlerP1 = toddlerKeys{
-		fwd: []ebiten.Key{ebiten.KeyW}, back: []ebiten.Key{ebiten.KeyS},
-		left: []ebiten.Key{ebiten.KeyA}, right: []ebiten.Key{ebiten.KeyD},
-		button: []ebiten.Key{ebiten.KeySpace, ebiten.KeyShiftLeft},
-		view:   []ebiten.Key{ebiten.KeyV},
-		pick:   [3][]ebiten.Key{{ebiten.KeyDigit1}, {ebiten.KeyDigit2}, {ebiten.KeyDigit3}},
+		fwd: []Key{rl.KeyW}, back: []Key{rl.KeyS},
+		left: []Key{rl.KeyA}, right: []Key{rl.KeyD},
+		button: []Key{rl.KeySpace, rl.KeyLeftShift},
+		view:   []Key{rl.KeyV},
+		pick:   [3][]Key{{rl.KeyOne}, {rl.KeyTwo}, {rl.KeyThree}},
 		label:  "W A S D  +  Space    V: view", pickLabels: [3]string{"1", "2", "3"},
 	}
 	toddlerP2 = toddlerKeys{
-		fwd: []ebiten.Key{ebiten.KeyArrowUp, ebiten.KeyK}, back: []ebiten.Key{ebiten.KeyArrowDown, ebiten.KeyJ},
-		left: []ebiten.Key{ebiten.KeyArrowLeft, ebiten.KeyH}, right: []ebiten.Key{ebiten.KeyArrowRight, ebiten.KeyL},
-		button: []ebiten.Key{ebiten.KeyEnter, ebiten.KeyShiftRight},
-		view:   []ebiten.Key{ebiten.KeyM, ebiten.KeyNumpad0},
-		pick: [3][]ebiten.Key{{ebiten.KeyDigit8, ebiten.KeyNumpad1}, {ebiten.KeyDigit9, ebiten.KeyNumpad2},
-			{ebiten.KeyDigit0, ebiten.KeyNumpad3}},
+		fwd: []Key{rl.KeyUp, rl.KeyK}, back: []Key{rl.KeyDown, rl.KeyJ},
+		left: []Key{rl.KeyLeft, rl.KeyH}, right: []Key{rl.KeyRight, rl.KeyL},
+		button: []Key{rl.KeyEnter, rl.KeyRightShift},
+		view:   []Key{rl.KeyM, rl.KeyKp0},
+		pick: [3][]Key{{rl.KeyEight, rl.KeyKp1}, {rl.KeyNine, rl.KeyKp2},
+			{rl.KeyZero, rl.KeyKp3}},
 		label: "Arrows  +  Enter    M: view", pickLabels: [3]string{"8", "9", "0"},
 	}
 )
@@ -399,10 +398,10 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 // ---- toddler HUD ----
 
 // drawToddlerHUD: the player colour strip, the machine picker and the keys.
-func (g *Game) drawToddlerHUD(dst *ebiten.Image, p *Player, vw, vh float64) {
+func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 	td := p.td
 	// player colour strip along the top
-	vector.DrawFilledRect(dst, 0, 0, float32(vw), 8, p.marker, false)
+	panel(dst, 0, 0, vw, 8, p.marker)
 
 	// machine picker: three tiles with the key and a little picture, the
 	// current machine lit up
@@ -421,15 +420,15 @@ func (g *Game) drawToddlerHUD(dst *ebiten.Image, p *Player, vw, vh float64) {
 }
 
 // drawMachineIcon draws a tiny loader (0), dump truck (1) or crane (2).
-func drawMachineIcon(dst *ebiten.Image, kind int, cx, cy float64) {
+func drawMachineIcon(dst canvas, kind int, cx, cy float64) {
 	yellow := rgba(246, 192, 22, 255)
 	orange := rgba(232, 140, 30, 255)
 	dark := rgba(40, 40, 44, 255)
 	rect := func(x, y, w, h float64, c color.RGBA) {
-		vector.DrawFilledRect(dst, float32(cx+x), float32(cy+y), float32(w), float32(h), c, true)
+		panel(dst, cx+x, cy+y, w, h, c)
 	}
 	wheel := func(x, y, r float64) {
-		vector.DrawFilledCircle(dst, float32(cx+x), float32(cy+y), float32(r), dark, true)
+		circle(dst, cx+x, cy+y, r, dark)
 	}
 	switch kind {
 	case 0: // loader: body, cab, arm and bucket

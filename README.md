@@ -3,14 +3,15 @@
 A **3D** construction-site game for two small kids on one keyboard. Each kid
 has their own **articulated wheel loader**, dump truck and tower crane, and
 plays with four direction keys and one button. Built in Go with
-[Ebitengine](https://ebitengine.org/).
+[raylib-go](https://github.com/gen2brain/raylib-go).
 
-The world is rendered with a small **software 3D pipeline** written on top of
-Ebitengine's 2D triangle rasterizer (`g3d.go`): a perspective chase camera,
-smooth (per-vertex) shading with sun + sky/ground ambient light, distance fog
-and a sky gradient, back-face culling, near-plane clipping, and depth-sorted
-drawing in a single batched call. Everything — the loader, trucks, buildings,
-aggregate heaps — is actual 3D geometry you orbit around.
+Each frame the mesh builders (`g3d.go`, `shapes.go`) build the world as
+3D triangles, and the **GPU renderer** (`gpu.go`) draws them with OpenGL: a
+depth buffer, per-pixel lighting (sun plus sky/ground ambient and a soft rim
+light), a soft sun **shadow map** so everything casts real shadows, distance
+fog, a sky gradient, and 2×2 supersampling for smooth edges. Everything —
+the loader, trucks, buildings, aggregate heaps — is actual 3D geometry you
+orbit around.
 
 - **Aggregate heaps** are a continuous heightfield mesh built from the
   material grid each frame, smoothed, shaded and textured with a seamless
@@ -21,11 +22,6 @@ aggregate heaps — is actual 3D geometry you orbit around.
 - **Scenery** mixes procedural props with free **Kenney CC0 models** (houses,
   a workshop garage, pickups, trees) loaded by a small built-in glTF/GLB
   reader (`model.go`).
-
-Objects are sorted per triangle (painter's algorithm), since Ebitengine has no
-depth buffer. Large triangles are split, horizontal surfaces sort by their far
-edge, and surface-mounted details get a small bias, which removes nearly all
-overlap errors. A faint seam can still show at a few very close angles.
 
 Under the simple controls the machines are properly simulated: the loader
 has heavy-machine inertia, articulated (frame) steering that bends at the
@@ -39,8 +35,16 @@ dump body and the crane hook for the kids.
 go run .
 ```
 
-A window opens at 1280×720. You need a working OpenGL context (on a headless
-Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`).
+A resizable window opens at 1280×720. You need OpenGL 3.3. On Linux the
+build compiles raylib with cgo and needs the GL/X11 headers:
+
+```sh
+sudo apt install libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev \
+  libxinerama-dev libwayland-dev libxkbcommon-dev
+```
+
+On a headless Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`
+(slow, but the screenshot modes work).
 
 ## How to play
 
@@ -129,13 +133,14 @@ partially filled and loads carry their material type.
 | `walker.go` | The kid on foot |
 | `animals.go` | The dogs, the chimp and the owl: riding, following, hopping |
 | `player.go` | Players, getting in and out, cameras |
-| `g3d.go` | Software 3D pipeline: projection, clipping, sorting, mesh builders |
+| `g3d.go` | Scene of world-space triangles and the mesh builders |
+| `gpu.go` | GPU renderer: shaders, shadow map, supersampled views |
 | `camera.go` | Perspective chase/orbit camera |
 | `input.go` | Keyboard → player controls |
 | `render.go` | Builds the 3D scene (ground, loader, props, trucks, particles) |
 | `art.go` | Procedural ground/dirt textures, grain atlas, fonts, noise |
 | `model.go` | Minimal glTF/GLB loader for the embedded Kenney models |
-| `hud.go` | HUD drawing helpers, pause notice |
+| `hud.go` | 2D drawing helpers (text, panels), pause notice |
 | `main.go` | Entry point, screenshot modes |
 
 Simulation, input and rendering are kept separate. The update step is a fixed

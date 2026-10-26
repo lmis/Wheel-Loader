@@ -3,15 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"image"
 	"image/png"
 	"log"
 	"math"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"time"
 
-	"github.com/hajimehoshi/ebiten/v2"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 func main() {
@@ -33,11 +33,6 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
-
-	ebiten.SetWindowSize(screenW, screenH)
-	ebiten.SetWindowTitle("Wheel Loader — Construction Site")
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetTPS(60)
 
 	g := NewGame()
 	if *frames > 0 {
@@ -72,15 +67,47 @@ func main() {
 		g.exitFrame = 136
 	}
 
-	if err := ebiten.RunGame(g); err != nil && err != ebiten.Termination {
-		log.Fatal(err)
+	headless := *scenesDir != "" || *studioDir != "" || *tourDir != ""
+	flags := uint32(rl.FlagWindowResizable | rl.FlagVsyncHint | rl.FlagMsaa4xHint)
+	if headless {
+		flags = rl.FlagWindowHidden
+	}
+	rl.SetConfigFlags(flags)
+	rl.SetTraceLogLevel(rl.LogWarning)
+	rl.InitWindow(screenW, screenH, "Wheel Loader — Construction Site")
+	defer rl.CloseWindow()
+	rl.SetExitKey(0) // Esc does not quit; toddlers find it
+	g.initGPU()
+	g.out = rl.LoadRenderTexture(screenW, screenH)
+	rl.SetTextureFilter(g.out.Texture, rl.FilterBilinear)
+
+	// fixed 60 Hz simulation; screenshot runs step once per frame so every
+	// scheduled shot is drawn
+	last, acc := time.Now(), 0.0
+	for !rl.WindowShouldClose() {
+		steps := 1
+		if !headless {
+			now := time.Now()
+			acc = math.Min(acc+now.Sub(last).Seconds(), 4*fixedDT)
+			last = now
+			steps = int(acc / fixedDT)
+			acc -= float64(steps) * fixedDT
+		}
+		var err error
+		for i := 0; i < steps && err == nil; i++ {
+			err = g.Update()
+		}
+		if err != nil {
+			break
+		}
+		g.Draw()
 	}
 	if g.done {
 		fmt.Println("finished")
 	}
 }
 
-func (g *Game) maybeCapture(screen *ebiten.Image) {
+func (g *Game) maybeCapture() {
 	// Draw may skip frame numbers when Update outruns it headlessly, so
 	// capture the first draw at or past each scheduled frame.
 	target := -1
@@ -94,10 +121,7 @@ func (g *Game) maybeCapture(screen *ebiten.Image) {
 		return
 	}
 	delete(g.shots, target)
-	w, h := screen.Bounds().Dx(), screen.Bounds().Dy()
-	buf := make([]byte, 4*w*h)
-	screen.ReadPixels(buf)
-	img := &image.RGBA{Pix: buf, Stride: 4 * w, Rect: image.Rect(0, 0, w, h)}
+	img := readTarget(g.out)
 	f, err := os.Create(name)
 	if err != nil {
 		log.Println("shot:", err)
@@ -110,5 +134,5 @@ func (g *Game) maybeCapture(screen *ebiten.Image) {
 	}
 	fmt.Printf("captured %s (frame %d)  loader spd=%.1f load=%.0f lift=%.2f tilt=%.2f pos=%.0f,%.0f  tris=%d cpu=%.1fms\n",
 		name, g.frame, g.loader.Speed, g.loader.Load, g.loader.Lift, g.loader.Tilt, g.loader.Joint.X, g.loader.Joint.Y,
-		len(g.scene.keys), g.renderMS)
+		len(g.scene.tris), g.renderMS)
 }

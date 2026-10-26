@@ -100,7 +100,6 @@ func (c *Car) Effects(w *World) {
 }
 
 func (c *Car) Render(g *Game, s *Scene) {
-	g.shadow(s, c.Pos, 92, 50, c.Angle)
 	if !g.cam.inView(ground(c.Pos, 20), 70) {
 		return
 	}

@@ -3,9 +3,7 @@ package main
 import (
 	"image/color"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var (
@@ -13,24 +11,33 @@ var (
 	hudPanel = rgba(24, 28, 34, 205)
 )
 
-func (g *Game) drawText(dst *ebiten.Image, s string, face text.Face, x, y float64, c color.RGBA) {
-	op := &text.DrawOptions{}
-	op.GeoM.Translate(x, y)
-	op.ColorScale.ScaleWithColor(c)
-	text.Draw(dst, s, face, op)
+// canvas is where 2D drawing lands: an offset into the current target.
+type canvas struct{ x, y float64 }
+
+func rlc(c color.RGBA) rl.Color { return rl.NewColor(c.R, c.G, c.B, c.A) }
+
+func (g *Game) drawText(dst canvas, s string, f *Face, x, y float64, c color.RGBA) {
+	rl.DrawTextEx(f.font, s, rl.NewVector2(float32(dst.x+x), float32(dst.y+y)), f.size, 0, rlc(c))
 }
 
-func (g *Game) drawTextC(dst *ebiten.Image, s string, face text.Face, cx, y float64, c color.RGBA) {
-	w, _ := text.Measure(s, face, 0)
-	g.drawText(dst, s, face, cx-w/2, y, c)
+func textWidth(s string, f *Face) float64 {
+	return float64(rl.MeasureTextEx(f.font, s, f.size, 0).X)
 }
 
-func panel(dst *ebiten.Image, x, y, w, h float64, c color.RGBA) {
-	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), c, true)
+func (g *Game) drawTextC(dst canvas, s string, f *Face, cx, y float64, c color.RGBA) {
+	g.drawText(dst, s, f, cx-textWidth(s, f)/2, y, c)
+}
+
+func panel(dst canvas, x, y, w, h float64, c color.RGBA) {
+	rl.DrawRectangleRec(rl.NewRectangle(float32(dst.x+x), float32(dst.y+y), float32(w), float32(h)), rlc(c))
+}
+
+func circle(dst canvas, x, y, r float64, c color.RGBA) {
+	rl.DrawCircleV(rl.NewVector2(float32(dst.x+x), float32(dst.y+y)), float32(r), rlc(c))
 }
 
 // drawGlobalHUD draws over both views: the pause notice.
-func (g *Game) drawGlobalHUD(screen *ebiten.Image) {
+func (g *Game) drawGlobalHUD(screen canvas) {
 	if g.paused {
 		g.drawTextC(screen, "PAUSED  (F2)", g.art.Big, screenW/2, screenH/2-20, hudWhite)
 	}

@@ -203,7 +203,6 @@ func (e *Excavator) Effects(w *World) {
 }
 
 func (e *Excavator) Render(g *Game, s *Scene) {
-	g.shadow(s, e.Pos, excTrackLen+8, excTrackW+8, e.Heading)
 	if !g.cam.inView(ground(e.Pos, 50), 200) {
 		return
 	}

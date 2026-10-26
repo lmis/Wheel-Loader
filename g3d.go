@@ -1,12 +1,8 @@
 package main
 
 import (
-	"cmp"
 	"image/color"
 	"math"
-	"slices"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // ---- 3D vector math ----
@@ -62,38 +58,6 @@ const (
 	fogMax   = 0.9
 )
 
-// lit applies hemispheric ambient + sun diffuse to a base color for a surface
-// with unit normal n. Returns straight (non-premultiplied) RGBA in 0..1.
-func lit(c color.RGBA, n Vec3) [4]float64 {
-	d := math.Max(0, n.Dot(lightDir))
-	h := n.Y*0.5 + 0.5
-	var out [4]float64
-	base := [3]float64{float64(c.R), float64(c.G), float64(c.B)}
-	for i := 0; i < 3; i++ {
-		k := lerp(gndAmb[i], skyAmb[i], h) + sunCol[i]*d
-		out[i] = math.Min(1, base[i]/255*k)
-	}
-	out[3] = float64(c.A) / 255
-	return out
-}
-
-func unlit(c color.RGBA) [4]float64 {
-	return [4]float64{float64(c.R) / 255, float64(c.G) / 255, float64(c.B) / 255, float64(c.A) / 255}
-}
-
-func fogAmount(z float64) float64 {
-	t := clamp((z-fogStart)/(fogEnd-fogStart), 0, 1)
-	return t * t * (3 - 2*t) * fogMax
-}
-
-func applyFog(c [4]float64, z float64) [4]float64 {
-	f := fogAmount(z)
-	for i := 0; i < 3; i++ {
-		c[i] = lerp(c[i], fogCol[i]/255, f)
-	}
-	return c
-}
-
 // ---- scene primitives ----
 
 type tri struct {
@@ -117,8 +81,8 @@ type billboard struct {
 	col    color.RGBA
 }
 
-// Scene accumulates geometry for one frame, then flushes it: sky, textured
-// ground with fog, then all objects depth-sorted back to front.
+// Scene accumulates the world-space geometry for one frame; the GPU renderer
+// (gpu.go) draws it.
 type Scene struct {
 	tris   []tri
 	ground []gquad
@@ -129,12 +93,6 @@ type Scene struct {
 	eye  Vec3    // camera position this frame (for level of detail)
 	bias float64 // sort bias applied to geometry added while it is set
 	glow bool    // geometry added while set is unlit: it glows
-
-	// reusable buffers
-	keys  []sortKey
-	sts   []screenTri
-	verts []ebiten.Vertex
-	idx   []uint32
 }
 
 func (s *Scene) reset() {
@@ -576,285 +534,7 @@ func (s *Scene) detail(fn func()) {
 	s.bias = prev
 }
 
-// Mostly-horizontal, upward-facing triangles (floors, tile plates, roofs,
-// heaps) sort by their farthest vertex instead of their centroid. Floors then
-// key on the edge where a wall stands on them, so the wall wins, while a roof
-// still sorts ahead of anything taller standing behind it.
-const flatNormalY = 0.7
-
 // shadeC scales a color's RGB, keeping alpha.
 func shadeC(c color.RGBA, m float64) color.RGBA {
 	return color.RGBA{clampByte(float64(c.R) * m), clampByte(float64(c.G) * m), clampByte(float64(c.B) * m), c.A}
-}
-
-// ---- flush: project, clip, sort, draw ----
-
-// viewV is a vertex in view space carrying its world position (for ground
-// UVs) and straight RGBA color through near-plane clipping.
-type viewV struct {
-	v  Vec3
-	w  Vec3
-	c  [4]float64
-	uv [2]float32
-}
-
-type sortKey struct {
-	d float64
-	i int32
-}
-
-type screenTri struct {
-	x, y  [3]float32
-	u, v  [3]float32 // atlas texel coordinates
-	c     [3][4]float64
-	depth float64
-}
-
-func (s *Scene) Flush(dst *ebiten.Image, cam *Camera, groundImg, skirtImg, atlas, white *ebiten.Image) {
-	cam.setup()
-	s.drawSky(dst, cam, white)
-
-	// --- ground passes (textured), then one fog overlay over all of it ---
-	var fverts []ebiten.Vertex
-	var fidx []uint32
-	drawGround := func(quads []gquad, img *ebiten.Image, uv func(Vec3) (float32, float32), addr ebiten.Address) {
-		var gverts []ebiten.Vertex
-		var gidx []uint32
-		emit := func(a, b, c Vec3) {
-			poly := clipNear(viewV{v: cam.view(a), w: a}, viewV{v: cam.view(b), w: b}, viewV{v: cam.view(c), w: c})
-			for i := 2; i < poly.n; i++ {
-				base := uint32(len(gverts))
-				fbase := uint32(len(fverts))
-				for _, vv := range [3]viewV{poly.v[0], poly.v[i-1], poly.v[i]} {
-					sx, sy := cam.project(vv.v)
-					u, v := uv(vv.w)
-					gverts = append(gverts, ebiten.Vertex{
-						DstX: float32(sx), DstY: float32(sy), SrcX: u, SrcY: v,
-						ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1,
-					})
-					f := float32(fogAmount(vv.v.Z))
-					fverts = append(fverts, ebiten.Vertex{
-						DstX: float32(sx), DstY: float32(sy), SrcX: 0.5, SrcY: 0.5,
-						ColorR: float32(fogCol[0]/255) * f, ColorG: float32(fogCol[1]/255) * f,
-						ColorB: float32(fogCol[2]/255) * f, ColorA: f,
-					})
-				}
-				gidx = append(gidx, base, base+1, base+2)
-				fidx = append(fidx, fbase, fbase+1, fbase+2)
-			}
-		}
-		for i := range quads {
-			q := &quads[i]
-			emit(q.p[0], q.p[1], q.p[2])
-			emit(q.p[0], q.p[2], q.p[3])
-		}
-		if len(gidx) > 0 {
-			dst.DrawTriangles32(gverts, gidx, img, &ebiten.DrawTrianglesOptions{Filter: ebiten.FilterLinear, Address: addr})
-		}
-	}
-	gw := float64(groundImg.Bounds().Dx())
-	gh := float64(groundImg.Bounds().Dy())
-	drawGround(s.ground, groundImg, func(w Vec3) (float32, float32) {
-		return float32(clamp(w.X, 0.5, gw-0.5)), float32(clamp(w.Z, 0.5, gh-0.5))
-	}, ebiten.AddressUnsafe)
-	drawGround(s.skirt, skirtImg, func(w Vec3) (float32, float32) {
-		return float32(w.X), float32(w.Z)
-	}, ebiten.AddressRepeat)
-
-	// --- ground decals (shadows), faded out with the fog ---
-	if len(s.decals) > 0 {
-		var dverts []ebiten.Vertex
-		var didx []uint32
-		for i := range s.decals {
-			t := &s.decals[i]
-			poly := clipNear(viewV{v: cam.view(t.p[0]), w: t.p[0], c: unlit(t.c[0])}, viewV{v: cam.view(t.p[1]), w: t.p[1], c: unlit(t.c[1])}, viewV{v: cam.view(t.p[2]), w: t.p[2], c: unlit(t.c[2])})
-			for j := 2; j < poly.n; j++ {
-				base := uint32(len(dverts))
-				for _, vv := range [3]viewV{poly.v[0], poly.v[j-1], poly.v[j]} {
-					sx, sy := cam.project(vv.v)
-					a := float32(vv.c[3] * (1 - fogAmount(vv.v.Z)))
-					dverts = append(dverts, ebiten.Vertex{
-						DstX: float32(sx), DstY: float32(sy), SrcX: 0.5, SrcY: 0.5,
-						ColorR: float32(vv.c[0]) * a, ColorG: float32(vv.c[1]) * a, ColorB: float32(vv.c[2]) * a, ColorA: a,
-					})
-				}
-				didx = append(didx, base, base+1, base+2)
-			}
-		}
-		// fog first so shadows sit on the hazed ground, not under the haze
-		if len(fidx) > 0 {
-			dst.DrawTriangles32(fverts, fidx, white, &ebiten.DrawTrianglesOptions{})
-			fidx = nil
-		}
-		dst.DrawTriangles32(dverts, didx, white, &ebiten.DrawTrianglesOptions{AntiAlias: true})
-	}
-	if len(fidx) > 0 {
-		dst.DrawTriangles32(fverts, fidx, white, &ebiten.DrawTrianglesOptions{})
-	}
-
-	// --- object pass, depth sorted ---
-	sts := s.sts[:0]
-	emit := func(poly clipPoly, bias float64, flat bool) {
-		for i := 2; i < poly.n; i++ {
-			var st screenTri
-			var dsum, dmax float64
-			for k, vv := range [3]viewV{poly.v[0], poly.v[i-1], poly.v[i]} {
-				sx, sy := cam.project(vv.v)
-				st.x[k], st.y[k] = float32(sx), float32(sy)
-				st.u[k], st.v[k] = vv.uv[0], vv.uv[1]
-				st.c[k] = applyFog(vv.c, vv.v.Z)
-				dsum += vv.v.Z
-				dmax = math.Max(dmax, vv.v.Z)
-			}
-			st.depth = dsum/3 - bias
-			if flat {
-				st.depth = dmax - bias
-			}
-			sts = append(sts, st)
-		}
-	}
-	for i := range s.tris {
-		t := &s.tris[i]
-		va, vb, vc := cam.view(t.p[0]), cam.view(t.p[1]), cam.view(t.p[2])
-		if va.Z < 1 && vb.Z < 1 && vc.Z < 1 {
-			continue
-		}
-		if t.cull {
-			// The view basis is left-handed (Z into the screen), which flips
-			// cross products: front faces come out with a positive Z here.
-			if vb.Sub(va).Cross(vc.Sub(va)).Z <= 0 {
-				continue
-			}
-		}
-		var cols [3][4]float64
-		fn := t.p[1].Sub(t.p[0]).Cross(t.p[2].Sub(t.p[0])).Norm()
-		flat := fn.Y > flatNormalY
-		if t.shade {
-			for k := 0; k < 3; k++ {
-				n := t.n[k]
-				if n == (Vec3{}) {
-					n = fn
-				}
-				cols[k] = lit(t.c[k], n)
-			}
-		} else {
-			for k := 0; k < 3; k++ {
-				cols[k] = unlit(t.c[k])
-			}
-		}
-		uv := [3][2]float32{{atlasWhiteUV, atlasWhiteUV}, {atlasWhiteUV, atlasWhiteUV}, {atlasWhiteUV, atlasWhiteUV}}
-		if t.tex {
-			uv = t.uv
-		}
-		emit(clipNear(viewV{va, t.p[0], cols[0], uv[0]}, viewV{vb, t.p[1], cols[1], uv[1]}, viewV{vc, t.p[2], cols[2], uv[2]}), t.bias, flat)
-	}
-	for _, b := range s.bills {
-		r := cam.right.Scale(b.size)
-		u := cam.up.Scale(b.size)
-		p := [4]Vec3{b.center.Sub(r).Sub(u), b.center.Add(r).Sub(u), b.center.Add(r).Add(u), b.center.Sub(r).Add(u)}
-		c := unlit(b.col)
-		wuv := [2]float32{atlasWhiteUV, atlasWhiteUV}
-		for _, tp := range [2][3]int{{0, 1, 2}, {0, 2, 3}} {
-			emit(clipNear(
-				viewV{cam.view(p[tp[0]]), p[tp[0]], c, wuv},
-				viewV{cam.view(p[tp[1]]), p[tp[1]], c, wuv},
-				viewV{cam.view(p[tp[2]]), p[tp[2]], c, wuv},
-			), 0, false)
-		}
-	}
-	s.sts = sts
-
-	// sort compact (depth, index) keys rather than the fat triangles
-	keys := s.keys[:0]
-	for i := range sts {
-		keys = append(keys, sortKey{sts[i].depth, int32(i)})
-	}
-	slices.SortFunc(keys, func(a, b sortKey) int { return cmp.Compare(b.d, a.d) })
-	s.keys = keys
-
-	verts := s.verts[:0]
-	idx := s.idx[:0]
-	for _, k := range keys {
-		st := &sts[k.i]
-		base := uint32(len(verts))
-		for k := 0; k < 3; k++ {
-			c := st.c[k]
-			a := float32(c[3])
-			verts = append(verts, ebiten.Vertex{
-				DstX: st.x[k], DstY: st.y[k], SrcX: st.u[k], SrcY: st.v[k],
-				ColorR: float32(c[0]) * a, ColorG: float32(c[1]) * a, ColorB: float32(c[2]) * a, ColorA: a,
-			})
-		}
-		idx = append(idx, base, base+1, base+2)
-	}
-	s.verts, s.idx = verts, idx
-	if len(idx) > 0 {
-		dst.DrawTriangles32(verts, idx, atlas, &ebiten.DrawTrianglesOptions{AntiAlias: true, Filter: ebiten.FilterLinear})
-	}
-}
-
-// drawSky paints a vertical gradient that meets the fog color at the horizon,
-// and fills below the horizon with fog so the world's edge dissolves.
-func (s *Scene) drawSky(dst *ebiten.Image, cam *Camera, white *ebiten.Image) {
-	w := float32(cam.ScreenW)
-	h := float32(cam.ScreenH)
-	horizon := float32(0)
-	hf := Vec3{cam.fwd.X, 0, cam.fwd.Z}.Norm()
-	if v := cam.view(cam.eye.Add(hf.Scale(1e6))); v.Z > 0 {
-		_, sy := cam.project(v)
-		horizon = float32(clamp(sy, 0, cam.ScreenH))
-	}
-	top := [3]float32{float32(skyTop[0] / 255), float32(skyTop[1] / 255), float32(skyTop[2] / 255)}
-	fog := [3]float32{float32(fogCol[0] / 255), float32(fogCol[1] / 255), float32(fogCol[2] / 255)}
-	vert := func(x, y float32, c [3]float32) ebiten.Vertex {
-		return ebiten.Vertex{DstX: x, DstY: y, SrcX: 0.5, SrcY: 0.5, ColorR: c[0], ColorG: c[1], ColorB: c[2], ColorA: 1}
-	}
-	vs := []ebiten.Vertex{
-		vert(0, 0, top), vert(w, 0, top), vert(w, horizon, fog), vert(0, horizon, fog),
-		vert(0, horizon, fog), vert(w, horizon, fog), vert(w, h, fog), vert(0, h, fog),
-	}
-	is := []uint32{0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7}
-	dst.DrawTriangles32(vs, is, white, &ebiten.DrawTrianglesOptions{})
-}
-
-// clipPoly is the result of clipping a triangle against the near plane:
-// a convex polygon of up to 4 vertices, kept on the stack.
-type clipPoly struct {
-	v [4]viewV
-	n int
-}
-
-// clipNear clips triangle (a,b,c) against the near plane z >= 1 in view
-// space, interpolating world position and color.
-func clipNear(a, b, c viewV) clipPoly {
-	const nearZ = 1.0
-	var out clipPoly
-	if a.v.Z >= nearZ && b.v.Z >= nearZ && c.v.Z >= nearZ {
-		out.v[0], out.v[1], out.v[2], out.n = a, b, c, 3
-		return out
-	}
-	in := [3]viewV{a, b, c}
-	for i := 0; i < 3; i++ {
-		cur, nxt := in[i], in[(i+1)%3]
-		curIn, nxtIn := cur.v.Z >= nearZ, nxt.v.Z >= nearZ
-		if curIn {
-			out.v[out.n] = cur
-			out.n++
-		}
-		if curIn != nxtIn {
-			t := (nearZ - cur.v.Z) / (nxt.v.Z - cur.v.Z)
-			var iv viewV
-			iv.v = cur.v.Add(nxt.v.Sub(cur.v).Scale(t))
-			iv.v.Z = nearZ
-			iv.w = cur.w.Add(nxt.w.Sub(cur.w).Scale(t))
-			for k := 0; k < 4; k++ {
-				iv.c[k] = lerp(cur.c[k], nxt.c[k], t)
-			}
-			iv.uv[0] = cur.uv[0] + (nxt.uv[0]-cur.uv[0])*float32(t)
-			iv.uv[1] = cur.uv[1] + (nxt.uv[1]-cur.uv[1])*float32(t)
-			out.v[out.n] = iv
-			out.n++
-		}
-	}
-	return out
 }

@@ -4,7 +4,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/hajimehoshi/ebiten/v2"
+	"errors"
+	"image"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const (
@@ -13,7 +16,10 @@ const (
 	fixedDT = 1.0 / 60.0
 )
 
-// Game is the top-level Ebitengine game.
+// errDone ends the main loop (screenshot runs).
+var errDone = errors.New("done")
+
+// Game is the whole game: simulation, players and rendering.
 type Game struct {
 	world    *World
 	loader   *Loader // player 1's loader
@@ -26,10 +32,12 @@ type Game struct {
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
 	cabView  Vehicle // machine whose driver this view looks out of, if any
 
-	ground *ebiten.Image // baked site ground texture
-	skirt  *ebiten.Image // repeating dirt for the land beyond the site
-	atlas  *ebiten.Image // object-pass texture: white block + material grain
+	ground *image.RGBA // baked site ground texture
+	skirt  *image.RGBA // repeating dirt for the land beyond the site
+	atlas  *image.RGBA // object-pass texture: white block + material grain
 	art    *Art
+	gpu    *GPU               // renderer, once a window is open (gpu.go)
+	out    rl.RenderTexture2D // the finished 1280×720 frame
 
 	paused bool
 	frame  int
@@ -127,8 +135,6 @@ func NewGame() *Game {
 	return g
 }
 
-func (g *Game) Layout(outW, outH int) (int, int) { return screenW, screenH }
-
 func (g *Game) frameTime() float64 { return float64(g.frame) * fixedDT }
 
 func (g *Game) Update() error {
@@ -201,7 +207,7 @@ func (g *Game) Update() error {
 
 	if g.exitFrame > 0 && g.frame >= g.exitFrame && len(g.shots) == 0 {
 		g.done = true
-		return ebiten.Termination
+		return errDone
 	}
 	return nil
 }
@@ -274,17 +280,29 @@ func (g *Game) rebuildObstacles() {
 	w.obstacles = obs
 }
 
-func (g *Game) Draw(screen *ebiten.Image) {
+// Draw renders the frame and shows it in the window, letterboxed to keep
+// the 16:9 layout when the window is resized.
+func (g *Game) Draw() {
 	if g.studio != "" {
 		if g.frame >= 2 {
 			g.renderStudio(g.studio)
 			g.studio, g.exitFrame = "", g.frame+1
 		}
+		rl.BeginDrawing()
+		rl.EndDrawing()
 		return
 	}
 	start := time.Now()
-	g.render(screen)
+	g.render()
 	// smoothed CPU cost of building and submitting the frame (diagnostics)
 	g.renderMS = lerp(g.renderMS, float64(time.Since(start).Microseconds())/1000, 0.2)
-	g.maybeCapture(screen)
+	g.maybeCapture()
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.Black)
+	ww, wh := float64(rl.GetScreenWidth()), float64(rl.GetScreenHeight())
+	k := math.Min(ww/screenW, wh/screenH)
+	src := rl.NewRectangle(0, 0, screenW, -screenH)
+	dst := rl.NewRectangle(float32((ww-screenW*k)/2), float32((wh-screenH*k)/2), float32(screenW*k), float32(screenH*k))
+	rl.DrawTexturePro(g.out.Texture, src, dst, rl.Vector2{}, 0, rl.White)
+	rl.EndDrawing()
 }

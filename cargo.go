@@ -118,7 +118,6 @@ func (c *Cargo) collider() (obstacle, bool) {
 // Render draws the item at its pose; the crane draws the slings.
 func (c *Cargo) Render(g *Game, s *Scene) {
 	if c.Y < 2 {
-		g.shadow(s, c.Pos, c.W+6, c.D+6, c.Yaw)
 	}
 	if !g.cam.inView(ground(c.Pos, c.Y+c.H/2), c.footRadius()+c.H) {
 		return

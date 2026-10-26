@@ -4,41 +4,47 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 func rgba(r, g, b, a uint8) color.RGBA { return color.RGBA{r, g, b, a} }
 
-// render draws the two players' views side by side with their HUDs, then
-// the shared overlay. Landmark shots (tours) use player 1's camera full
-// screen.
-func (g *Game) render(screen *ebiten.Image) {
+// render draws the frame into the output target: the two players' views
+// side by side with their HUDs, then the shared overlay. Landmark shots
+// (tours) use player 1's camera full screen.
+func (g *Game) render() {
+	views := []rl.RenderTexture2D{}
 	if len(g.tour) > 0 {
-		g.renderView(screen, g.players[0])
+		views = append(views, g.renderView(g.players[0], screenW, screenH, 0))
 	} else {
-		vw := screenW / 2
 		for i, p := range g.players {
-			if p.view == nil {
-				p.view = ebiten.NewImage(vw, screenH)
-			}
-			g.renderView(p.view, p)
-			g.drawToddlerHUD(p.view, p, float64(vw), screenH)
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(i*vw), 0)
-			screen.DrawImage(p.view, op)
+			views = append(views, g.renderView(p, screenW/2, screenH, i))
 		}
-		vector.DrawFilledRect(screen, float32(vw)-2, 0, 4, screenH, rgba(18, 20, 24, 255), false)
 	}
-	g.drawGlobalHUD(screen)
+	rl.BeginTextureMode(g.out)
+	rl.ClearBackground(rl.Black)
+	if len(g.tour) > 0 {
+		blit(views[0], 0, 0, screenW, screenH)
+	} else {
+		vw := float64(screenW / 2)
+		for i, p := range g.players {
+			x := float64(i) * vw
+			blit(views[i], x, 0, vw, screenH)
+			rl.BeginScissorMode(int32(x), 0, int32(vw), screenH)
+			g.drawToddlerHUD(canvas{x, 0}, p, vw, screenH)
+			rl.EndScissorMode()
+		}
+		panel(canvas{}, vw-2, 0, 4, screenH, rgba(18, 20, 24, 255))
+	}
+	g.drawGlobalHUD(canvas{})
+	rl.EndTextureMode()
 	g.cam = g.players[0].cam
 }
 
 // renderView builds the 3D scene from one player's camera and draws it.
-func (g *Game) renderView(dst *ebiten.Image, p *Player) {
+func (g *Game) renderView(p *Player, w, h, slot int) rl.RenderTexture2D {
 	g.cam = p.cam
-	b := dst.Bounds()
-	g.cam.ScreenW, g.cam.ScreenH = float64(b.Dx()), float64(b.Dy())
+	g.cam.ScreenW, g.cam.ScreenH = float64(w), float64(h)
 	g.cam.setup()
 	s := &g.scene
 	s.reset()
@@ -46,7 +52,6 @@ func (g *Game) renderView(dst *ebiten.Image, p *Player) {
 
 	g.buildGround3D(s)
 	g.buildMaterial3D(s)
-	g.buildShadows(s)
 	g.buildProps3D(s)
 	for _, c := range g.world.Cargo {
 		c.Render(g, s)
@@ -75,7 +80,7 @@ func (g *Game) renderView(dst *ebiten.Image, p *Player) {
 	g.renderWonders(s)
 	g.buildParticles3D(s)
 
-	s.Flush(dst, g.cam, g.ground, g.skirt, g.atlas, g.art.white)
+	return g.drawScene(s, g.cam, w, h, slot)
 }
 
 // ---- ground ----
@@ -275,21 +280,6 @@ func (g *Game) buildMaterial3D(s *Scene) {
 
 // ---- shadows (flat dark quads on the ground) ----
 
-// shadow adds a soft rectangular ground shadow, offset away from the sun.
-func (g *Game) shadow(s *Scene, center Vec, w, h, ang float64) {
-	cc := center.Add(V(12, 16))
-	if !g.cam.inView(ground(cc, 0), math.Max(w, h)) {
-		return
-	}
-	c := dir(ang)
-	p := dir(ang + math.Pi/2)
-	a := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(-h/2)), 0.4)
-	b := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(-h/2)), 0.4)
-	d := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(h/2)), 0.4)
-	e := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(h/2)), 0.4)
-	s.addDecalQuad(a, b, d, e, rgba(18, 22, 20, 80))
-}
-
 // blobShadow is a soft round contact shadow for characters, nudged a little
 // away from the sun.
 func (g *Game) blobShadow(s *Scene, center Vec, rx, rz, ang float64) {
@@ -297,18 +287,7 @@ func (g *Game) blobShadow(s *Scene, center Vec, rx, rz, ang float64) {
 	if !g.cam.inView(ground(c, 0), math.Max(rx, rz)) {
 		return
 	}
-	s.addBlob(ground(c, 0.45), rx, rz, ang, rgba(18, 22, 20, 110))
-}
-
-// buildShadows adds shadows for static props; moving things add their own.
-func (g *Game) buildShadows(s *Scene) {
-	for i := range g.world.Props {
-		p := &g.world.Props[i]
-		if p.Kind == propSign || (p.Kind == propModel && p.Tag == "tree") {
-			continue
-		}
-		g.shadow(s, p.Rect.Center, p.Rect.W+8, p.Rect.H+8, p.Rect.Angle)
-	}
+	s.addBlob(ground(c, 0.45), rx, rz, ang, rgba(18, 22, 20, 60)) // contact shadow under the real one
 }
 
 // ---- props ----

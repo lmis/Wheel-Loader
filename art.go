@@ -6,43 +6,42 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	rl "github.com/gen2brain/raylib-go/raylib"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
-	"golang.org/x/image/font/opentype"
 )
 
-// Art holds cached fonts and a 1x1 white image for solid fills.
-type Art struct {
-	Small text.Face
-	Mid   text.Face
-	Big   text.Face
-	Bold  text.Face
-	white *ebiten.Image
+// Face is a font at one size. The GPU font is loaded once a window is open.
+type Face struct {
+	ttf  []byte
+	size float32
+	font rl.Font
 }
 
-func mustFace(ttf []byte, size float64) text.Face {
-	tt, err := opentype.Parse(ttf)
-	if err != nil {
-		panic(err)
-	}
-	f, err := opentype.NewFace(tt, &opentype.FaceOptions{Size: size, DPI: 72, Hinting: 0})
-	if err != nil {
-		panic(err)
-	}
-	return text.NewGoXFace(f)
+// Art holds the fonts.
+type Art struct {
+	Small, Mid, Big, Bold *Face
 }
 
 func NewArt() *Art {
-	wi := ebiten.NewImage(1, 1)
-	wi.Fill(color.White)
 	return &Art{
-		Small: mustFace(goregular.TTF, 13),
-		Mid:   mustFace(goregular.TTF, 17),
-		Big:   mustFace(gobold.TTF, 26),
-		Bold:  mustFace(gobold.TTF, 15),
-		white: wi,
+		Small: &Face{ttf: goregular.TTF, size: 13},
+		Mid:   &Face{ttf: goregular.TTF, size: 17},
+		Big:   &Face{ttf: gobold.TTF, size: 26},
+		Bold:  &Face{ttf: gobold.TTF, size: 15},
+	}
+}
+
+// load rasterises the fonts (ASCII and the em dash) at twice their size for
+// crisp scaling.
+func (a *Art) load() {
+	runes := []rune{'—'}
+	for r := rune(32); r < 127; r++ {
+		runes = append(runes, r)
+	}
+	for _, f := range []*Face{a.Small, a.Mid, a.Big, a.Bold} {
+		f.font = rl.LoadFontFromMemory(".ttf", f.ttf, int32(f.size*2), runes)
+		rl.SetTextureFilter(f.font.Texture, rl.FilterBilinear)
 	}
 }
 
@@ -98,7 +97,7 @@ func pointInRect(x, y float64, rc Rect) bool {
 
 // buildGround bakes the entire site ground (surfaces + markings) into one
 // image, built once at startup and drawn with a single transform per frame.
-func buildGround(w *World) *ebiten.Image {
+func buildGround(w *World) *image.RGBA {
 	iw, ih := int(w.Width), int(w.Height)
 	img := image.NewRGBA(image.Rect(0, 0, iw, ih))
 	rng := rand.New(rand.NewSource(99))
@@ -151,7 +150,7 @@ func buildGround(w *World) *ebiten.Image {
 		drawLineRGBA(img, m)
 	}
 
-	return ebiten.NewImageFromImage(img)
+	return img
 }
 
 // Object-pass texture atlas layout. Flat-coloured geometry samples the white
@@ -169,7 +168,7 @@ const (
 // neutral-grey granular texture (fine grit + scattered pebbles with lit tops
 // and dark rims). The grain is periodic with an extra grainSpan of wrapped
 // texels, so any heap cell maps onto it without seams.
-func buildAtlas() *ebiten.Image {
+func buildAtlas() *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, atlasW, atlasH))
 	for y := 0; y < 16; y++ {
 		for x := 0; x < 16; x++ {
@@ -233,13 +232,13 @@ func buildAtlas() *ebiten.Image {
 			}
 		}
 	}
-	return ebiten.NewImageFromImage(img)
+	return img
 }
 
 // buildDirtTile makes a seamless repeating dirt texture for the land around
 // the site: a 256px patch in the same style as the baked ground, mirrored in
 // both axes so its edges always match when repeated.
-func buildDirtTile() *ebiten.Image {
+func buildDirtTile() *image.RGBA {
 	const n = 256
 	img := image.NewRGBA(image.Rect(0, 0, 2*n, 2*n))
 	br, bg, bb, sp := surfaceBase(surfDirt)
@@ -259,7 +258,7 @@ func buildDirtTile() *ebiten.Image {
 			}
 		}
 	}
-	return ebiten.NewImageFromImage(img)
+	return img
 }
 
 func clampByte(v float64) uint8 {

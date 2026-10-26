@@ -116,7 +116,7 @@ func (l *Loader) RenderCockpit(s *Scene) {
 	s.addCapsule(at(-5.2, -11.5, 53.6), at(-5.2, 11.5, 53.6), 0.9, 0.9, trim)
 	s.addCapsule(at(-4.6, -11.5, 37.2), at(-4.6, 11.5, 37.2), 0.6, 0.6, trim)
 	// roof lining and a small mirror
-	s.addOBB2(at(-15, 0, 54.6), fw, up, 10.5, 0.4, 13.5, rgba(88, 90, 96, 255))
+	s.addOBB2(at(-15, 0, 53.3), fw, up, 10.5, 0.4, 13.5, rgba(88, 90, 96, 255))
 	s.addEllipsoid(at(-6.2, 0, 52.4), fw, up, 0.3, 0.7, 1.8, trim)
 }
 
@@ -126,10 +126,6 @@ func (l *Loader) ExitPoint(side float64) Vec {
 }
 
 func (l *Loader) Render(g *Game, s *Scene) {
-	rh, fh := l.RearHeading(), l.FrontHeading()
-	g.shadow(s, l.RearAxle().Sub(dir(rh).Scale(6)), rearLen+34, bodyWidth+16, rh)
-	g.shadow(s, l.FrontAxle(), frontLen+18, bodyWidth+16, fh)
-	g.shadow(s, l.BucketPivot().Add(dir(fh).Scale(16)), 34, bodyWidth+28, fh)
 	g.buildLoader3D(s, l)
 }
 

@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hajimehoshi/ebiten/v2"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // The character studio: a case-study area that renders each character in
@@ -107,53 +107,64 @@ func (g *Game) studioSheets() []studioSheet {
 // renderStudio draws every sheet and writes them to dir.
 func (g *Game) renderStudio(dir string) {
 	for _, sh := range g.studioSheets() {
-		img := ebiten.NewImage(studioCols*studioCellW, len(sh.poses)*studioCellH)
-		img.Fill(rgba(40, 44, 50, 255))
-		cell := ebiten.NewImage(studioCellW, studioCellH)
+		sheet := rl.LoadRenderTexture(studioCols*studioCellW, int32(len(sh.poses)*studioCellH))
+		type cell struct {
+			rt   rl.RenderTexture2D
+			x, y float64
+			text string
+		}
+		var cells []cell
 		for r, pose := range sh.poses {
 			for c, ang := range studioAngles {
 				cam := NewCamera(studioCellW, studioCellH)
 				cam.Target = studioSpot
 				cam.Dist, cam.TgtDist = pose.dist, pose.dist
 				cam.Yaw, cam.Pitch, cam.lookHeight = sh.yaw+ang.off, 0.14, pose.look
-				cell.Clear()
-				g.renderStudioCell(cell, cam, pose.draw)
-				g.drawText(cell, fmt.Sprintf("%s — %s", pose.name, ang.name), g.art.Bold, 10, 8, hudWhite)
-				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(c*studioCellW), float64(r*studioCellH))
-				img.DrawImage(cell, op)
+				rt := g.renderStudioCell(cam, pose.draw)
+				// each cell needs its own copy, as views of one size share a target
+				cp := rl.LoadRenderTexture(studioCellW, studioCellH)
+				rl.BeginTextureMode(cp)
+				blit(rt, 0, 0, studioCellW, studioCellH)
+				rl.EndTextureMode()
+				cells = append(cells, cell{cp, float64(c * studioCellW), float64(r * studioCellH), fmt.Sprintf("%s — %s", pose.name, ang.name)})
 			}
 		}
-		savePNG(img, filepath.Join(dir, "studio_"+sh.name+".png"))
+		rl.BeginTextureMode(sheet)
+		rl.ClearBackground(rlc(rgba(40, 44, 50, 255)))
+		for _, c := range cells {
+			blit(c.rt, c.x, c.y, studioCellW, studioCellH)
+			g.drawText(canvas{c.x, c.y}, c.text, g.art.Bold, 10, 8, hudWhite)
+		}
+		rl.EndTextureMode()
+		savePNG(readTarget(sheet), filepath.Join(dir, "studio_"+sh.name+".png"))
+		for _, c := range cells {
+			rl.UnloadRenderTexture(c.rt)
+		}
+		rl.UnloadRenderTexture(sheet)
 	}
 }
 
 // renderStudioCell builds a scene of just the ground and one subject.
-func (g *Game) renderStudioCell(dst *ebiten.Image, cam *Camera, subject func(g *Game, s *Scene)) {
+func (g *Game) renderStudioCell(cam *Camera, subject func(g *Game, s *Scene)) rl.RenderTexture2D {
 	g.cam = cam
-	b := dst.Bounds()
-	cam.ScreenW, cam.ScreenH = float64(b.Dx()), float64(b.Dy())
+	cam.ScreenW, cam.ScreenH = studioCellW, studioCellH
 	cam.setup()
 	s := &g.scene
 	s.reset()
 	s.eye = cam.eye
 	g.buildGround3D(s)
 	subject(g, s)
-	s.Flush(dst, cam, g.ground, g.skirt, g.atlas, g.art.white)
+	return g.drawScene(s, cam, studioCellW, studioCellH, 0)
 }
 
-func savePNG(img *ebiten.Image, name string) {
-	w, h := img.Bounds().Dx(), img.Bounds().Dy()
-	buf := make([]byte, 4*w*h)
-	img.ReadPixels(buf)
-	out := &image.RGBA{Pix: buf, Stride: 4 * w, Rect: image.Rect(0, 0, w, h)}
+func savePNG(img *image.RGBA, name string) {
 	f, err := os.Create(name)
 	if err != nil {
 		log.Println("studio:", err)
 		return
 	}
 	defer f.Close()
-	if err := png.Encode(f, out); err != nil {
+	if err := png.Encode(f, img); err != nil {
 		log.Println("studio:", err)
 		return
 	}
