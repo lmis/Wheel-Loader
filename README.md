@@ -80,12 +80,14 @@ with `./run.sh --doggo` for the two dogs (`--owl` is the default).
 ### Split screen
 
 `./run.sh --split-screen` puts two kids side by side on one keyboard, each
-with their own machines and animals:
+with their own machines and animals. Everything plays exactly as in single
+screen; only the keys differ:
 
-| | Player 1 | Player 2 |
+| | Player 1 (left) | Player 2 (right) |
 | --- | --- | --- |
 | Drive / steer (crane: swing and trolley) | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
-| The button | `Space` | `Enter` |
+| The machine's one thing | `Space` | `Enter` |
+| Next machine | `Left Shift` | `Right Shift` |
 | Pick loader / truck / crane / excavator | `1` `2` `3` `4` | `8` `9` `0` `-` (or numpad `1`–`4`) |
 | Cab view / chase camera | `V` | `M` (or numpad `0`) |
 

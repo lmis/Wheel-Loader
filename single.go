@@ -2,12 +2,11 @@ package main
 
 import (
 	"path/filepath"
-
-	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // Single-screen play (the default): one kid, the whole screen, and only the
-// arrow keys, space, shift, 1-4 and V. Up drives forward and down backs up;
+// arrow keys, space, shift, 1-4 and V. Split screen plays exactly the same,
+// just with two key sets (see toddlerP1 and toddlerP2). Up drives forward and down backs up;
 // left and right steer while driving forward (so one key is enough to go
 // round a corner). Space does the machine's one thing (lift or tip the
 // loader's bucket, tip the truck, dig once with the excavator, pick up or
@@ -26,6 +25,7 @@ const (
 func (g *Game) setSingle(companions string) {
 	g.single = true
 	p := g.players[0]
+	p.td.keys = &singleKeys
 	for _, q := range g.players[1:] {
 		if q.Driving != nil {
 			q.Driving.SetOccupied(false) // player 2's machines stand parked
@@ -66,37 +66,6 @@ func (g *Game) setSingle(companions string) {
 	}
 	p.cam.UserYaw = 0
 	g.snapCamera(p)
-}
-
-var (
-	arrowUp    = []Key{rl.KeyUp}
-	arrowDown  = []Key{rl.KeyDown}
-	arrowLeft  = []Key{rl.KeyLeft}
-	arrowRight = []Key{rl.KeyRight}
-)
-
-// singleInput reads the arrows, space, shift, 1-4 and V. Nothing else does
-// anything.
-func (g *Game) singleInput(p *Player) {
-	td := p.td
-	_, crane := p.Driving.(*TowerCrane)
-	p.ctl = arrowControls(keyDown(arrowUp...), keyDown(arrowDown...), keyDown(arrowLeft...), keyDown(arrowRight...), crane)
-	down := keyDown(rl.KeySpace)
-	if down && !td.button {
-		td.pressed = true
-	}
-	td.button = down
-	if inpTapped(rl.KeyLeftShift) || inpTapped(rl.KeyRightShift) {
-		g.nextMachine(p)
-	}
-	for i, k := range []Key{rl.KeyOne, rl.KeyTwo, rl.KeyThree, rl.KeyFour} {
-		if inpTapped(k) {
-			g.toddlerPick(p, td.own[i])
-		}
-	}
-	if inpTapped(rl.KeyV) {
-		p.fp = !p.fp // cab view / chase camera
-	}
 }
 
 // arrowControls maps the arrows to controls: up forward, down back, and

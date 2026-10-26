@@ -23,6 +23,7 @@ import (
 // toddlerKeys is one player's tiny control set.
 type toddlerKeys struct {
 	fwd, back, left, right, button []Key
+	next                           []Key    // walk over to the next machine
 	view                           []Key    // cab view / chase camera
 	pick                           [4][]Key // loader, truck, crane, excavator
 	label                          string
@@ -33,19 +34,34 @@ var (
 	toddlerP1 = toddlerKeys{
 		fwd: []Key{rl.KeyW}, back: []Key{rl.KeyS},
 		left: []Key{rl.KeyA}, right: []Key{rl.KeyD},
-		button: []Key{rl.KeySpace, rl.KeyLeftShift},
-		view:   []Key{rl.KeyV},
-		pick:   [4][]Key{{rl.KeyOne}, {rl.KeyTwo}, {rl.KeyThree}, {rl.KeyFour}},
-		label:  "W A S D  +  Space    V: view", pickLabels: [4]string{"1", "2", "3", "4"},
+		button:     []Key{rl.KeySpace},
+		next:       []Key{rl.KeyLeftShift},
+		view:       []Key{rl.KeyV},
+		pick:       [4][]Key{{rl.KeyOne}, {rl.KeyTwo}, {rl.KeyThree}, {rl.KeyFour}},
+		label:      "W A S D: drive    Space: do    Left Shift: next machine    V: view",
+		pickLabels: [4]string{"1", "2", "3", "4"},
 	}
 	toddlerP2 = toddlerKeys{
 		fwd: []Key{rl.KeyUp, rl.KeyK}, back: []Key{rl.KeyDown, rl.KeyJ},
 		left: []Key{rl.KeyLeft, rl.KeyH}, right: []Key{rl.KeyRight, rl.KeyL},
-		button: []Key{rl.KeyEnter, rl.KeyRightShift},
+		button: []Key{rl.KeyEnter, rl.KeyKpEnter},
+		next:   []Key{rl.KeyRightShift},
 		view:   []Key{rl.KeyM, rl.KeyKp0},
 		pick: [4][]Key{{rl.KeyEight, rl.KeyKp1}, {rl.KeyNine, rl.KeyKp2},
 			{rl.KeyZero, rl.KeyKp3}, {rl.KeyMinus, rl.KeyKp4}},
-		label: "Arrows  +  Enter    M: view", pickLabels: [4]string{"8", "9", "0", "-"},
+		label:      "Arrows: drive    Enter: do    Right Shift: next machine    M: view",
+		pickLabels: [4]string{"8", "9", "0", "-"},
+	}
+	// single-screen play: the arrows, space, either shift, 1-4 and V
+	singleKeys = toddlerKeys{
+		fwd: []Key{rl.KeyUp}, back: []Key{rl.KeyDown},
+		left: []Key{rl.KeyLeft}, right: []Key{rl.KeyRight},
+		button:     []Key{rl.KeySpace},
+		next:       []Key{rl.KeyLeftShift, rl.KeyRightShift},
+		view:       []Key{rl.KeyV},
+		pick:       [4][]Key{{rl.KeyOne}, {rl.KeyTwo}, {rl.KeyThree}, {rl.KeyFour}},
+		label:      "Arrows: drive    Space: do    Shift: next machine    V: view",
+		pickLabels: [4]string{"1", "2", "3", "4"},
 	}
 )
 
@@ -155,19 +171,28 @@ func (g *Game) secondLoader() *Loader {
 func (g *Game) toddlerInput(p *Player) {
 	td := p.td
 	k := td.keys
-	for i, keys := range k.pick {
+	tapped := func(keys []Key) bool {
+		hit := false
 		for _, key := range keys {
 			if inpTapped(key) {
-				g.toddlerPick(p, td.own[i])
+				hit = true
 			}
 		}
+		return hit
 	}
-	for _, key := range k.view {
-		if inpTapped(key) {
-			p.fp = !p.fp
+	for i, keys := range k.pick {
+		if tapped(keys) {
+			g.toddlerPick(p, td.own[i])
 		}
 	}
-	p.ctl = Controls{Throttle: axis(k.fwd, k.back), Steer: axis(k.right, k.left)}
+	if tapped(k.next) {
+		g.nextMachine(p)
+	}
+	if tapped(k.view) {
+		p.fp = !p.fp // cab view / chase camera
+	}
+	_, crane := p.Driving.(*TowerCrane)
+	p.ctl = arrowControls(keyDown(k.fwd...), keyDown(k.back...), keyDown(k.left...), keyDown(k.right...), crane)
 	down := keyDown(k.button...)
 	if down && !td.button {
 		td.pressed = true
@@ -442,11 +467,11 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 				td.armed = true // space near a load: home in, then pick it up
 			}
 			over := c.hook.Sub(*target).Len() < 9 && math.Abs(c.slewV) < 0.15 && td.modeT > 0.2
-			if over && (!g.single || td.armed) {
+			if over && td.armed {
 				td.mode, td.modeT, td.armed = tdLower, 0, false
 			}
 		}
-		if td.pressed && td.modeT > 0.2 && (target == nil || g.single) {
+		if td.pressed && td.modeT > 0.2 {
 			td.mode, td.modeT = tdLower, 0
 		}
 	}
@@ -575,11 +600,7 @@ func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 		}
 	}
 
-	label := td.keys.label
-	if g.single {
-		label = "Arrows: drive    Space: do    Shift: next machine    V: view"
-	}
-	g.drawText(dst, label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
+	g.drawText(dst, td.keys.label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
 }
 
 // drawMachineIcon draws a tiny loader (0), dump truck (1), crane (2) or

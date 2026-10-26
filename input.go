@@ -6,14 +6,10 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 type Key = int32
 
 // handleInput reads the keyboard once per frame. There is nothing else to
-// press: no pause, no menus (see singleInput and toddlerInput for the keys).
+// press: no pause, no menus (see toddlerInput for the keys).
 func (g *Game) handleInput() {
 	for _, p := range g.players {
-		if g.single {
-			g.singleInput(p)
-		} else {
-			g.toddlerInput(p)
-		}
+		g.toddlerInput(p)
 	}
 }
 
