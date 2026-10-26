@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"path/filepath"
+	"strings"
 )
 
 // sceneSpec is one staged screenshot: set the world up, hold the given
@@ -14,8 +15,9 @@ type sceneSpec struct {
 	ctl    *Controls // player 1 controls while the scene runs
 }
 
-// stageScenes schedules the screenshot collection of every feature.
-func (g *Game) stageScenes(outDir string) {
+// stageScenes schedules the screenshot collection of every feature; only, if
+// non-empty, keeps just the scenes whose name contains it.
+func (g *Game) stageScenes(outDir, only string) {
 	g.scripted = true
 	g.simSpeed = 2
 	w := g.world
@@ -57,6 +59,13 @@ func (g *Game) stageScenes(outDir string) {
 			homeAnimals()
 			walkerCam(p, 46, math.Pi+0.35, 0.16)
 			p.cam.lookHeight = 15
+		}},
+		{name: "01b_kid_back", frames: 20, setup: func(g *Game) {
+			p := p1()
+			g.putOnFoot(p, V(1600, 1312), math.Pi/2)
+			p.fp = false
+			walkerCam(p, 46, 0.4, 0.2)
+			p.cam.lookHeight = 14
 		}},
 		{name: "02_kid_and_loader", frames: 30, setup: func(g *Game) {
 			p := p1()
@@ -202,6 +211,9 @@ func (g *Game) stageScenes(outDir string) {
 	f := 5
 	for _, sc := range scenes {
 		sc := sc
+		if only != "" && !strings.Contains(sc.name, only) {
+			continue
+		}
 		start := f
 		g.script = append(g.script, scriptStep{at: start, fn: func(g *Game) {
 			g.tour = nil

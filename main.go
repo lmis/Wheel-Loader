@@ -19,6 +19,7 @@ func main() {
 	shotDir := flag.String("shots", "", "run headless autopilot and save screenshots to this dir, then exit")
 	dumpShot := flag.String("dumpshot", "", "render a loaded loader dumping into a truck to this dir, then exit")
 	scenesDir := flag.String("scenes", "", "stage and capture a screenshot of every feature to this dir, then exit")
+	only := flag.String("only", "", "with -scenes: capture only scenes whose name contains this")
 	coop := flag.Bool("coop", false, "start in two-player split screen")
 	tourDir := flag.String("tour", "", "render static views of site landmarks to this dir, then exit")
 	frames := flag.Int("frames", 0, "exit after this many frames (0 = run forever)")
@@ -63,7 +64,7 @@ func main() {
 		if err := os.MkdirAll(*scenesDir, 0o755); err != nil {
 			log.Fatal(err)
 		}
-		g.stageScenes(*scenesDir)
+		g.stageScenes(*scenesDir, *only)
 	}
 	if *dumpShot != "" {
 		if err := os.MkdirAll(*dumpShot, 0o755); err != nil {
