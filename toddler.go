@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"math"
 
@@ -20,7 +19,7 @@ import (
 //     lowers the hook to pick up or put down a load
 //
 // Number keys pick a machine: the kid climbs out, walks over and gets in.
-// Nobody can climb out otherwise.
+// Nobody can climb out otherwise. Deliveries are celebrated with confetti.
 
 // toddlerKeys is one player's tiny control set.
 type toddlerKeys struct {
@@ -73,10 +72,8 @@ type toddlerState struct {
 	side      float64 // which way the kid walks around obstacles (±1)
 	sideT     float64 // how long to keep to that side
 	mode      int
-	button    bool // held
-	pressed   bool // pressed since the assistant last looked
-	stars     int
-	cheerT    float64 // a big star pops on screen after a delivery
+	button    bool    // held
+	pressed   bool    // pressed since the assistant last looked
 	dumpTruck *Truck  // truck under the bucket when the dump started
 	before    float64 // its load at that moment
 	modeT     float64 // time in the current mode
@@ -305,9 +302,6 @@ func (g *Game) toddlerStep(dt float64) {
 			continue
 		}
 		g.toddlerTravel(p, dt)
-		if td.cheerT > 0 {
-			td.cheerT -= dt
-		}
 	}
 }
 
@@ -330,10 +324,8 @@ func (g *Game) toddlerAssist(p *Player, dt float64) {
 	td.pressed = false
 }
 
-// cheer awards a star with confetti at a spot.
-func (g *Game) cheer(td *toddlerState, at Vec, height float64) {
-	td.stars++
-	td.cheerT = 1.6
+// cheer celebrates a delivery with confetti at a spot.
+func (g *Game) cheer(at Vec, height float64) {
 	g.world.spawnConfetti(at, height, 70)
 }
 
@@ -384,7 +376,7 @@ func (g *Game) toddlerLoader(p *Player, l *Loader) {
 		}
 		if l.Load < 2 {
 			if t := td.dumpTruck; t != nil && t.Total()-td.before > 10 {
-				g.cheer(td, t.Pos, 60)
+				g.cheer(t.Pos, 60)
 			}
 			td.mode, td.dumpTruck = tdDig, nil
 		}
@@ -403,7 +395,7 @@ func (g *Game) toddlerDumpTruck(p *Player, t *Truck) {
 		t.bedCmd = 1
 		if t.BedTilt >= 1 && (t.Total() < 1 || td.modeT > 4) {
 			if td.before-t.Total() > 10 {
-				g.cheer(td, t.Pos.Sub(dir(t.Angle).Scale(80)), 40)
+				g.cheer(t.Pos.Sub(dir(t.Angle).Scale(80)), 40)
 			}
 			td.mode, td.modeT = tdLower, 0
 		}
@@ -436,7 +428,7 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 				h.held, h.vy = false, 0
 				c.held = nil
 				if w.TruckAt(h.Pos) != nil {
-					g.cheer(td, h.Pos, h.H+40)
+					g.cheer(h.Pos, h.H+40)
 				}
 			} else {
 				c.attach(w)
@@ -476,38 +468,11 @@ func (g *Game) toddlerTrucks(dt float64) {
 
 // ---- toddler HUD ----
 
-// drawStar fills a five-pointed star.
-func drawStar(dst *ebiten.Image, cx, cy, r float64, c [4]uint8) {
-	var path vector.Path
-	for i := 0; i < 10; i++ {
-		rr := r
-		if i%2 == 1 {
-			rr = r * 0.45
-		}
-		a := -math.Pi/2 + float64(i)*math.Pi/5
-		x, y := float32(cx+math.Cos(a)*rr), float32(cy+math.Sin(a)*rr)
-		if i == 0 {
-			path.MoveTo(x, y)
-		} else {
-			path.LineTo(x, y)
-		}
-	}
-	path.Close()
-	op := &vector.DrawPathOptions{AntiAlias: true}
-	op.ColorScale.ScaleWithColor(rgba(c[0], c[1], c[2], c[3]))
-	vector.FillPath(dst, &path, nil, op)
-}
-
-// drawToddlerHUD: big star counter, a big bucket meter and the player colour.
+// drawToddlerHUD: the player colour, a big load meter and the machine picker.
 func (g *Game) drawToddlerHUD(dst *ebiten.Image, p *Player, vw, vh float64) {
 	td := p.td
 	// player colour strip along the top
 	vector.DrawFilledRect(dst, 0, 0, float32(vw), 8, p.marker, false)
-
-	// stars
-	panel(dst, 16, 20, 170, 64, hudPanel)
-	drawStar(dst, 50, 52, 24, [4]uint8{255, 205, 40, 255})
-	g.drawText(dst, fmt.Sprintf("%d", td.stars), g.art.Huge, 86, 26, hudWhite)
 
 	// load meter: how full the bucket or the truck is, in the material's
 	// colour
@@ -547,13 +512,6 @@ func (g *Game) drawToddlerHUD(dst *ebiten.Image, p *Player, vw, vh float64) {
 		g.drawText(dst, td.keys.pickLabels[i], g.art.Bold, x+5, y+3, hudWhite)
 	}
 
-	// a big star pops up after a delivery
-	if td.cheerT > 0 {
-		t := 1.6 - td.cheerT
-		size := 40 + 140*math.Min(1, t*3)
-		a := uint8(clamp(td.cheerT/1.6*255, 0, 255))
-		drawStar(dst, vw/2, vh*0.42, size, [4]uint8{255, 214, 50, a})
-	}
 	g.drawText(dst, td.keys.label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
 }
 

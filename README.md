@@ -63,8 +63,8 @@ the way) and climb in. The machines do the fiddly parts themselves:
   The hook stays at a safe height and its shadow shows where it is. The
   button lowers it to hook onto a load, or to put the load down.
 
-Stars and confetti reward every load into a truck, every truck tipped out,
-and every crane load set on a truck. Parked full trucks empty themselves.
+Confetti celebrates every load into a truck, every truck tipped out, and
+every crane load set on a truck. Parked full trucks empty themselves.
 The machines are speed-limited and stop when no key is held. `F5` switches to
 the full game (and back); `go run . -full` starts there.
 
@@ -143,7 +143,7 @@ partially filled and loads carry their material type.
 | `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
 | `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
-| `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over, stars |
+| `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over, confetti |
 | `walker.go` | The kid on foot |
 | `animals.go` | The dogs, the chimp and the owl |
 | `player.go`, `keys.go` | Players, getting in and out, cameras, key maps |

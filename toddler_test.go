@@ -52,11 +52,8 @@ func TestToddlerModeLoadsTruck(t *testing.T) {
 	// back out, then drive to the truck: it tips in by itself
 	toddlerDrive(g, p, Vec{}, true, 70, func() bool { return false })
 	tr := g.world.Trucks[0]
-	if !toddlerDrive(g, p, tr.Pos, false, 1500, func() bool { return p.td.stars > 0 }) {
+	if !toddlerDrive(g, p, tr.Pos, false, 1500, func() bool { return tr.Total() > 30 && l.Load < 2 }) {
 		t.Fatalf("no delivery: mode %d load %.1f truck %.1f", p.td.mode, l.Load, tr.Total())
-	}
-	if tr.Total() < 30 {
-		t.Fatalf("truck got only %.1f", tr.Total())
 	}
 }
 
@@ -65,6 +62,7 @@ func TestToddlerButtonDumps(t *testing.T) {
 	g.setToddler(true)
 	p := g.players[1]
 	l := p.Driving.(*Loader)
+	tr := p.td.own[1].(*Truck)
 	l.Load, l.LoadType, p.td.mode = 60, MatDirt, tdCarry
 	p.td.button = true
 	run(g, 1)
@@ -77,8 +75,8 @@ func TestToddlerButtonDumps(t *testing.T) {
 	if least > 2 || p.td.mode != tdDig {
 		t.Fatalf("button should dump the bucket: load %.1f mode %d", least, p.td.mode)
 	}
-	if p.td.stars != 0 {
-		t.Fatal("dumping on the ground is not a delivery")
+	if tr.Total() > 0 {
+		t.Fatal("the load should go on the ground, not in the truck")
 	}
 }
 
@@ -133,9 +131,6 @@ func TestToddlerTruckTipsWithOneButton(t *testing.T) {
 	if tr.Total() > 20 {
 		t.Fatalf("truck still holds %.1f", tr.Total())
 	}
-	if p.td.stars != 1 {
-		t.Fatalf("emptying the truck should give a star, got %d", p.td.stars)
-	}
 	if tr.BedTilt > 0 {
 		t.Fatalf("body should come back down, tilt %.2f", tr.BedTilt)
 	}
@@ -176,8 +171,8 @@ func TestToddlerCraneLiftsOntoTruck(t *testing.T) {
 		aimHook(c, tr.Pos)
 		p.td.pressed = true
 		run(g, 60*5)
-		if c.held != nil || p.td.stars != 1 {
-			t.Fatalf("player %d: crate should be put on the truck: held %v stars %d", p.ID, c.held != nil, p.td.stars)
+		if c.held != nil {
+			t.Fatalf("player %d: the button should put the crate down", p.ID)
 		}
 		run(g, 60)
 		if box.truck != tr {

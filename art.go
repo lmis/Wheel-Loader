@@ -19,7 +19,6 @@ type Art struct {
 	Mid   text.Face
 	Big   text.Face
 	Bold  text.Face
-	Huge  text.Face
 	white *ebiten.Image
 }
 
@@ -43,7 +42,6 @@ func NewArt() *Art {
 		Mid:   mustFace(goregular.TTF, 17),
 		Big:   mustFace(gobold.TTF, 26),
 		Bold:  mustFace(gobold.TTF, 15),
-		Huge:  mustFace(gobold.TTF, 44),
 		white: wi,
 	}
 }
