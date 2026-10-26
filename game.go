@@ -91,7 +91,7 @@ func NewGame() *Game {
 
 	// the fleet
 	g.vehicles = append(g.vehicles, l,
-		&Loader{Joint: V(2650, 1980), Heading: 0.6, Artic: 0.22, Lift: 0.02, Tilt: 0.5, Color: rgba(226, 150, 30, 255)})
+		&Loader{Joint: V(2650, 1980), Heading: 0.6, Artic: 0.22, Lift: 0.02, Tilt: 0.5})
 	for _, t := range w.Trucks {
 		g.vehicles = append(g.vehicles, t)
 	}

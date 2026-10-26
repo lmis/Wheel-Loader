@@ -432,8 +432,6 @@ func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 
 // drawMachineIcon draws a tiny loader (0), dump truck (1) or crane (2).
 func drawMachineIcon(dst canvas, kind int, cx, cy float64) {
-	yellow := rgba(246, 192, 22, 255)
-	orange := rgba(232, 140, 30, 255)
 	dark := rgba(40, 40, 44, 255)
 	rect := func(x, y, w, h float64, c color.RGBA) {
 		panel(dst, cx+x, cy+y, w, h, c)
@@ -443,21 +441,21 @@ func drawMachineIcon(dst canvas, kind int, cx, cy float64) {
 	}
 	switch kind {
 	case 0: // loader: body, cab, arm and bucket
-		rect(-12, -6, 20, 8, yellow)
-		rect(-10, -14, 9, 8, yellow)
-		rect(6, -8, 8, 3, yellow)
+		rect(-12, -6, 20, 8, colLoader)
+		rect(-10, -14, 9, 8, colLoader)
+		rect(6, -8, 8, 3, colLoader)
 		rect(12, -8, 6, 10, dark)
 		wheel(-8, 4, 5)
 		wheel(5, 4, 5)
 	case 1: // dump truck: body and cab
-		rect(-17, -12, 22, 12, orange)
-		rect(7, -10, 9, 10, orange)
+		rect(-17, -12, 22, 12, colTruck)
+		rect(7, -10, 9, 10, colTruck)
 		wheel(-11, 3, 4)
 		wheel(-3, 3, 4)
 		wheel(11, 3, 4)
 	case 2: // crane: mast, jib, rope and hook
-		rect(-10, -20, 4, 28, yellow)
-		rect(-16, -22, 34, 3, yellow)
+		rect(-10, -20, 4, 28, colCrane)
+		rect(-16, -22, 34, 3, colCrane)
 		rect(11, -19, 1, 12, dark)
 		rect(9, -8, 5, 3, rgba(230, 60, 40, 255))
 		rect(-14, 6, 12, 3, dark)

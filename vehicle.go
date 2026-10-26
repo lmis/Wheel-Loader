@@ -145,10 +145,18 @@ func (l *Loader) Effects(w *World) {
 	}
 }
 
-// loaderColor returns the body colour, defaulting to construction yellow.
+// Each kind of machine has its own colour, used on the machine and on its
+// tile in the HUD: yellow loaders, red dump trucks, green cranes.
+var (
+	colLoader = rgba(240, 186, 24, 255)
+	colTruck  = rgba(206, 46, 38, 255)
+	colCrane  = rgba(48, 158, 74, 255)
+)
+
+// bodyColor returns the loader's colour, defaulting to loader yellow.
 func (l *Loader) bodyColor() color.RGBA {
 	if l.Color.A != 0 {
 		return l.Color
 	}
-	return rgba(240, 186, 24, 255)
+	return colLoader
 }

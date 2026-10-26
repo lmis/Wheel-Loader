@@ -204,7 +204,7 @@ func (c *TowerCrane) attach(w *World) {
 
 func (c *TowerCrane) Render(g *Game, s *Scene) {
 	g.blobShadow(s, c.hook, 7, 7, c.Slew) // helps to aim the hook
-	yellow := rgba(246, 192, 22, 255)
+	paint := colCrane
 	beam := func(a, b Vec3, r float64, col color.RGBA) {
 		d := b.Sub(a)
 		s.addOBB(a.Add(d.Scale(0.5)), d, d.Len()/2, r, r, col)
@@ -218,16 +218,16 @@ func (c *TowerCrane) Render(g *Game, s *Scene) {
 			return ground(c.Base, y).Add(Vec3{sx * half, 0, sz * half})
 		}
 		for i := 0; i < 4; i++ {
-			beam(corner(i, 8), corner(i, craneMastH), 1.6, yellow)
+			beam(corner(i, 8), corner(i, craneMastH), 1.6, paint)
 		}
 		for y := 8.0; y+step <= craneMastH+0.1; y += step {
 			for i := 0; i < 4; i++ {
 				j := (i + 1) % 4
-				beam(corner(i, y+step), corner(j, y+step), 0.9, yellow)
+				beam(corner(i, y+step), corner(j, y+step), 0.9, paint)
 				if int(y/step)%2 == 0 {
-					beam(corner(i, y), corner(j, y+step), 0.8, yellow)
+					beam(corner(i, y), corner(j, y+step), 0.8, paint)
 				} else {
-					beam(corner(j, y), corner(i, y+step), 0.8, yellow)
+					beam(corner(j, y), corner(i, y+step), 0.8, paint)
 				}
 			}
 		}
@@ -238,7 +238,7 @@ func (c *TowerCrane) Render(g *Game, s *Scene) {
 	if !g.cam.inView(c.jibAt(craneJibLen/2-60, 0, craneJibY), craneJibLen/2+140) {
 		return
 	}
-	s.addBox(top.Add(Vec3{0, 6, 0}), 14, 6, 14, c.Slew, shadeC(yellow, 0.9))
+	s.addBox(top.Add(Vec3{0, 6, 0}), 14, 6, 14, c.Slew, shadeC(paint, 0.9))
 	cab := c.jibAt(20, -17, 0)
 	s.addPrismCaps(cab, c.Slew, []ring{{-10, 12, 9, craneMastH - 24, 2}, {-10, 12, 9, craneMastH - 18, 2}}, rgba(235, 235, 230, 255), true, false)
 	s.addPrismCaps(cab, c.Slew, []ring{{-10, 12, 9, craneMastH - 18, 2}, {-10, 10, 8.5, craneMastH - 3, 2}}, colGlass, false, false)
@@ -246,8 +246,8 @@ func (c *TowerCrane) Render(g *Game, s *Scene) {
 	// apex and tie bars
 	apex := c.jibAt(0, 0, craneJibY+72)
 	for _, z := range []float64{-7, 7} {
-		beam(c.jibAt(-6, z, craneJibY), apex, 1.4, yellow)
-		beam(c.jibAt(6, z, craneJibY), apex, 1.4, yellow)
+		beam(c.jibAt(-6, z, craneJibY), apex, 1.4, paint)
+		beam(c.jibAt(6, z, craneJibY), apex, 1.4, paint)
 	}
 	beam(apex, c.jibAt(craneJibLen*0.55, 0, craneJibY+22), 0.7, colSteel)
 	beam(apex, c.jibAt(craneJibLen-30, 0, craneJibY+22), 0.7, colSteel)
@@ -256,18 +256,18 @@ func (c *TowerCrane) Render(g *Game, s *Scene) {
 	const seg = 35.0
 	jb := func(x, z float64) Vec3 { return c.jibAt(x, z, craneJibY) }
 	jt := func(x float64) Vec3 { return c.jibAt(x, 0, craneJibY+22) }
-	beam(jb(-4, -7), jb(craneJibLen, -7), 1.2, yellow)
-	beam(jb(-4, 7), jb(craneJibLen, 7), 1.2, yellow)
-	beam(jt(-4), jt(craneJibLen-10), 1.2, yellow)
+	beam(jb(-4, -7), jb(craneJibLen, -7), 1.2, paint)
+	beam(jb(-4, 7), jb(craneJibLen, 7), 1.2, paint)
+	beam(jt(-4), jt(craneJibLen-10), 1.2, paint)
 	for x := 0.0; x+seg <= craneJibLen; x += seg {
-		beam(jb(x, -7), jt(x+seg/2), 0.7, yellow)
-		beam(jt(x+seg/2), jb(x+seg, -7), 0.7, yellow)
-		beam(jb(x, 7), jt(x+seg/2), 0.7, yellow)
-		beam(jt(x+seg/2), jb(x+seg, 7), 0.7, yellow)
-		beam(jb(x+seg, -7), jb(x+seg, 7), 0.6, yellow)
+		beam(jb(x, -7), jt(x+seg/2), 0.7, paint)
+		beam(jt(x+seg/2), jb(x+seg, -7), 0.7, paint)
+		beam(jb(x, 7), jt(x+seg/2), 0.7, paint)
+		beam(jt(x+seg/2), jb(x+seg, 7), 0.7, paint)
+		beam(jb(x+seg, -7), jb(x+seg, 7), 0.6, paint)
 	}
 	// counter-jib with walkway and concrete counterweights
-	s.addBox(c.jibAt(-craneCounter/2, 0, craneJibY+1), craneCounter/2, 1.5, 9, c.Slew, shadeC(yellow, 0.85))
+	s.addBox(c.jibAt(-craneCounter/2, 0, craneJibY+1), craneCounter/2, 1.5, 9, c.Slew, shadeC(paint, 0.85))
 	for k := 0; k < 3; k++ {
 		x := -craneCounter + 12 + float64(k)*14
 		s.addBox(c.jibAt(x, 0, craneJibY-12), 6, 12, 11, c.Slew, rgba(168, 166, 160, 255))

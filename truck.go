@@ -187,7 +187,7 @@ func (t *Truck) Render(g *Game, s *Scene) {
 	}
 	ang := t.Angle
 	at := t.local
-	body := rgba(222, 140, 32, 255)
+	body := colTruck
 
 	for _, x := range []float64{36, -24, -46} {
 		yaw := ang
