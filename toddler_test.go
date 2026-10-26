@@ -62,9 +62,7 @@ func TestToddlerButtonDumps(t *testing.T) {
 	l := p.Driving.(*Loader)
 	tr := p.td.own[1].(*Truck)
 	l.Load, l.LoadType, p.td.mode = 60, MatDirt, tdCarry
-	p.td.button = true
-	run(g, 1)
-	p.td.button = false
+	p.td.pressed = true
 	least := l.Load
 	for i := 0; i < 240; i++ {
 		run(g, 1)

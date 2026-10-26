@@ -81,6 +81,10 @@ type toddlerState struct {
 	phase     int     // excavator: step of the dig cycle
 	avoidT    float64 // driving: keep steering round an obstacle for this long
 	cool      float64 // crane: time before the hook homes in again
+	armed     bool    // crane: space was pressed near a load; lower once over it
+	want      Vec     // single screen: the way the arrows point (zero: none)
+	idleT     float64 // single screen: time with no arrow held
+	moved     float64 // single screen: distance driven in this machine
 	avoidSide float64 // which way (+1 right, -1 left)
 	phaseT    float64 // time in that step
 	awayT     float64 // loader: time the bucket has been out of the heap
@@ -220,7 +224,7 @@ func (g *Game) toddlerTravel(p *Player, dt float64) {
 		if g.driverOf(v) == nil {
 			g.enter(p, v)
 			td.mode, td.modeT, td.dumpTruck, td.hookLen = tdCarry, 0, nil, 0
-			td.phase, td.phaseT = exIdle, 0
+			td.phase, td.phaseT, td.moved = exIdle, 0, 0
 			if _, ok := v.(*Loader); ok {
 				td.mode = tdDig
 			}
@@ -277,6 +281,9 @@ func (g *Game) toddlerStep(dt float64) {
 			continue
 		}
 		g.toddlerTravel(p, dt)
+		if g.single {
+			g.singleDrive(p, dt)
+		}
 		if td.goTo == nil {
 			g.toddlerAvoid(p, dt)
 		}
@@ -340,15 +347,15 @@ func (g *Game) toddlerLoader(p *Player, l *Loader) {
 		// the bucket: lift it
 		case l.Load > bucketCap*0.8, l.Load > 12 && l.Speed < -5, l.Load > 15 && td.awayT > 0.35:
 			td.mode = tdCarry
-		case l.Load > 5 && td.button:
-			td.mode, td.dumpTruck = tdDump, nil
+		case td.pressed: // the button: lift the bucket with whatever is in it
+			td.mode = tdCarry
 		}
 	case tdCarry:
 		l.liftCmd, l.tiltCmd = toward(l.Lift, 0.62), toward(l.Tilt, 1)
 		switch {
 		case l.Load < 2:
 			td.mode = tdDig
-		case over != nil && l.Lift > 0.45, td.button:
+		case over != nil && l.Lift > 0.45, td.pressed:
 			td.mode, td.dumpTruck = tdDump, over
 		}
 	case tdDump:
@@ -383,7 +390,7 @@ func (g *Game) toddlerDumpTruck(p *Player, t *Truck) {
 	default:
 		t.bedCmd = 0
 		if td.pressed {
-			td.mode, td.modeT = tdDump, 0
+			td.mode, td.modeT, td.moved = tdDump, 0, 0
 		}
 	}
 }
@@ -453,11 +460,15 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 			if p.ctl.Throttle == 0 {
 				c.trolleyCmd = clamp(dt2/25, -1, 1)
 			}
-			if c.hook.Sub(*target).Len() < 9 && math.Abs(c.slewV) < 0.15 && td.modeT > 0.2 {
-				td.mode, td.modeT = tdLower, 0
+			if td.pressed {
+				td.armed = true // space near a load: home in, then pick it up
+			}
+			over := c.hook.Sub(*target).Len() < 9 && math.Abs(c.slewV) < 0.15 && td.modeT > 0.2
+			if over && (!g.single || td.armed) {
+				td.mode, td.modeT, td.armed = tdLower, 0, false
 			}
 		}
-		if td.pressed && td.modeT > 0.2 {
+		if td.pressed && td.modeT > 0.2 && (target == nil || g.single) {
 			td.mode, td.modeT = tdLower, 0
 		}
 	}
@@ -656,10 +667,16 @@ func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 		}
 		panel(dst, x, y, 54, 64, bg)
 		drawMachineIcon(dst, i, x+27, y+40)
-		g.drawText(dst, td.keys.pickLabels[i], g.art.Bold, x+5, y+3, hudWhite)
+		if !g.single {
+			g.drawText(dst, td.keys.pickLabels[i], g.art.Bold, x+5, y+3, hudWhite)
+		}
 	}
 
-	g.drawText(dst, td.keys.label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
+	label := td.keys.label
+	if g.single {
+		label = "Arrows: drive    Space: next machine"
+	}
+	g.drawText(dst, label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
 }
 
 // drawMachineIcon draws a tiny loader (0), dump truck (1), crane (2) or

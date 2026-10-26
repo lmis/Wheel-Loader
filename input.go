@@ -12,7 +12,11 @@ func (g *Game) handleInput() {
 		g.paused = !g.paused
 	}
 	for _, p := range g.players {
-		g.toddlerInput(p)
+		if g.single {
+			g.singleInput(p)
+		} else {
+			g.toddlerInput(p)
+		}
 	}
 }
 

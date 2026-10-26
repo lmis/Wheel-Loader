@@ -106,11 +106,18 @@ func (g *Game) snapCamera(p *Player) {
 		}); ok {
 			tgt, h, head = ct.CamTarget()
 		}
+		if g.single {
+			head = singleYaw
+		}
 		c.Target, c.followYaw, c.lookHeight = tgt, head, h
 		c.Dist, c.TgtDist = p.distVehicle, p.distVehicle
 		return
 	}
-	c.Target, c.followYaw, c.lookHeight = p.W.Pos, p.W.Yaw, 14
+	head := p.W.Yaw
+	if g.single {
+		head = singleYaw
+	}
+	c.Target, c.followYaw, c.lookHeight = p.W.Pos, head, 14
 	c.Dist, c.TgtDist = p.distWalker, p.distWalker
 }
 
@@ -130,13 +137,20 @@ func (g *Game) updatePlayerCamera(p *Player, dt float64) {
 		}); ok {
 			tgt, h, head = ct.CamTarget()
 		}
+		if g.single {
+			head = singleYaw
+		}
 		c.TgtDist = p.distVehicle
 		c.SetLookHeight(h)
 		c.Follow(tgt, head, dt)
 	default:
+		head := p.W.Yaw
+		if g.single {
+			head = singleYaw
+		}
 		c.TgtDist = p.distWalker
 		c.SetLookHeight(14)
-		c.Follow(p.W.Pos, p.W.Yaw, dt)
+		c.Follow(p.W.Pos, head, dt)
 	}
 	if v := p.Driving; v != nil {
 		if j := v.Jolt(); j > 60 {

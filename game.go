@@ -32,6 +32,7 @@ type Game struct {
 	players  []*Player
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
 	cabView  Vehicle // machine whose driver this view looks out of, if any
+	single   bool    // single-screen play (single.go); otherwise split screen
 
 	ground *image.RGBA // baked site ground texture
 	skirt  *image.RGBA // repeating dirt for the land beyond the site

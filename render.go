@@ -14,7 +14,8 @@ func rgba(r, g, b, a uint8) color.RGBA { return color.RGBA{r, g, b, a} }
 // (tours) use player 1's camera full screen.
 func (g *Game) render() {
 	views := []rl.RenderTexture2D{}
-	if len(g.tour) > 0 {
+	full := len(g.tour) > 0 || len(g.players) == 1
+	if full {
 		views = append(views, g.renderView(g.players[0], screenW, screenH, 0))
 	} else {
 		for i, p := range g.players {
@@ -23,8 +24,11 @@ func (g *Game) render() {
 	}
 	rl.BeginTextureMode(g.out)
 	rl.ClearBackground(rl.Black)
-	if len(g.tour) > 0 {
+	if full {
 		blit(views[0], 0, 0, screenW, screenH)
+		if len(g.tour) == 0 {
+			g.drawToddlerHUD(canvas{}, g.players[0], screenW, screenH)
+		}
 	} else {
 		vw := float64(screenW / 2)
 		for i, p := range g.players {

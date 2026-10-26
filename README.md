@@ -60,15 +60,29 @@ On a headless Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`
 
 ## How to play
 
-The screen is split in two: player 1 on the left, player 2 on the right.
-Each kid starts in their loader, with a sand or dirt heap and their dump
-truck right in front of them, and their crane and a stack of loads nearby.
+The game starts in **single-screen play** for one kid, made for a laptop
+keyboard with picture keycaps: just the arrow keys, the space bar and shift.
+
+| Key | What it does |
+| --- | --- |
+| Arrows | Go that way on the screen: the machine turns toward it and drives there (one key is enough) |
+| Space | The machine's one thing: lift or tip the loader's bucket, tip the dump truck, dig once with the excavator, pick up or drop with the crane |
+| Shift | Climb out and walk over to the next machine (loader → truck → crane → excavator) |
+
+The camera keeps one fixed direction, so "right" always means right on the
+screen. The animal friends come along: the owl and the chimp, or start with
+`./run.sh --doggo` for the two dogs (`--owl` is the default).
+
+### Split screen
+
+`./run.sh --split-screen` puts two kids side by side on one keyboard, each
+with their own machines and animals:
 
 | | Player 1 | Player 2 |
 | --- | --- | --- |
 | Drive / steer (crane: swing and trolley) | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
 | The button | `Space` | `Enter` |
-| Pick loader / truck / crane | `1` `2` `3` | `8` `9` `0` (or numpad `1` `2` `3`) |
+| Pick loader / truck / crane / excavator | `1` `2` `3` `4` | `8` `9` `0` `-` (or numpad `1`–`4`) |
 | Cab view / chase camera | `V` | `M` (or numpad `0`) |
 
 `F2` pauses. The view key switches between the chase camera and looking
@@ -81,13 +95,15 @@ machines do the fiddly parts themselves:
 
 - **Loader:** drive (or turn) into the heap and the bucket fills, then
   lifts, also when the kid turns away with a part-full bucket. Drive up
-  to the truck and it tips in. The button dumps the bucket anywhere.
+  to the truck and it tips in. The button lifts the bucket, or tips it out
+  anywhere.
 - **Dump truck:** the button tips the body all the way, the load pours out,
   and the body comes back down.
 - **Crane:** a snappy toy. Left/right swings the jib, up/down runs the
   trolley out and in. Swing near a load and the hook homes in, drops, hooks
   on and lifts; carry it near your truck and it homes in over the bed and
-  sets it down. The button lowers the hook by hand anywhere.
+  sets it down (in single-screen play it waits for space). The button lowers
+  the hook by hand anywhere.
 - **Excavator:** the direction keys drive the tracks; one press of the
   button digs: reach out in front, fill the bucket, lift, swing to your
   truck if it is in reach (or out to the side), tip it in and swing back.
@@ -170,7 +186,8 @@ Simulation, input and rendering are kept separate. The update step is a fixed
 ## Developer modes
 
 ```sh
-go run . -scenes ./shots    # headless: stage and capture every feature
+go run . -scenes ./shots    # headless: stage and capture every feature (split screen)
+go run . -single-scenes ./shots  # headless: capture single-screen play
 go run . -scenes ./shots -only crane  # just the scenes whose name matches
 go run . -tour ./shots      # headless: static views of site landmarks
 go run . -studio ./shots    # headless: contact sheets of every character in every pose

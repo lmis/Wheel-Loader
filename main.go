@@ -21,6 +21,10 @@ func main() {
 	studioDir := flag.String("studio", "", "render contact sheets of every character pose to this dir, then exit")
 	frames := flag.Int("frames", 0, "exit after this many frames (0 = run forever)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile to this file")
+	split := flag.Bool("split-screen", false, "two kids side by side on one keyboard (WASD and the arrows)")
+	doggo := flag.Bool("doggo", false, "single screen: the two dogs come along")
+	owl := flag.Bool("owl", false, "single screen: the owl and the chimp come along (the default)")
+	singleDir := flag.String("single-scenes", "", "capture single-screen play to this dir, then exit")
 	flag.Parse()
 
 	if *cpuProfile != "" {
@@ -35,6 +39,20 @@ func main() {
 	}
 
 	g := NewGame()
+	_ = *owl
+	if !*split && *scenesDir == "" && *studioDir == "" && *tourDir == "" {
+		companions := companionsOwl
+		if *doggo {
+			companions = companionsDogs
+		}
+		g.setSingle(companions)
+	}
+	if *singleDir != "" {
+		if err := os.MkdirAll(*singleDir, 0o755); err != nil {
+			log.Fatal(err)
+		}
+		g.stageSingleScenes(*singleDir)
+	}
 	if *frames > 0 {
 		g.exitFrame = *frames
 	}
@@ -67,7 +85,7 @@ func main() {
 		g.exitFrame = 136
 	}
 
-	headless := *scenesDir != "" || *studioDir != "" || *tourDir != ""
+	headless := *scenesDir != "" || *studioDir != "" || *tourDir != "" || *singleDir != ""
 	flags := uint32(rl.FlagWindowResizable | rl.FlagVsyncHint | rl.FlagMsaa4xHint)
 	if headless {
 		flags = rl.FlagWindowHidden
