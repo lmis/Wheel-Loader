@@ -47,7 +47,7 @@ func (g *Game) drawGlobalHUD(screen *ebiten.Image) {
 		if g.paused {
 			g.drawTextC(screen, "PAUSED  (F2)", g.art.Big, screenW/2, screenH/2-20, hudWhite)
 		}
-		g.drawTextC(screen, "F5: grown-up mode", g.art.Small, screenW/2, screenH-18, rgba(200, 204, 210, 120))
+		g.drawTextC(screen, "F5: grown-up mode", g.art.Small, screenW/2, 14, rgba(200, 204, 210, 120))
 		return
 	}
 	j := g.jobs.Current

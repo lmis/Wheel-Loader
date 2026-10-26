@@ -206,6 +206,23 @@ func (g *Game) stageScenes(outDir, only string) {
 			g.setCoop(false)
 			g.tour = []tourStop{{frame: g.frame, pos: V(1850, 1300), zoom: 1550, yaw: 1.1, pitch: 0.72, shot: filepath.Join(outDir, "24_site_overview.png")}}
 		}},
+		{name: "25_toddler_start", frames: 20, setup: func(g *Game) {
+			g.setToddler(true)
+			homeAnimals()
+		}},
+		{name: "26_toddler_scooping", frames: 60, setup: func(g *Game) {
+			g.players[1].scriptCtl = &Controls{Throttle: 1, Steer: 0.1}
+		}, ctl: &Controls{Throttle: 1, Steer: -0.05}},
+		{name: "27_toddler_delivery", frames: 34, setup: func(g *Game) {
+			tr := w.Trucks[0]
+			l := g.loader
+			l.Joint = tr.Pos.Add(dir(tr.Angle).Scale(118))
+			l.Heading, l.Artic, l.Lift, l.Tilt, l.Load, l.LoadType, l.Speed = tr.Angle+math.Pi, 0, 0.62, 1, 95, MatSand, 0
+			p := p1()
+			p.td.mode = tdCarry
+			driveCam(p, 380, 0.9, 0.5)
+			g.players[1].scriptCtl = &Controls{Throttle: -0.6}
+		}},
 	}
 
 	f := 5

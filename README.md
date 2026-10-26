@@ -39,9 +39,27 @@ go run .
 A window opens at 1280×720. You need a working OpenGL context (on a headless
 Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`).
 
+## Toddler mode (the default)
+
+The game starts in **toddler mode**: two players, split screen, each already
+sitting in a wheel loader with a sand or dirt heap and a dump truck right in
+front of them. There are only four direction keys and one button, and nobody
+can climb out.
+
+| | Player 1 | Player 2 |
+| --- | --- | --- |
+| Drive / steer | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
+| Dump the bucket | `Space` | `Enter` |
+
+The bucket works itself. Drive into a heap and it fills, then lifts up. Drive
+up to the truck and it tips in. Each load in a truck earns a big star and
+confetti. Full trucks empty themselves with a confetti shower. The loaders
+are speed-limited and stop as soon as you let go of the keys. `F5` switches
+to the full game (and back); `go run . -full` starts there.
+
 ## The site
 
-You start in the cab of the wheel loader. Climb out and walk around as a kid
+In the full game you start in the cab of the wheel loader. Climb out and walk around as a kid
 site worker (orange hi-vis vest, yellow hard hat, blonde hair, brown eyes), and
 climb into any machine:
 
@@ -80,7 +98,7 @@ the screen splits left / right.
 | Zoom | `1` / `2` (mouse wheel when solo) | `9` / `0` |
 
 Global keys: `F1` help (lists the current machine's controls, with your
-keys), `F2` pause, `F3` reset machines, `F4` co-op on/off. Solo, click to look
+keys), `F2` pause, `F3` reset machines, `F4` co-op on/off, `F5` toddler mode on/off. Solo, click to look
 around with the mouse (`Esc` frees it); arrow keys also drive.
 
 ## How to play
@@ -114,6 +132,7 @@ partially filled and loads carry their material type.
 | `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
 | `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
+| `toddler.go` | Toddler mode: tiny controls, bucket assistant, stars |
 | `walker.go` | The kid on foot |
 | `animals.go` | The dogs, the chimp and the owl |
 | `player.go`, `keys.go` | Players, getting in and out, cameras, key maps |
@@ -137,8 +156,9 @@ go run . -demo              # hands-free autopilot plays the job loop
 go run . -shots ./shots     # headless: drive a full cycle, save screenshots
 go run . -dumpshot ./shots  # headless: render a loaded loader dumping into a truck
 go run . -tour ./shots      # headless: static views of site landmarks
-go run . -scenes ./shots    # headless: stage and capture every feature (24 shots)
-go run . -coop              # start in two-player split screen
+go run . -scenes ./shots    # headless: stage and capture every feature (27 shots)
+go run . -full              # start in the full game instead of toddler mode
+go run . -coop              # start the full game in two-player split screen
 go run . -cpuprofile cpu.prof  # write a CPU profile (combine with any mode)
 ```
 
@@ -156,6 +176,7 @@ repositories. They are embedded into the binary. See `assets/kenney/LICENSE.txt`
 
 ```sh
 go test ./...   # driving, scooping, dumping, entering/exiting, truck tipping,
-                # excavator dig-and-load, crane lift onto a truck, animals, co-op
+                # excavator dig-and-load, crane lift onto a truck, animals, co-op,
+                # toddler mode loading a truck with only drive keys
 go vet ./...
 ```
