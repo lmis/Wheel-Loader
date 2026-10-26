@@ -85,11 +85,11 @@ screen; only the keys differ:
 
 | | Player 1 (left) | Player 2 (right) |
 | --- | --- | --- |
-| Drive / steer (crane: swing and trolley) | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
+| Drive / steer (crane: swing and trolley) | `W` `A` `S` `D` | arrow keys |
 | The machine's one thing | `Space` | `Enter` |
 | Next machine | `Left Shift` | `Right Shift` |
-| Pick loader / truck / crane / excavator | `1` `2` `3` `4` | `8` `9` `0` `-` (or numpad `1`–`4`) |
-| Cab view / chase camera | `V` | `M` (or numpad `0`) |
+| Pick loader / truck / crane / excavator | `1` `2` `3` `4` | `8` `9` `0` `-` |
+| Cab view / chase camera | `V` | `M` |
 
 The view key switches between the chase camera and looking
 out of the cab: the loader's dashboard, steering wheel and windscreen frame

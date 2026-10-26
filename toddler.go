@@ -42,13 +42,13 @@ var (
 		pickLabels: [4]string{"1", "2", "3", "4"},
 	}
 	toddlerP2 = toddlerKeys{
-		fwd: []Key{rl.KeyUp, rl.KeyK}, back: []Key{rl.KeyDown, rl.KeyJ},
-		left: []Key{rl.KeyLeft, rl.KeyH}, right: []Key{rl.KeyRight, rl.KeyL},
-		button: []Key{rl.KeyEnter, rl.KeyKpEnter},
+		fwd: []Key{rl.KeyUp}, back: []Key{rl.KeyDown},
+		left: []Key{rl.KeyLeft}, right: []Key{rl.KeyRight},
+		button: []Key{rl.KeyEnter},
 		next:   []Key{rl.KeyRightShift},
-		view:   []Key{rl.KeyM, rl.KeyKp0},
-		pick: [4][]Key{{rl.KeyEight, rl.KeyKp1}, {rl.KeyNine, rl.KeyKp2},
-			{rl.KeyZero, rl.KeyKp3}, {rl.KeyMinus, rl.KeyKp4}},
+		view:   []Key{rl.KeyM},
+		pick: [4][]Key{{rl.KeyEight}, {rl.KeyNine},
+			{rl.KeyZero}, {rl.KeyMinus}},
 		label:      "Arrows: drive    Enter: do    Right Shift: next machine    M: view",
 		pickLabels: [4]string{"8", "9", "0", "-"},
 	}
