@@ -99,7 +99,7 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 
 	// ---- Controls hint (bottom-left) ----
 	if g.showHelp {
-		panel(screen, 16, 470, 340, 234, panelBg)
+		panel(screen, 16, 432, 340, 272, panelBg)
 		lines := []string{
 			"DRIVE",
 			"  W / Up        accelerate",
@@ -112,10 +112,12 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 			"  T / G         curl / dump bucket",
 			"CAMERA",
 			"  wheel / + -   zoom",
+			"  Q / E         orbit view",
+			"  [ / ]         tilt view",
 			"GENERAL",
 			"  Tab  help    P  pause    Bksp reset",
 		}
-		y := 480.0
+		y := 442.0
 		for _, s := range lines {
 			c := white
 			if len(s) > 0 && s[0] != ' ' {

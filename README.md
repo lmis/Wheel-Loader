@@ -1,8 +1,15 @@
 # Wheel Loader — Construction Site
 
-A top-down construction/quarry game where you drive a large **articulated wheel
+A **3D** construction/quarry game where you drive a large **articulated wheel
 loader**, scoop loose material from aggregate piles, and deliver it to dump
 trucks for pay. Built in Go with [Ebitengine](https://ebitengine.org/).
+
+The world is rendered with a small **software 3D pipeline** written on top of
+Ebitengine's 2D triangle rasterizer (`g3d.go`): a perspective chase camera,
+real 3D box/cylinder geometry, flat directional-light shading, back-face
+culling, near-plane clipping, back-to-front sorting, and a textured ground
+plane. Everything — the loader, trucks, buildings, aggregate heaps — is actual
+3D geometry you orbit around.
 
 The loader is the star: it has heavy-machine inertia, true articulated (frame)
 steering that bends at the center joint, and an independently controlled bucket
@@ -26,7 +33,9 @@ Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`).
 | Articulated steer (bend left / right) | `A` / `D` (or `←` / `→`) |
 | Raise / lower loader arms | `R` / `F` |
 | Curl / dump bucket | `T` / `G` |
-| Zoom | mouse wheel or `+` / `-` |
+| Zoom camera | mouse wheel or `+` / `-` |
+| Orbit camera | `Q` / `E` |
+| Tilt camera | `[` / `]` |
 | Help · Pause · Reset loader | `Tab` · `P` · `Backspace` |
 
 Press `Tab` in-game for the full control list.
@@ -61,9 +70,10 @@ partially filled and loads carry their material type.
 | `material.go` | Loose-material height grid (scoop / dump / push / slump) |
 | `world.go` | Site layout, collision, trucks, particles |
 | `jobs.go` | Job generation, progress, money / level progression |
-| `camera.go` | Smooth follow camera with zoom and shake |
-| `input.go` | Keyboard → loader intents |
-| `render.go` | All world/loader/particle drawing |
+| `g3d.go` | Software 3D pipeline: projection, clipping, sorting, mesh builders |
+| `camera.go` | Perspective chase/orbit camera |
+| `input.go` | Keyboard → loader + camera intents |
+| `render.go` | Builds the 3D scene (ground, loader, props, trucks, particles) |
 | `art.go` | Procedural ground texture + fonts + value noise |
 | `hud.go` | HUD, gauges, minimap |
 | `autopilot.go` | Hands-free AI that plays the full loop (also test instrumentation) |

@@ -3,88 +3,65 @@ package main
 import (
 	"image/color"
 	"math"
-	"sort"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func rgba(r, g, b, a uint8) color.RGBA { return color.RGBA{r, g, b, a} }
 
-// ---- world-space primitive helpers (transform via camera) ----
-
-func (g *Game) fillPoly(dst *ebiten.Image, ptsWorld []Vec, c color.RGBA) {
-	var p vector.Path
-	for i, w := range ptsWorld {
-		s := g.cam.WorldToScreen(w)
-		if i == 0 {
-			p.MoveTo(float32(s.X), float32(s.Y))
-		} else {
-			p.LineTo(float32(s.X), float32(s.Y))
-		}
-	}
-	p.Close()
-	vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
-	cr, cg, cb, ca := float32(c.R)/255, float32(c.G)/255, float32(c.B)/255, float32(c.A)/255
-	for i := range vs {
-		vs[i].SrcX, vs[i].SrcY = 0.5, 0.5
-		vs[i].ColorR, vs[i].ColorG, vs[i].ColorB, vs[i].ColorA = cr*ca, cg*ca, cb*ca, ca
-	}
-	op := &ebiten.DrawTrianglesOptions{AntiAlias: true}
-	dst.DrawTriangles(vs, is, g.art.white, op)
-}
-
-// rectPoly returns the 4 world corners of a rotated rectangle.
-func rectPoly(center Vec, w, h, ang float64) []Vec {
-	hx, hy := w/2, h/2
-	return []Vec{
-		center.Add(V(-hx, -hy).Rot(ang)),
-		center.Add(V(hx, -hy).Rot(ang)),
-		center.Add(V(hx, hy).Rot(ang)),
-		center.Add(V(-hx, hy).Rot(ang)),
-	}
-}
-
-func (g *Game) fillRect(dst *ebiten.Image, center Vec, w, h, ang float64, c color.RGBA) {
-	g.fillPoly(dst, rectPoly(center, w, h, ang), c)
-}
-
-func (g *Game) fillCircle(dst *ebiten.Image, center Vec, r float64, c color.RGBA) {
-	s := g.cam.WorldToScreen(center)
-	vector.DrawFilledCircle(dst, float32(s.X), float32(s.Y), float32(r*g.cam.Zoom), c, true)
-}
-
-func (g *Game) strokeWorld(dst *ebiten.Image, a, b Vec, w float64, c color.RGBA) {
-	sa := g.cam.WorldToScreen(a)
-	sb := g.cam.WorldToScreen(b)
-	vector.StrokeLine(dst, float32(sa.X), float32(sa.Y), float32(sb.X), float32(sb.Y), float32(w*g.cam.Zoom), c, true)
-}
-
-// ---- top-level render ----
-
+// render builds the whole 3D scene for this frame and draws it, then the HUD.
 func (g *Game) render(screen *ebiten.Image) {
-	screen.Fill(rgba(60, 66, 58, 255))
+	screen.Fill(rgba(150, 170, 190, 255)) // sky
+	g.drawSkyGradient(screen)
 
-	// Ground image with camera transform.
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(g.cam.Zoom, g.cam.Zoom)
-	topLeft := g.cam.WorldToScreen(V(0, 0))
-	op.GeoM.Translate(topLeft.X, topLeft.Y)
-	op.Filter = ebiten.FilterLinear
-	screen.DrawImage(g.ground, op)
+	s := &g.scene
+	s.reset()
 
-	g.drawMaterial(screen)
-	g.drawShadows(screen)
-	g.drawProps(screen)
-	g.drawTrucks(screen)
-	g.drawLoader(screen)
-	g.drawParticles(screen)
+	g.buildGround3D(s)
+	g.buildMaterial3D(s)
+	g.buildShadows(s)
+	g.buildProps3D(s)
+	g.buildTrucks3D(s)
+	g.buildLoader3D(s)
+	g.buildParticles3D(s)
+
+	s.Flush(screen, g.cam, g.ground, g.art.white)
+
 	g.drawHUD(screen)
 }
 
-// ---- material grid ----
+// drawSkyGradient paints a simple vertical gradient band for the sky above
+// the horizon so the void does not read as flat.
+func (g *Game) drawSkyGradient(screen *ebiten.Image) {
+	top := rgba(120, 150, 180, 255)
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(screenW, screenH*0.6)
+	op.ColorScale.ScaleWithColor(top)
+	screen.DrawImage(g.art.white, op)
+}
 
-func (g *Game) drawMaterial(screen *ebiten.Image) {
+// ---- ground ----
+
+func (g *Game) buildGround3D(s *Scene) {
+	const tile = 110.0
+	mn, mx := g.cam.VisibleBounds()
+	x0 := math.Max(0, math.Floor(mn.X/tile)*tile)
+	y0 := math.Max(0, math.Floor(mn.Y/tile)*tile)
+	x1 := math.Min(g.world.Width, mx.X)
+	y1 := math.Min(g.world.Height, mx.Y)
+	for y := y0; y < y1; y += tile {
+		for x := x0; x < x1; x += tile {
+			xe := math.Min(x+tile, g.world.Width)
+			ye := math.Min(y+tile, g.world.Height)
+			s.addGroundQuad(
+				Vec3{x, 0, y}, Vec3{xe, 0, y}, Vec3{xe, 0, ye}, Vec3{x, 0, ye}, 1.0)
+		}
+	}
+}
+
+// ---- material grid as 3D heaps ----
+
+func (g *Game) buildMaterial3D(s *Scene) {
 	grid := g.world.Grid
 	mn, mx := g.cam.VisibleBounds()
 	cxMin := int(mn.X/grid.CellSize) - 1
@@ -98,181 +75,174 @@ func (g *Game) drawMaterial(screen *ebiten.Image) {
 				continue
 			}
 			c := grid.at(cx, cy)
-			if c.Amount < 1.5 {
+			if c.Amount < 2 {
 				continue
 			}
-			px := (float64(cx) + 0.5) * cs
-			py := (float64(cy) + 0.5) * cs
-			h := clamp(c.Amount/55, 0, 1.4)
+			h := clamp(c.Amount*0.5, 3, 46)
+			px := float64(cx) * cs
+			py := float64(cy) * cs
 			r, gg, b := matColor(c.Type)
-			// shaded base (darker, sits on ground)
-			base := rgba(uint8(float64(r)*0.62), uint8(float64(gg)*0.62), uint8(float64(b)*0.62), 255)
-			rad := cs*0.62 + h*cs*0.5
-			g.fillCircle(screen, V(px, py+h*2), rad, base)
-			// lit top offset toward the light (up-left), size by height
-			top := rgba(clampByte(float64(r)*1.08+h*18), clampByte(float64(gg)*1.08+h*18), clampByte(float64(b)*1.08+h*16), 255)
-			seed := grid.scatterSeed(cx, cy)
-			off := V(-2-h*3, -2-h*3+(seed-0.5)*2)
-			g.fillCircle(screen, V(px+off.X, py+off.Y), rad*0.66, top)
+			col := rgba(r, gg, b, 255)
+			// a column: top quad + the four side skirts (culled automatically)
+			cxw := px + cs/2
+			cyw := py + cs/2
+			s.addBox(Vec3{cxw, h / 2, cyw}, cs*0.55, h/2, cs*0.55, 0, col)
 		}
 	}
 }
 
-// ---- shadows ----
+// ---- shadows (flat dark quads on the ground) ----
 
-func (g *Game) drawShadows(screen *ebiten.Image) {
-	sh := rgba(20, 24, 20, 90)
+func (g *Game) buildShadows(s *Scene) {
+	sh := rgba(18, 22, 20, 90)
+	off := V(14, 18) // cast offset away from the light
+	quad := func(center Vec, w, h, ang float64) {
+		cc := center.Add(off)
+		c := dir(ang)
+		p := dir(ang + math.Pi/2)
+		a := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(-h/2)), 0.4)
+		b := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(-h/2)), 0.4)
+		d := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(h/2)), 0.4)
+		e := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(h/2)), 0.4)
+		s.addQuad(a, b, d, e, sh, false, false)
+	}
 	for i := range g.world.Props {
 		p := &g.world.Props[i]
-		if p.Kind == propCone || p.Kind == propSign {
-			g.fillCircle(screen, p.Rect.Center.Add(V(6, 8)), math.Max(p.Rect.W, p.Rect.H)*0.6, sh)
+		if !p.Solid && p.Kind != propCone {
 			continue
 		}
-		g.fillRect(screen, p.Rect.Center.Add(V(7, 9)), p.Rect.W+8, p.Rect.H+8, p.Rect.Angle, sh)
+		quad(p.Rect.Center, p.Rect.W+10, p.Rect.H+10, p.Rect.Angle)
 	}
 	for _, t := range g.world.Trucks {
-		g.fillRect(screen, t.Pos.Add(V(8, 10)), 80, 120, t.Angle, sh)
+		quad(t.Pos, 80, 120, t.Angle)
 	}
+	// loader shadow (two halves)
+	l := g.loader
+	quad(l.RearAxle(), bodyWidth+14, rearLen+20, l.RearHeading())
+	quad(l.FrontAxle(), bodyWidth+14, frontLen+20, l.FrontHeading())
 }
 
 // ---- props ----
 
-func (g *Game) drawProps(screen *ebiten.Image) {
-	props := make([]*Prop, len(g.world.Props))
-	for i := range g.world.Props {
-		props[i] = &g.world.Props[i]
-	}
-	sort.Slice(props, func(a, b int) bool { return props[a].Rect.Center.Y < props[b].Rect.Center.Y })
-	for _, p := range props {
-		g.drawProp(screen, p)
-	}
-}
-
-func (g *Game) drawProp(screen *ebiten.Image, p *Prop) {
-	c := rgba(p.Color[0], p.Color[1], p.Color[2], 255)
-	rc := p.Rect
-	switch p.Kind {
-	case propBuilding, propCabin:
-		fwd := dir(rc.Angle)
-		side := dir(rc.Angle + math.Pi/2)
-		// dark parapet / outline, then the roof surface inset within it
-		g.fillRect(screen, rc.Center, rc.W, rc.H, rc.Angle, rgba(c.R*2/5, c.G*2/5, c.B*2/5, 255))
-		g.fillRect(screen, rc.Center, rc.W-8, rc.H-8, rc.Angle, c)
-		// lit edge toward the light (up-left) for a sense of a raised roof
-		g.fillRect(screen, rc.Center.Add(side.Scale(-rc.H/2+7)), rc.W-14, 6, rc.Angle, rgba(clampByte(float64(c.R)*1.18), clampByte(float64(c.G)*1.18), clampByte(float64(c.B)*1.18), 255))
-		if p.Kind == propCabin {
-			// shipping-container style seams + a door
-			for i := -1; i <= 1; i++ {
-				g.strokeWorld(screen, rc.Center.Add(fwd.Scale(float64(i)*rc.W*0.26)).Add(side.Scale(-rc.H/2+5)),
-					rc.Center.Add(fwd.Scale(float64(i)*rc.W*0.26)).Add(side.Scale(rc.H/2-5)), 2, rgba(c.R*3/5, c.G*3/5, c.B*3/5, 255))
-			}
-			g.fillRect(screen, rc.Center.Add(fwd.Scale(rc.W*0.32)), 10, rc.H*0.5, rc.Angle, rgba(70, 72, 78, 255))
-		} else {
-			// flat roof with HVAC units + seams
-			g.fillRect(screen, rc.Center.Add(fwd.Scale(-rc.W*0.18)).Add(side.Scale(rc.H*0.12)), 34, 24, rc.Angle, rgba(150, 152, 156, 255))
-			g.fillRect(screen, rc.Center.Add(fwd.Scale(rc.W*0.22)).Add(side.Scale(-rc.H*0.14)), 24, 20, rc.Angle, rgba(135, 137, 142, 255))
-			g.strokeWorld(screen, rc.Center.Add(side.Scale(-rc.H*0.02)).Add(fwd.Scale(-rc.W/2+6)), rc.Center.Add(side.Scale(-rc.H*0.02)).Add(fwd.Scale(rc.W/2-6)), 2, rgba(c.R*4/5, c.G*4/5, c.B*4/5, 255))
-		}
+func propHeight(k PropKind) float64 {
+	switch k {
+	case propBuilding:
+		return 74
+	case propCabin:
+		return 46
 	case propTank:
-		g.fillCircle(screen, rc.Center, rc.W/2, rgba(c.R/2, c.G/2, c.B/2, 255))
-		g.fillCircle(screen, rc.Center.Add(V(-3, -3)), rc.W/2-5, c)
+		return 54
 	case propBarrier:
-		// jersey barrier: dark base + colored body + reflective stripes
-		g.fillRect(screen, rc.Center, rc.W, rc.H, rc.Angle, rgba(60, 60, 64, 255))
-		g.fillRect(screen, rc.Center.Add(V(-2, -3)), rc.W-6, rc.H-8, rc.Angle, c)
-		for s := -1; s <= 1; s++ {
-			g.fillRect(screen, rc.Center.Add(V(float64(s)*rc.W*0.3, -3)), 10, rc.H-8, rc.Angle, rgba(240, 240, 235, 220))
-		}
+		return 24
 	case propCone:
-		g.fillCircle(screen, rc.Center, rc.W*0.7, rgba(200, 90, 20, 255))
-		g.fillCircle(screen, rc.Center, rc.W*0.45, rgba(245, 140, 40, 255))
-		g.fillCircle(screen, rc.Center, rc.W*0.22, rgba(255, 255, 255, 230))
+		return 20
 	case propSign:
-		g.fillRect(screen, rc.Center, rc.W, rc.H, 0.78, rgba(250, 210, 40, 255))
-		g.fillRect(screen, rc.Center, rc.W*0.7, rc.H*0.7, 0.78, rgba(30, 30, 30, 255))
+		return 34
 	case propExcavator:
-		g.drawExcavator(screen, p)
+		return 40
 	case propParkedLoader:
-		g.fillRect(screen, rc.Center, rc.W, rc.H*0.7, rc.Angle, rgba(c.R/2, c.G/2, c.B/2, 255))
-		g.fillRect(screen, rc.Center.Add(V(-2, -3)), rc.W-10, rc.H*0.7-6, rc.Angle, c)
-		// a little bucket out front
-		fc := rc.Center.Add(dir(rc.Angle).Scale(rc.W/2 + 10))
-		g.fillRect(screen, fc, 16, rc.H*0.8, rc.Angle, rgba(50, 50, 52, 255))
-		// wheels
-		for _, s := range []float64{-1, 1} {
-			for _, f := range []float64{-1, 1} {
-				wc := rc.Center.Add(dir(rc.Angle).Scale(f * rc.W * 0.3)).Add(dir(rc.Angle + math.Pi/2).Scale(s * rc.H * 0.45))
-				g.fillCircle(screen, wc, 10, rgba(30, 30, 32, 255))
+		return 38
+	}
+	return 30
+}
+
+func (g *Game) buildProps3D(s *Scene) {
+	for i := range g.world.Props {
+		p := &g.world.Props[i]
+		c := rgba(p.Color[0], p.Color[1], p.Color[2], 255)
+		rc := p.Rect
+		h := propHeight(p.Kind)
+		switch p.Kind {
+		case propBuilding:
+			s.addBox(ground(rc.Center, h/2), rc.W/2, h/2, rc.H/2, rc.Angle, c)
+			// roof HVAC units
+			s.addBox(ground(rc.Center.Add(dir(rc.Angle).Scale(-rc.W*0.18)), h+8), 18, 8, 12, rc.Angle, rgba(150, 152, 156, 255))
+			s.addBox(ground(rc.Center.Add(dir(rc.Angle).Scale(rc.W*0.22)), h+6), 12, 6, 10, rc.Angle, rgba(135, 137, 142, 255))
+		case propCabin:
+			s.addBox(ground(rc.Center, h/2), rc.W/2, h/2, rc.H/2, rc.Angle, c)
+			s.addBox(ground(rc.Center, h+2), rc.W/2-2, 2, rc.H/2-2, rc.Angle, shade(c, 1.15))
+		case propTank:
+			s.addCylinder(ground(rc.Center, h/2), rc.W/2, h, 12, c)
+		case propBarrier:
+			s.addBox(ground(rc.Center, h/2), rc.W/2, h/2, rc.H/2, rc.Angle, c)
+			s.addBox(ground(rc.Center, h*0.5), rc.W/2+1, h*0.18, rc.H/2+1, rc.Angle, rgba(240, 240, 235, 255))
+		case propCone:
+			s.addCylinder(ground(rc.Center, h*0.3), rc.W*0.7, h*0.6, 8, rgba(240, 120, 30, 255))
+			s.addCylinder(ground(rc.Center, h*0.72), rc.W*0.3, h*0.3, 8, rgba(240, 120, 30, 255))
+			s.addBox(ground(rc.Center, 2), rc.W, 2, rc.W, 0, rgba(40, 40, 44, 255))
+		case propSign:
+			s.addBox(ground(rc.Center.Add(dir(0).Scale(0)), h*0.5), 2, h*0.5, 2, 0, rgba(120, 120, 124, 255))
+			s.addBox(ground(rc.Center, h), rc.W*0.5, rc.H*0.5, 3, 0.78, rgba(250, 210, 40, 255))
+		case propExcavator:
+			g.buildExcavator3D(s, p)
+		case propParkedLoader:
+			s.addBox(ground(rc.Center, 22), rc.W*0.42, 12, rc.H*0.5, rc.Angle, c)
+			s.addBox(ground(rc.Center.Add(dir(rc.Angle).Scale(rc.W*0.1)), 40), rc.W*0.2, 10, rc.H*0.4, rc.Angle, shade(c, 0.9))
+			fc := rc.Center.Add(dir(rc.Angle).Scale(rc.W/2 + 8))
+			s.addBox(ground(fc, 14), 8, 14, rc.H*0.5, rc.Angle, rgba(60, 60, 64, 255))
+			for _, sx := range []float64{-1, 1} {
+				for _, fx := range []float64{-1, 1} {
+					wc := rc.Center.Add(dir(rc.Angle).Scale(fx * rc.W * 0.32)).Add(dir(rc.Angle + math.Pi/2).Scale(sx * rc.H * 0.5))
+					s.addWheel(ground(wc, 14), 14, 10, rc.Angle, rgba(30, 30, 32, 255))
+				}
 			}
 		}
 	}
 }
 
-func (g *Game) drawExcavator(screen *ebiten.Image, p *Prop) {
+func (g *Game) buildExcavator3D(s *Scene, p *Prop) {
 	rc := p.Rect
 	c := rgba(p.Color[0], p.Color[1], p.Color[2], 255)
-	cDark := rgba(c.R*2/3, c.G*2/3, c.B*2/3, 255)
-	// two crawler tracks
 	side := dir(rc.Angle + math.Pi/2)
-	for _, s := range []float64{-1, 1} {
-		tc := rc.Center.Add(side.Scale(s * rc.H * 0.34))
-		g.fillRect(screen, tc, rc.W, rc.H*0.3, rc.Angle, rgba(38, 38, 42, 255))
-		for i := -2; i <= 2; i++ {
-			g.strokeWorld(screen, tc.Add(dir(rc.Angle).Scale(float64(i)*rc.W*0.18)).Add(side.Scale(s*rc.H*0.15)),
-				tc.Add(dir(rc.Angle).Scale(float64(i)*rc.W*0.18)).Sub(side.Scale(s*rc.H*0.15)), 2, rgba(60, 60, 64, 255))
-		}
+	// crawler tracks
+	for _, sgn := range []float64{-1, 1} {
+		tc := rc.Center.Add(side.Scale(sgn * rc.H * 0.34))
+		s.addBox(ground(tc, 10), rc.W/2, 10, rc.H*0.16, rc.Angle, rgba(45, 45, 48, 255))
 	}
-	// slewing house (upper body) rotated relative to the tracks
+	// slewing house
 	ha := rc.Angle + 0.35
-	house := rc.Center.Sub(dir(ha).Scale(10))
-	g.fillRect(screen, house, rc.W*0.62, rc.H*0.72, ha, cDark)
-	g.fillRect(screen, house, rc.W*0.58-6, rc.H*0.72-6, ha, c)
-	// counterweight at the back + cab glass at the front
-	g.fillRect(screen, house.Sub(dir(ha).Scale(rc.W*0.3)), 12, rc.H*0.6, ha, rgba(50, 50, 54, 255))
-	g.fillRect(screen, house.Add(dir(ha).Scale(rc.W*0.18)).Add(side.Scale(rc.H*0.18)), 16, 16, ha, rgba(150, 200, 225, 230))
-	// boom -> dipper -> bucket reaching out front of the house
-	base := house.Add(dir(ha).Scale(rc.W * 0.28))
-	elbow := base.Add(dir(ha + 0.15).Scale(64))
-	wrist := elbow.Add(dir(ha - 0.55).Scale(50))
-	g.strokeWorld(screen, base, elbow, 13, c)
-	g.strokeWorld(screen, elbow, wrist, 9, cDark)
-	// bucket at the wrist
-	ba := ha - 0.55
-	g.fillPoly(screen, []Vec{
-		wrist,
-		wrist.Add(dir(ba + 1.4).Scale(16)),
-		wrist.Add(dir(ba + 1.4).Scale(16)).Add(dir(ba + 2.3).Scale(18)),
-		wrist.Add(dir(ba + 2.6).Scale(20)),
-	}, rgba(48, 48, 52, 255))
+	house := rc.Center
+	s.addBox(ground(house, 34), rc.W*0.3, 16, rc.H*0.36, ha, c)
+	s.addBox(ground(house.Add(dir(ha).Scale(rc.W*0.18)), 40), 10, 8, rc.H*0.28, ha, rgba(150, 200, 225, 235))
+	// boom -> dipper -> bucket
+	base := ground(house.Add(dir(ha).Scale(rc.W*0.26)), 36)
+	elbow := base.Add(Vec3{math.Cos(ha) * 46, 26, math.Sin(ha) * 46})
+	wrist := elbow.Add(Vec3{math.Cos(ha) * 42, -40, math.Sin(ha) * 42})
+	s.addOBB(base.Add(elbow.Sub(base).Scale(0.5)), elbow.Sub(base), base.Sub(elbow).Len()/2, 6, 6, c)
+	s.addOBB(elbow.Add(wrist.Sub(elbow).Scale(0.5)), wrist.Sub(elbow), wrist.Sub(elbow).Len()/2, 5, 5, shade(c, 0.8))
+	s.addBox(Vec3{wrist.X, wrist.Y, wrist.Z}, 10, 12, rc.H*0.2, ha, rgba(48, 48, 52, 255))
 }
 
 // ---- trucks ----
 
-func (g *Game) drawTrucks(screen *ebiten.Image) {
+func (g *Game) buildTrucks3D(s *Scene) {
 	for _, t := range g.world.Trucks {
 		ang := t.Angle
 		fwd := dir(ang)
 		side := dir(ang + math.Pi/2)
-		// wheels first (under the body)
+		// wheels
 		for _, f := range []float64{-1, -0.35, 0.28} {
-			for _, s := range []float64{-1, 1} {
-				wc := t.Pos.Add(fwd.Scale(f * 40)).Add(side.Scale(s * 34))
-				g.fillRect(screen, wc, 22, 13, ang, rgba(26, 26, 28, 255))
-				g.fillCircle(screen, wc, 3, rgba(120, 120, 124, 255))
+			for _, sgn := range []float64{-1, 1} {
+				wc := t.Pos.Add(fwd.Scale(f * 42)).Add(side.Scale(sgn * 34))
+				s.addWheel(ground(wc, 15), 15, 12, ang, rgba(26, 26, 28, 255))
 			}
 		}
-		// chassis frame
-		g.fillRect(screen, t.Pos, 66, 112, ang, rgba(58, 62, 70, 255))
-		// cab at front with a safety-stripe bumper
-		cab := t.Pos.Add(fwd.Scale(44))
-		g.fillRect(screen, cab, 64, 36, ang, rgba(210, 160, 40, 255))
-		g.fillRect(screen, cab.Add(fwd.Scale(2)), 52, 18, ang, rgba(150, 200, 230, 235)) // windscreen
-		g.fillRect(screen, cab.Add(fwd.Scale(18)), 60, 6, ang, rgba(40, 42, 46, 255))    // bumper
-		// dump bed walls + darker interior
+		// chassis
+		s.addBox(ground(t.Pos, 26), 56, 10, 32, ang, rgba(58, 62, 70, 255))
+		// cab
+		cab := t.Pos.Add(fwd.Scale(42))
+		s.addBox(ground(cab, 40), 18, 22, 30, ang, rgba(210, 160, 40, 255))
+		s.addBox(ground(cab.Add(fwd.Scale(10)), 44), 6, 12, 26, ang, rgba(150, 200, 230, 235))
+		// dump bed: floor + 4 low walls (open top)
 		bed := t.bedRect()
-		g.fillRect(screen, bed.Center, bed.W, bed.H, ang, rgba(70, 74, 82, 255))
-		g.fillRect(screen, bed.Center, bed.W-9, bed.H-9, ang, rgba(40, 42, 48, 255))
-		// contents: rounded heap coloured by dominant material, sized by fill
+		bc := bed.Center
+		fh := 36.0
+		s.addBox(ground(bc, fh-8), bed.W/2, 4, bed.H/2, ang, rgba(44, 46, 52, 255)) // floor
+		s.addBox(ground(bc.Add(fwd.Scale(-bed.W/2)), fh), 3, 12, bed.H/2, ang, rgba(66, 70, 78, 255))
+		s.addBox(ground(bc.Add(fwd.Scale(bed.W/2)), fh), 3, 12, bed.H/2, ang, rgba(66, 70, 78, 255))
+		s.addBox(ground(bc.Add(side.Scale(-bed.H/2)), fh), bed.W/2, 12, 3, ang, rgba(66, 70, 78, 255))
+		s.addBox(ground(bc.Add(side.Scale(bed.H/2)), fh), bed.W/2, 12, 3, ang, rgba(66, 70, 78, 255))
+		// contents heap
 		if tot := t.Total(); tot > 1 {
 			frac := clamp(tot/t.Capacity, 0, 1)
 			dom, best := 0, 0.0
@@ -282,20 +252,22 @@ func (g *Game) drawTrucks(screen *ebiten.Image) {
 				}
 			}
 			r, gg, b := matColor(dom)
-			hw := (bed.W/2 - 6) * math.Sqrt(frac)
-			hh := (bed.H/2 - 6) * math.Sqrt(frac)
-			g.fillRect(screen, bed.Center, hw*2, hh*2, ang, rgba(uint8(float64(r)*0.8), uint8(float64(gg)*0.8), uint8(float64(b)*0.8), 255))
-			g.fillRect(screen, bed.Center.Add(side.Scale(-hh*0.3)), hw*1.5, hh*1.1, ang, rgba(r, gg, b, 255))
+			hh := 6 + frac*22
+			s.addBox(ground(bc, fh-10+hh/2), (bed.W/2-5)*math.Sqrt(frac), hh/2, (bed.H/2-5)*math.Sqrt(frac), ang, rgba(r, gg, b, 255))
 		}
-		// mud flaps at the rear
-		rear := t.Pos.Add(fwd.Scale(-56))
-		g.fillRect(screen, rear, 60, 8, ang, rgba(30, 30, 32, 255))
 	}
 }
 
 // ---- the loader ----
 
-func (g *Game) drawLoader(screen *ebiten.Image) {
+const (
+	wheelR     = 18.0
+	bodyY      = 24.0 // chassis vertical centre
+	liftBaseY  = 28.0
+	liftRangeY = 56.0
+)
+
+func (g *Game) buildLoader3D(s *Scene) {
 	l := g.loader
 	fh := l.FrontHeading()
 	rh := l.RearHeading()
@@ -303,172 +275,129 @@ func (g *Game) drawLoader(screen *ebiten.Image) {
 	rear := l.RearAxle()
 	joint := l.Joint
 
-	yellow := rgba(240, 190, 30, 255)
-	yellowD := rgba(190, 148, 20, 255)
-	darkGrey := rgba(44, 46, 50, 255)
+	yellow := rgba(245, 194, 30, 255)
+	yellowD := rgba(205, 158, 22, 255)
+	dark := rgba(46, 48, 52, 255)
 
-	// ground shadow for the whole machine
-	shadow := rgba(16, 20, 16, 95)
-	g.fillRect(screen, rear.Add(V(6, 8)), bodyWidth+10, rearLen+16, rh, shadow)
-	g.fillRect(screen, front.Add(V(6, 8)), bodyWidth+10, frontLen+16, fh, shadow)
+	// subtle body pitch/roll affect the chassis height a touch
+	bob := l.bounce * 0.3
 
-	// wheels (big) — rear pair then front pair
-	g.drawWheel(screen, rear, rh, 1)
-	g.drawWheel(screen, rear, rh, -1)
-	g.drawWheel(screen, front, fh, 1)
-	g.drawWheel(screen, front, fh, -1)
+	// wheels
+	for _, sgn := range []float64{-1, 1} {
+		rc := rear.Add(dir(rh + math.Pi/2).Scale(sgn * (bodyWidth/2 + 2)))
+		fc := front.Add(dir(fh + math.Pi/2).Scale(sgn * (bodyWidth/2 + 2)))
+		s.addWheel(ground(rc, wheelR), wheelR, 13, rh, rgba(28, 28, 30, 255))
+		s.addWheel(ground(fc, wheelR), wheelR, 13, fh, rgba(28, 28, 30, 255))
+	}
 
-	// REAR body (engine compartment)
+	// rear body (engine compartment)
 	rearCenter := joint.Sub(dir(rh).Scale(rearLen * 0.5))
-	g.fillRect(screen, rearCenter, bodyWidth, rearLen, rh, yellowD)
-	// engine grille lines at the very back
-	backEnd := joint.Sub(dir(rh).Scale(rearLen))
-	for i := -2; i <= 2; i++ {
-		off := dir(rh + math.Pi/2).Scale(float64(i) * 7)
-		g.strokeWorld(screen, backEnd.Add(off).Add(dir(rh).Scale(2)), backEnd.Add(off).Add(dir(rh).Scale(14)), 2.5, darkGrey)
-	}
+	s.addBox(ground(rearCenter, bodyY+bob), rearLen*0.5, 13, bodyWidth*0.5, rh, yellowD)
+	// engine hood detail
+	s.addBox(ground(rearCenter.Add(dir(rh).Scale(-rearLen*0.2)), bodyY+16+bob), rearLen*0.22, 6, bodyWidth*0.4, rh, shade(yellowD, 0.9))
 	// exhaust stack
-	stack := backEnd.Add(dir(rh).Scale(16)).Add(dir(rh + math.Pi/2).Scale(12))
-	g.fillCircle(screen, stack, 4, darkGrey)
+	stack := rearCenter.Add(dir(rh).Scale(-rearLen * 0.35)).Add(dir(rh + math.Pi/2).Scale(bodyWidth * 0.3))
+	s.addCylinder(ground(stack, bodyY+26+bob), 3, 34, 6, dark)
 
-	// FRONT body (cab section)
+	// front body (cab section)
 	frontCenter := joint.Add(dir(fh).Scale(frontLen * 0.5))
-	g.fillRect(screen, frontCenter, bodyWidth, frontLen, fh, yellow)
-	// cab + glass
-	cabPos := joint.Add(dir(fh).Scale(frontLen * 0.28))
-	g.fillRect(screen, cabPos, bodyWidth-8, 26, fh, rgba(60, 64, 72, 255))
-	g.fillRect(screen, cabPos, bodyWidth-16, 18, fh, rgba(150, 200, 225, 235))
+	s.addBox(ground(frontCenter, bodyY+bob), frontLen*0.5, 12, bodyWidth*0.5, fh, yellow)
 
-	// ARTICULATION joint — hinge plate bridging the halves + pivot pin
-	g.fillRect(screen, joint, bodyWidth-6, 16, (fh+rh)/2, darkGrey)
-	g.fillCircle(screen, joint, 6, rgba(210, 210, 215, 255))
-	g.fillCircle(screen, joint, 3, rgba(90, 90, 95, 255))
+	// cab with glass, raised on the front body
+	cabPos := joint.Add(dir(fh).Scale(frontLen * 0.34))
+	s.addBox(ground(cabPos, bodyY+30+bob), 15, 18, bodyWidth*0.38, fh, shade(yellow, 0.85))
+	s.addBox(ground(cabPos, bodyY+32+bob), 13, 15, bodyWidth*0.33, fh, rgba(150, 200, 225, 230))
 
-	// warning beacon on cab roof (blinks)
-	beaconOn := math.Sin(l.Beacon*2) > 0
-	bc := rgba(140, 60, 20, 255)
-	if beaconOn {
-		bc = rgba(255, 140, 30, 255)
-		// glow
-		g.fillCircle(screen, cabPos.Add(dir(fh).Scale(-6)), 10, rgba(255, 150, 40, 70))
+	// warning beacon on the cab roof (blinks)
+	beaconCol := rgba(150, 60, 20, 255)
+	if math.Sin(l.Beacon*2) > 0 {
+		beaconCol = rgba(255, 150, 35, 255)
 	}
-	g.fillCircle(screen, cabPos.Add(dir(fh).Scale(-6)), 4, bc)
+	s.addCylinder(ground(cabPos.Add(dir(fh).Scale(-8)), bodyY+50+bob), 4, 8, 7, beaconCol)
 
-	// ---- loader arms + bucket (with fake lift elevation) ----
-	g.drawBucket(screen, l, fh)
+	// articulation joint hinge
+	s.addCylinder(ground(joint, bodyY+bob), 7, 30, 8, rgba(70, 72, 78, 255))
+
+	// ---- lift arms + bucket ----
+	g.buildBucket3D(s, l, fh, bob)
 }
 
-func (g *Game) drawWheel(screen *ebiten.Image, axle Vec, heading, side float64) {
-	wc := axle.Add(dir(heading + math.Pi/2).Scale(side * (bodyWidth/2 + 4)))
-	// tire
-	g.fillRect(screen, wc, 30, 18, heading, rgba(28, 28, 30, 255))
-	// tread hint
-	g.fillRect(screen, wc, 30, 18, heading, rgba(40, 40, 44, 90))
-	// hub
-	g.fillCircle(screen, wc, 5, rgba(150, 150, 155, 255))
-}
+func (g *Game) buildBucket3D(s *Scene, l *Loader, fh, bob float64) {
+	// shoulders on the front body sides
+	shL := ground(l.FrontAxle().Add(dir(fh+math.Pi/2).Scale(bodyWidth*0.4)).Add(dir(fh).Scale(4)), liftBaseY+bob)
+	shR := ground(l.FrontAxle().Add(dir(fh-math.Pi/2).Scale(bodyWidth*0.4)).Add(dir(fh).Scale(4)), liftBaseY+bob)
 
-// drawBucket draws the lift arms and the animated bucket. Lift is faked in
-// top-down by elevating the assembly toward the viewer with a growing gap
-// to its ground shadow; tilt reshapes the scoop and reveals its load.
-func (g *Game) drawBucket(screen *ebiten.Image, l *Loader, fh float64) {
-	elev := l.Lift * 20 // screen-space lift offset (toward viewer / up)
-	up := V(0, -elev)   // elevate on screen (drawn after transform via world? use world offset)
+	liftY := liftBaseY + l.Lift*liftRangeY + bob
+	reach := armReach - l.Lift*8
+	pivot2D := l.FrontAxle().Add(dir(fh).Scale(reach))
+	pivotL := ground(pivot2D.Add(dir(fh+math.Pi/2).Scale(bodyWidth*0.36)), liftY)
+	pivotR := ground(pivot2D.Add(dir(fh-math.Pi/2).Scale(bodyWidth*0.36)), liftY)
+	pivotC := ground(pivot2D, liftY)
 
-	// shoulders at the front corners of the front body
-	shoulderL := l.FrontAxle().Add(dir(fh + math.Pi/2).Scale(bodyWidth * 0.42)).Add(dir(fh).Scale(6))
-	shoulderR := l.FrontAxle().Add(dir(fh - math.Pi/2).Scale(bodyWidth * 0.42)).Add(dir(fh).Scale(6))
+	armCol := rgba(215, 168, 25, 255)
+	s.addOBB(shL.Add(pivotL.Sub(shL).Scale(0.5)), pivotL.Sub(shL), pivotL.Sub(shL).Len()/2, 4, 5, armCol)
+	s.addOBB(shR.Add(pivotR.Sub(shR).Scale(0.5)), pivotR.Sub(shR), pivotR.Sub(shR).Len()/2, 4, 5, armCol)
 
-	pivot := l.BucketPivot()
-	// bucket ground-shadow (stays near ground projection, no elevation)
-	shcol := rgba(16, 20, 16, 80)
-	g.bucketShape(screen, pivot, fh, l.Tilt, shcol, shcol, 0, V(6, 8))
+	// tilt hydraulic ram (visual)
+	ramBase := ground(l.FrontAxle().Add(dir(fh).Scale(8)), bodyY+18+bob)
+	s.addOBB(ramBase.Add(pivotC.Sub(ramBase).Scale(0.5)), pivotC.Sub(ramBase), pivotC.Sub(ramBase).Len()/2, 3, 3, rgba(120, 120, 128, 255))
 
-	// elevate arms+bucket on screen by adjusting world target with camera-up.
-	// Convert screen-up offset into world by dividing by zoom (pure vertical).
-	worldUp := up.Scale(1 / g.cam.Zoom)
-	pivotE := pivot.Add(worldUp)
-	shLE := shoulderL.Add(worldUp)
-	shRE := shoulderR.Add(worldUp)
+	// bucket: oriented so tilt curls the opening. tiltPitch < 0 points the
+	// cutting edge down (dig/dump), > 0 curls it back (carry).
+	tiltPitch := (l.Tilt - 0.45) * 1.25
+	fwd3 := Vec3{math.Cos(fh), 0, math.Sin(fh)}
+	up3 := Vec3{0, 1, 0}
+	lat := fwd3.Cross(up3).Norm()
+	// bf is the bucket's forward (floor) axis; bu is its "up" (opening) axis.
+	bf := rotAbout(fwd3, lat, -tiltPitch)
+	bu := rotAbout(up3, lat, -tiltPitch)
+	steel := rgba(72, 74, 80, 255)
+	bw := bodyWidth*0.5 + 14
+	// scoop body: a box tilted with the bucket
+	bodyC := pivotC.Add(bf.Scale(16)).Add(bu.Scale(2))
+	s.addOBB(bodyC, bf, 20, 11, bw, steel)
+	// cutting-edge lip at the front
+	lipC := pivotC.Add(bf.Scale(36)).Add(bu.Scale(-4))
+	s.addOBB(lipC, bf, 5, 4, bw, rgba(120, 122, 128, 255))
 
-	// arms
-	armCol := rgba(210, 165, 25, 255)
-	bucketPivotL := pivotE.Add(dir(fh + math.Pi/2).Scale(bodyWidth * 0.38))
-	bucketPivotR := pivotE.Add(dir(fh - math.Pi/2).Scale(bodyWidth * 0.38))
-	g.strokeWorld(screen, shLE, bucketPivotL, 8, armCol)
-	g.strokeWorld(screen, shRE, bucketPivotR, 8, armCol)
-	// tilt hydraulic ram (visual): from mid front body to bucket back
-	ramBase := l.FrontAxle().Add(dir(fh).Scale(10)).Add(worldUp)
-	g.strokeWorld(screen, ramBase, pivotE, 4, rgba(120, 120, 128, 255))
-
-	// bucket body (lit) + load
-	steel := rgba(60, 62, 66, 255)
-	lip := rgba(90, 92, 98, 255)
-	g.bucketShape(screen, pivotE, fh, l.Tilt, steel, lip, l.LoadFrac(), V(0, 0))
-}
-
-// bucketShape draws the scoop as a filled quad that reshapes with tilt and,
-// optionally, a load mound inside. off is a screen-ish world offset for
-// drawing the shadow copy.
-func (g *Game) bucketShape(screen *ebiten.Image, pivot Vec, fh, tilt float64, body, edge color.RGBA, loadFrac float64, off Vec) {
-	w := bodyWidth*0.5 + 14
-	// forward reach of the cutting edge grows as the bucket tilts forward
-	reach := 14 + (1-tilt)*18
-	back := 4 + tilt*6
-	left := dir(fh + math.Pi/2)
-	fwd := dir(fh)
-	pivot = pivot.Add(off)
-	// quad: back-left, back-right, edge-right, edge-left
-	bl := pivot.Add(left.Scale(w)).Sub(fwd.Scale(back))
-	br := pivot.Sub(left.Scale(w)).Sub(fwd.Scale(back))
-	er := pivot.Sub(left.Scale(w * 0.92)).Add(fwd.Scale(reach))
-	el := pivot.Add(left.Scale(w * 0.92)).Add(fwd.Scale(reach))
-	g.fillPoly(screen, []Vec{bl, br, er, el}, body)
-
-	// load mound inside the bucket, visible mostly when curled (tilt high)
-	if loadFrac > 0.02 {
-		vis := loadFrac * (0.3 + tilt*0.7)
-		r, gg, b := matColor(g.loader.LoadType)
-		mc := rgba(r, gg, b, 255)
-		iw := w * 0.8 * math.Sqrt(clamp(vis, 0, 1))
-		ic := pivot.Add(fwd.Scale(reach * 0.35))
-		g.fillPoly(screen, []Vec{
-			ic.Add(left.Scale(iw)).Sub(fwd.Scale(2)),
-			ic.Sub(left.Scale(iw)).Sub(fwd.Scale(2)),
-			ic.Sub(left.Scale(iw * 0.9)).Add(fwd.Scale(8 * vis)),
-			ic.Add(left.Scale(iw * 0.9)).Add(fwd.Scale(8 * vis)),
-		}, mc)
+	// load heaped inside the bucket, visible mostly when curled back
+	if l.Load > 2 {
+		vis := l.LoadFrac() * (0.3 + l.Tilt*0.7)
+		r, gg, b := matColor(l.LoadType)
+		sq := math.Sqrt(clamp(vis, 0, 1))
+		mc := pivotC.Add(bf.Scale(14)).Add(bu.Scale(9))
+		s.addOBB(mc, bf, 17*sq, 4+5*vis, bw*0.9*sq, rgba(r, gg, b, 255))
 	}
-	// cutting edge bar
-	g.strokeWorld(screen, el, er, 5, edge)
+}
+
+// rotAbout rotates vector v about unit axis k by angle a (Rodrigues).
+func rotAbout(v, k Vec3, a float64) Vec3 {
+	si, co := math.Sincos(a)
+	return v.Scale(co).
+		Add(k.Cross(v).Scale(si)).
+		Add(k.Scale(k.Dot(v) * (1 - co)))
 }
 
 // ---- particles ----
 
-func (g *Game) drawParticles(screen *ebiten.Image) {
+func (g *Game) buildParticles3D(s *Scene) {
 	for i := range g.world.Particles {
 		p := &g.world.Particles[i]
 		life := p.Life / p.Max
-		// draw a ground shadow for elevated particles
-		var a uint8
-		var col color.RGBA
+		var a float64
 		switch p.Kind {
 		case pfxSmoke:
-			a = uint8(clamp(life*90, 0, 90))
-			col = rgba(p.Color[0], p.Color[1], p.Color[2], a)
+			a = clamp(life*90, 0, 90)
 		case pfxDust:
-			a = uint8(clamp(life*95, 0, 95))
-			col = rgba(p.Color[0], p.Color[1], p.Color[2], a)
+			a = clamp(life*95, 0, 95)
 		default:
-			a = uint8(clamp(life*255, 0, 255))
-			col = rgba(p.Color[0], p.Color[1], p.Color[2], a)
+			a = clamp(life*235, 0, 235)
 		}
-		// fake elevation: shift up by Z and grow slightly
-		screenPos := p.Pos.Add(V(0, -p.Z))
-		size := p.Size * (0.6 + life*0.6)
+		size := p.Size * (0.7 + life*0.6)
 		if p.Kind == pfxSmoke || p.Kind == pfxDust {
-			size = p.Size * (1.15 - life*0.4)
+			size = p.Size * (1.1 - life*0.4)
 		}
-		g.fillCircle(screen, screenPos, size, col)
+		center := Vec3{p.Pos.X, p.Z + size*0.5, p.Pos.Y}
+		s.addBillboard(center, size, rgba(p.Color[0], p.Color[1], p.Color[2], uint8(a)))
 	}
 }

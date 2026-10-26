@@ -28,6 +28,7 @@ type Game struct {
 
 	auto     *Autopilot // non-nil in demo/shot mode
 	simSpeed int        // simulation substeps per rendered frame (default 1)
+	scene    Scene      // reused 3D geometry buffer
 
 	// screenshot scheduling
 	shots     map[int]string
@@ -53,9 +54,8 @@ func NewGame() *Game {
 		Lift:    0.2,
 	}
 	cam := NewCamera(screenW, screenH)
-	cam.Pos = l.Joint
-	cam.Zoom = 1.1
-	cam.TgtZoom = 1.1
+	cam.Target = l.Joint
+	cam.followYaw = l.Heading
 	g := &Game{
 		world:    w,
 		loader:   l,
@@ -97,17 +97,18 @@ func (g *Game) Update() error {
 		for i := range g.tour {
 			ts := &g.tour[i]
 			if ts.shot != "" && g.frame >= ts.frame {
-				g.cam.Pos = ts.pos
-				g.cam.Zoom, g.cam.TgtZoom = ts.zoom, ts.zoom
+				g.cam.Target = ts.pos
+				g.cam.Dist, g.cam.TgtDist = ts.zoom, ts.zoom
+				g.cam.Yaw = 0.85
+				g.cam.Pitch = 0.62
 				g.shots[g.frame] = ts.shot
 				ts.shot = ""
 				break
 			}
 		}
 	} else {
-		// Camera follows the loader, aiming a little ahead.
-		lead := dir(g.loader.Heading).Scale(g.loader.Speed * 0.35)
-		g.cam.Follow(g.loader.Joint, lead, fixedDT)
+		// Chase camera follows the loader and swings behind its heading.
+		g.cam.Follow(g.loader.Joint, g.loader.Heading, fixedDT)
 	}
 
 	// Camera kick on hard impacts / big loads landing handled via bounceV.

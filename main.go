@@ -51,9 +51,9 @@ func main() {
 			log.Fatal(err)
 		}
 		g.tour = []tourStop{
-			{frame: 8, pos: V(640, 620), zoom: 1.2, shot: filepath.Join(*tourDir, "t1_office.png")},
-			{frame: 24, pos: V(1050, 820), zoom: 1.1, shot: filepath.Join(*tourDir, "t2_barriers.png")},
-			{frame: 40, pos: V(2580, 1900), zoom: 1.2, shot: filepath.Join(*tourDir, "t3_equipment.png")},
+			{frame: 8, pos: V(640, 620), zoom: 430, shot: filepath.Join(*tourDir, "t1_office.png")},
+			{frame: 24, pos: V(1050, 820), zoom: 460, shot: filepath.Join(*tourDir, "t2_barriers.png")},
+			{frame: 40, pos: V(2580, 1900), zoom: 470, shot: filepath.Join(*tourDir, "t3_equipment.png")},
 		}
 		g.exitFrame = 60
 	}
@@ -111,9 +111,10 @@ func (g *Game) dumpScene(outDir string) {
 	ap.state = apDump
 	ap.truck = truck
 	g.auto = ap
-	g.cam.Pos = l.Joint
-	g.cam.TgtZoom = 1.5
-	g.cam.Zoom = 1.5
+	g.cam.Target = l.Joint
+	g.cam.followYaw = l.Heading
+	g.cam.Dist, g.cam.TgtDist = 300, 300
+	g.shots[3] = filepath.Join(outDir, "dump_0.png")
 	g.shots[16] = filepath.Join(outDir, "dump_1.png")
 	g.shots[40] = filepath.Join(outDir, "dump_2.png")
 	g.shots[70] = filepath.Join(outDir, "dump_3.png")

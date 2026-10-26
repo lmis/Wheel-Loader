@@ -60,15 +60,29 @@ func (g *Game) handleInput() {
 		l.tiltCmd = -1 // dump forward
 	}
 
-	// Zoom.
+	// Zoom (camera distance).
 	if keyDown(ebiten.KeyEqual, ebiten.KeyKPAdd) {
-		g.cam.TgtZoom = clamp(g.cam.TgtZoom*1.02, 0.45, 2.4)
+		g.cam.TgtDist = clamp(g.cam.TgtDist*0.98, 180, 1100)
 	}
 	if keyDown(ebiten.KeyMinus, ebiten.KeyKPSubtract) {
-		g.cam.TgtZoom = clamp(g.cam.TgtZoom*0.98, 0.45, 2.4)
+		g.cam.TgtDist = clamp(g.cam.TgtDist*1.02, 180, 1100)
 	}
 	if _, dy := ebiten.Wheel(); dy != 0 {
-		g.cam.TgtZoom = clamp(g.cam.TgtZoom*(1+dy*0.08), 0.45, 2.4)
+		g.cam.TgtDist = clamp(g.cam.TgtDist*(1-dy*0.08), 180, 1100)
+	}
+
+	// Orbit the camera (yaw offset) and tilt (pitch).
+	if keyDown(ebiten.KeyQ) {
+		g.cam.UserYaw -= 1.6 * fixedDT
+	}
+	if keyDown(ebiten.KeyE) {
+		g.cam.UserYaw += 1.6 * fixedDT
+	}
+	if keyDown(ebiten.KeyBracketLeft) {
+		g.cam.Pitch = clamp(g.cam.Pitch-1.2*fixedDT, 0.2, 1.35)
+	}
+	if keyDown(ebiten.KeyBracketRight) {
+		g.cam.Pitch = clamp(g.cam.Pitch+1.2*fixedDT, 0.2, 1.35)
 	}
 }
 
