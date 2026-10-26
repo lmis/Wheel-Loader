@@ -78,7 +78,6 @@ type Truck struct {
 	throttle, steerCmd, bedCmd float64
 	brake                      bool
 	spin, rpm, jolt            float64
-	fullT                      float64 // toddler mode: how long it has been full
 }
 
 func (t *Truck) Total() float64 {
@@ -89,15 +88,12 @@ func (t *Truck) Total() float64 {
 	return s
 }
 
-func (t *Truck) Receive(amt float64, typ int) {
-	room := t.Capacity - t.Total()
-	if room <= 0 {
-		return
-	}
-	if amt > room {
-		amt = room
-	}
-	t.Contents[typ] += amt
+// Receive puts material in the bed and returns what did not fit.
+func (t *Truck) Receive(amt float64, typ int) float64 {
+	room := math.Max(0, t.Capacity-t.Total())
+	took := math.Min(amt, room)
+	t.Contents[typ] += took
+	return amt - took
 }
 
 // bedRect returns the dump bed rectangle (the catch area) in world space.

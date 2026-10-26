@@ -268,7 +268,12 @@ func (l *Loader) discharge(w *World, amount, forward float64) {
 		}
 	}
 	if tr != nil {
-		tr.Receive(amount, l.LoadType)
+		// a full bed overflows onto the ground between loader and truck
+		if spill := tr.Receive(amount, l.LoadType); spill > 0 {
+			at := l.FrontAxle().Add(dir(fh).Scale(40))
+			w.Grid.Add(at.X, at.Y, spill, l.LoadType)
+			w.Grid.Relax(at.X, at.Y, 60, 1)
+		}
 	} else {
 		w.Grid.Add(drop.X, drop.Y, amount, l.LoadType)
 		w.Grid.Relax(drop.X, drop.Y, 60, 1)

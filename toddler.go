@@ -19,7 +19,7 @@ import (
 //     lowers the hook to pick up or put down a load
 //
 // Number keys pick a machine: the kid climbs out, walks over and gets in.
-// Nobody can climb out otherwise. Deliveries are celebrated with confetti.
+// Nobody can climb out otherwise. Trucks fill up until a kid tips them out.
 
 // toddlerKeys is one player's tiny control set.
 type toddlerKeys struct {
@@ -75,7 +75,6 @@ type toddlerState struct {
 	button    bool    // held
 	pressed   bool    // pressed since the assistant last looked
 	dumpTruck *Truck  // truck under the bucket when the dump started
-	before    float64 // its load at that moment
 	modeT     float64 // time in the current mode
 	hookLen   float64 // crane rope length last step, to see the hook land
 }
@@ -281,11 +280,6 @@ func (g *Game) toddlerAssist(p *Player, dt float64) {
 	td.pressed = false
 }
 
-// cheer celebrates a delivery with confetti at a spot.
-func (g *Game) cheer(at Vec, height float64) {
-	g.world.spawnConfetti(at, height, 70)
-}
-
 // toward returns a command (-1..1) that moves cur toward target.
 func toward(cur, target float64) float64 {
 	d := target - cur
@@ -322,9 +316,6 @@ func (g *Game) toddlerLoader(p *Player, l *Loader) {
 			td.mode = tdDig
 		case over != nil && l.Lift > 0.45, td.button:
 			td.mode, td.dumpTruck = tdDump, over
-			if over != nil {
-				td.before = over.Total()
-			}
 		}
 	case tdDump:
 		l.tiltCmd = -1
@@ -332,9 +323,6 @@ func (g *Game) toddlerLoader(p *Player, l *Loader) {
 			l.liftCmd = toward(l.Lift, 0.75)
 		}
 		if l.Load < 2 {
-			if t := td.dumpTruck; t != nil && t.Total()-td.before > 10 {
-				g.cheer(t.Pos, 60)
-			}
 			td.mode, td.dumpTruck = tdDig, nil
 		}
 	}
@@ -351,9 +339,6 @@ func (g *Game) toddlerDumpTruck(p *Player, t *Truck) {
 	case tdDump:
 		t.bedCmd = 1
 		if t.BedTilt >= 1 && (t.Total() < 1 || td.modeT > 4) {
-			if td.before-t.Total() > 10 {
-				g.cheer(t.Pos.Sub(dir(t.Angle).Scale(80)), 40)
-			}
 			td.mode, td.modeT = tdLower, 0
 		}
 	case tdLower:
@@ -364,7 +349,7 @@ func (g *Game) toddlerDumpTruck(p *Player, t *Truck) {
 	default:
 		t.bedCmd = 0
 		if td.pressed {
-			td.mode, td.modeT, td.before = tdDump, 0, t.Total()
+			td.mode, td.modeT = tdDump, 0
 		}
 	}
 }
@@ -384,9 +369,6 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 			if h := c.held; h != nil {
 				h.held, h.vy = false, 0
 				c.held = nil
-				if w.TruckAt(h.Pos) != nil {
-					g.cheer(h.Pos, h.H+40)
-				}
 			} else {
 				c.attach(w)
 			}
@@ -404,23 +386,6 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 	}
 	c.grabCmd = 0
 	td.hookLen = c.HookLen
-}
-
-// toddlerTrucks empties full, parked trucks with a big confetti shower so they can
-// be filled again.
-func (g *Game) toddlerTrucks(dt float64) {
-	for _, t := range g.world.Trucks {
-		if t.Total() >= t.Capacity*0.9 && !t.Occupied {
-			t.fullT += dt
-			if t.fullT > 1.2 {
-				g.world.spawnConfetti(t.Pos, 70, 180)
-				t.Contents = [numMat]float64{}
-				t.fullT = 0
-			}
-		} else {
-			t.fullT = 0
-		}
-	}
 }
 
 // ---- toddler HUD ----

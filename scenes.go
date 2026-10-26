@@ -58,6 +58,15 @@ func (g *Game) stageScenes(outDir, only string) {
 			driveCam(p1, 380, 0.9, 0.5)
 			p2.scriptCtl = &Controls{Throttle: -0.6}
 		}},
+		{name: "03b_truck_full", frames: 40, setup: func(g *Game) {
+			tr := w.Trucks[0]
+			tr.Contents = [numMat]float64{}
+			tr.Contents[MatSand] = tr.Capacity - 30
+			l := g.loader
+			l.Lift, l.Tilt, l.Load, l.LoadType = 0.62, 1, 95, MatSand
+			p1.td.mode = tdCarry
+			driveCam(p1, 330, 1.2, 0.55)
+		}},
 		{name: "04_walk_over", frames: 46, setup: func(g *Game) {
 			for i, p := range g.players {
 				g.toddlerPick(p, p.td.own[2-i])

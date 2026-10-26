@@ -211,7 +211,6 @@ func (g *Game) step(dt float64) {
 	for _, p := range g.players {
 		g.toddlerAssist(p, dt)
 	}
-	g.toddlerTrucks(dt)
 	g.rebuildObstacles()
 	for _, v := range g.vehicles {
 		v.Update(dt, w)

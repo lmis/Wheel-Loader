@@ -220,3 +220,29 @@ func TestAnimalsComeAlong(t *testing.T) {
 		}
 	}
 }
+
+func TestFullTruckStaysFullAndOverflows(t *testing.T) {
+	g := NewGame()
+	p := g.players[0]
+	l := p.Driving.(*Loader)
+	tr := p.td.own[1].(*Truck)
+	tr.Contents[MatSand] = tr.Capacity - 20
+	l.Joint = tr.Pos.Add(dir(tr.Angle).Scale(118))
+	l.Heading, l.Artic, l.Lift, l.Tilt, l.Load, l.LoadType = tr.Angle+math.Pi, 0, 0.62, 1, 95, MatSand
+	p.td.mode = tdCarry
+	ground := totalMaterial(g.world)
+	run(g, 60*4)
+	if l.Load > 2 {
+		t.Fatalf("bucket should have tipped, load %.1f", l.Load)
+	}
+	if tr.Total() != tr.Capacity {
+		t.Fatalf("truck should be exactly full, has %.1f of %.0f", tr.Total(), tr.Capacity)
+	}
+	if spilled := totalMaterial(g.world) - ground; spilled < 60 {
+		t.Fatalf("what did not fit should spill on the ground, got %.1f", spilled)
+	}
+	run(g, 60*10)
+	if tr.Total() != tr.Capacity {
+		t.Fatal("a full truck should stay full until it is tipped")
+	}
+}

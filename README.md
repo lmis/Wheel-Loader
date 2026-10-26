@@ -66,9 +66,10 @@ machines do the fiddly parts themselves:
   The hook stays at a safe height and its shadow shows where it is. The
   button lowers it to hook onto a load, or to put the load down.
 
-Confetti celebrates every load into a truck, every truck tipped out, and
-every crane load set on a truck. Parked full trucks empty themselves. The
-machines are speed-limited and stop when no key is held.
+Each truck takes about five bucket loads before it is full; it stays full
+until its kid drives it somewhere and tips it out (and the new heap can be
+scooped up again). The machines are speed-limited and stop when no key is
+held.
 
 The kids are site workers in orange hi-vis vests and yellow hard hats, with
 blonde hair and brown eyes. Each kid has two animal friends who ride on
@@ -98,7 +99,7 @@ partially filled and loads carry their material type.
 | `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
 | `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
-| `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over, confetti |
+| `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over |
 | `walker.go` | The kid on foot |
 | `animals.go` | The dogs, the chimp and the owl: riding, following, hopping |
 | `player.go` | Players, getting in and out, cameras |
