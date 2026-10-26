@@ -73,6 +73,7 @@ type Truck struct {
 	Steer    float64 // front wheel angle
 	BedTilt  float64 // 0 = down, 1 = fully raised
 	Occupied bool
+	SpeedCap float64 // toddler mode top speed (0 = none)
 
 	throttle, steerCmd, bedCmd float64
 	brake                      bool

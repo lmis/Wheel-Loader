@@ -19,6 +19,7 @@ type Game struct {
 	loader   *Loader // the main loader (autopilot, demo modes)
 	vehicles []Vehicle
 	crane    *TowerCrane
+	crane2   *TowerCrane // player 1's crane in toddler mode
 	animals  []*Animal
 	players  []*Player
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
@@ -204,6 +205,9 @@ func (g *Game) Update() error {
 // step advances the whole simulation by one fixed timestep.
 func (g *Game) step(dt float64) {
 	w := g.world
+	if g.toddler {
+		g.toddlerStep(dt)
+	}
 	for _, v := range g.vehicles {
 		if p := g.driverOf(v); p != nil {
 			v.Drive(&p.ctl)
@@ -213,9 +217,7 @@ func (g *Game) step(dt float64) {
 	}
 	if g.toddler {
 		for _, p := range g.players {
-			if l, ok := p.Driving.(*Loader); ok && p.td != nil {
-				g.toddlerAssist(p, l, dt)
-			}
+			g.toddlerAssist(p, dt)
 		}
 		g.toddlerTrucks(dt)
 	}

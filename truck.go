@@ -77,6 +77,9 @@ func (t *Truck) Update(dt float64, w *World) {
 		t.Speed = approach(t.Speed, 0, 50*dt)
 	}
 	t.Speed = clamp(t.Speed, -truckMaxRev, truckMaxSpeed)
+	if t.SpeedCap > 0 {
+		t.Speed = clamp(t.Speed, -t.SpeedCap*0.6, t.SpeedCap)
+	}
 
 	// kinematic bicycle about the rear tandem, so the rear tracks properly
 	rear := t.Pos.Add(dir(t.Angle).Scale(truckRearX)).Add(dir(t.Angle).Scale(t.Speed * dt))

@@ -14,6 +14,7 @@ type TowerCrane struct {
 	Trolley  float64 // trolley distance from the mast
 	HookLen  float64 // rope length below the jib
 	Occupied bool
+	Easy     bool // toddler mode: brisk slewing and a well-damped hook
 
 	hook, hookV Vec // swinging hook position on the ground plane
 	held        *Cargo
@@ -82,7 +83,11 @@ func (c *TowerCrane) ExitPoint(side float64) Vec {
 
 func (c *TowerCrane) Update(dt float64, w *World) {
 	// heavy slewing inertia: it takes a moment to get going and to stop
-	c.slewV = approach(c.slewV, c.slewCmd*0.32, 0.35*dt)
+	maxV, slewAcc, damp := 0.32, 0.35, 0.35
+	if c.Easy {
+		maxV, slewAcc, damp = 0.5, 1.4, 2.5
+	}
+	c.slewV = approach(c.slewV, c.slewCmd*maxV, slewAcc*dt)
 	c.Slew += c.slewV * dt
 	c.Trolley = clamp(c.Trolley+c.trolleyCmd*100*dt, 70, craneJibLen-14)
 	c.HookLen = clamp(c.HookLen-c.hoistCmd*80*dt, 12, craneJibY-12)
@@ -90,7 +95,7 @@ func (c *TowerCrane) Update(dt float64, w *World) {
 	// the hook swings like a pendulum hanging under the trolley
 	L := math.Max(c.HookLen, 20)
 	tp := c.trolleyPos()
-	acc := tp.Sub(c.hook).Scale(craneGravity / L).Sub(c.hookV.Scale(0.35))
+	acc := tp.Sub(c.hook).Scale(craneGravity / L).Sub(c.hookV.Scale(damp))
 	c.hookV = c.hookV.Add(acc.Scale(dt))
 	c.hook = c.hook.Add(c.hookV.Scale(dt))
 
@@ -191,6 +196,7 @@ func b2f(b bool) float64 {
 
 func (c *TowerCrane) Render(g *Game, s *Scene, cockpit bool) {
 	g.shadow(s, c.Base, 70, 70, 0)
+	g.shadow(s, c.hook, 9, 9, c.Slew) // helps to aim the hook
 	yellow := rgba(246, 192, 22, 255)
 	beam := func(a, b Vec3, r float64, col color.RGBA) {
 		d := b.Sub(a)

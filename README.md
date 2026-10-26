@@ -41,21 +41,32 @@ Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`).
 
 ## Toddler mode (the default)
 
-The game starts in **toddler mode**: two players, split screen, each already
-sitting in a wheel loader with a sand or dirt heap and a dump truck right in
-front of them. There are only four direction keys and one button, and nobody
-can climb out.
+The game starts in **toddler mode**: two players, split screen. Each player
+has their own wheel loader, dump truck and tower crane, a sand or dirt heap,
+and a stack of crane loads. There are only four direction keys and one
+button, and nobody can climb out by accident.
 
 | | Player 1 | Player 2 |
 | --- | --- | --- |
-| Drive / steer | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
-| Dump the bucket | `Space` | `Enter` |
+| Drive / steer (crane: slew and trolley) | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
+| The button | `Space` | `Enter` |
+| Pick loader / truck / crane | `1` `2` `3` | `8` `9` `0` (or numpad `1` `2` `3`) |
 
-The bucket works itself. Drive into a heap and it fills, then lifts up. Drive
-up to the truck and it tips in. Each load in a truck earns a big star and
-confetti. Full trucks empty themselves with a confetti shower. The loaders
-are speed-limited and stop as soon as you let go of the keys. `F5` switches
-to the full game (and back); `go run . -full` starts there.
+Picking a machine makes the kid stop, climb out, walk over (round anything in
+the way) and climb in. The machines do the fiddly parts themselves:
+
+- **Loader:** drive into the heap and the bucket fills, then lifts. Drive up
+  to the truck and it tips in. The button dumps the bucket anywhere.
+- **Dump truck:** the button tips the body all the way, the load pours out,
+  and the body comes back down.
+- **Crane:** left/right swings the jib, up/down runs the trolley out and in.
+  The hook stays at a safe height and its shadow shows where it is. The
+  button lowers it to hook onto a load, or to put the load down.
+
+Stars and confetti reward every load into a truck, every truck tipped out,
+and every crane load set on a truck. Parked full trucks empty themselves.
+The machines are speed-limited and stop when no key is held. `F5` switches to
+the full game (and back); `go run . -full` starts there.
 
 ## The site
 
@@ -132,7 +143,7 @@ partially filled and loads carry their material type.
 | `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
 | `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
-| `toddler.go` | Toddler mode: tiny controls, bucket assistant, stars |
+| `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over, stars |
 | `walker.go` | The kid on foot |
 | `animals.go` | The dogs, the chimp and the owl |
 | `player.go`, `keys.go` | Players, getting in and out, cameras, key maps |
@@ -156,7 +167,7 @@ go run . -demo              # hands-free autopilot plays the job loop
 go run . -shots ./shots     # headless: drive a full cycle, save screenshots
 go run . -dumpshot ./shots  # headless: render a loaded loader dumping into a truck
 go run . -tour ./shots      # headless: static views of site landmarks
-go run . -scenes ./shots    # headless: stage and capture every feature (27 shots)
+go run . -scenes ./shots    # headless: stage and capture every feature (30 shots)
 go run . -full              # start in the full game instead of toddler mode
 go run . -coop              # start the full game in two-player split screen
 go run . -cpuprofile cpu.prof  # write a CPU profile (combine with any mode)
@@ -177,6 +188,6 @@ repositories. They are embedded into the binary. See `assets/kenney/LICENSE.txt`
 ```sh
 go test ./...   # driving, scooping, dumping, entering/exiting, truck tipping,
                 # excavator dig-and-load, crane lift onto a truck, animals, co-op,
-                # toddler mode loading a truck with only drive keys
+                # toddler mode: loading, tipping, crane lifts, walking over
 go vet ./...
 ```

@@ -97,3 +97,91 @@ func TestToddlerNoExit(t *testing.T) {
 		t.Fatal("grown-up mode should allow climbing out again")
 	}
 }
+
+func TestToddlerWalksOverToPickedMachine(t *testing.T) {
+	g := NewGame()
+	g.setToddler(true)
+	p := g.players[0]
+	tr := p.td.own[1].(*Truck)
+	g.toddlerPick(p, tr)
+	walked := false
+	for i := 0; i < 60*12 && p.Driving != tr; i++ {
+		run(g, 1)
+		walked = walked || (p.Driving == nil && p.W.moving > 0.5)
+	}
+	if p.Driving != tr {
+		t.Fatalf("kid never got into the truck; at %v, truck at %v", p.W.Pos, tr.Pos)
+	}
+	if !walked {
+		t.Fatal("kid should climb out and walk over")
+	}
+	if g.loader.Occupied {
+		t.Fatal("the loader should be empty now")
+	}
+}
+
+func TestToddlerTruckTipsWithOneButton(t *testing.T) {
+	g := NewGame()
+	g.setToddler(true)
+	p := g.players[0]
+	tr := p.td.own[1].(*Truck)
+	g.put(p, tr)
+	p.td.mode = tdCarry
+	tr.Contents[MatSand] = 200
+	p.td.pressed = true
+	run(g, 60*8)
+	if tr.Total() > 20 {
+		t.Fatalf("truck still holds %.1f", tr.Total())
+	}
+	if p.td.stars != 1 {
+		t.Fatalf("emptying the truck should give a star, got %d", p.td.stars)
+	}
+	if tr.BedTilt > 0 {
+		t.Fatalf("body should come back down, tilt %.2f", tr.BedTilt)
+	}
+}
+
+// aimHook puts the crane's hook straight over a spot.
+func aimHook(c *TowerCrane, at Vec) {
+	d := at.Sub(c.Base)
+	c.Slew, c.slewV, c.Trolley = d.Angle(), 0, d.Len()
+	c.hook, c.hookV = c.trolleyPos(), Vec{}
+}
+
+func TestToddlerCraneLiftsOntoTruck(t *testing.T) {
+	for _, pi := range []int{0, 1} {
+		g := NewGame()
+		g.setToddler(true)
+		p := g.players[pi]
+		c := p.td.own[2].(*TowerCrane)
+		tr := p.td.own[1].(*Truck)
+		g.put(p, c)
+		p.td.mode = tdCarry
+		var box *Cargo
+		for _, o := range g.world.Cargo {
+			if o.Kind == cargoCrate && o.Pos.Sub(c.Base).Len() < craneJibLen {
+				box = o
+			}
+		}
+		run(g, 60) // the hook goes up to travel height
+		aimHook(c, box.Pos)
+		p.td.pressed = true
+		run(g, 60*5)
+		if c.held != box {
+			t.Fatalf("player %d: the button should hook the crate (hook y %.0f)", p.ID, c.HookY())
+		}
+		if box.Y < 60 {
+			t.Fatalf("player %d: crate should go up, y %.0f", p.ID, box.Y)
+		}
+		aimHook(c, tr.Pos)
+		p.td.pressed = true
+		run(g, 60*5)
+		if c.held != nil || p.td.stars != 1 {
+			t.Fatalf("player %d: crate should be put on the truck: held %v stars %d", p.ID, c.held != nil, p.td.stars)
+		}
+		run(g, 60)
+		if box.truck != tr {
+			t.Fatalf("player %d: crate is not riding on the truck (y %.0f)", p.ID, box.Y)
+		}
+	}
+}

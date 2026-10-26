@@ -223,6 +223,43 @@ func (g *Game) stageScenes(outDir, only string) {
 			driveCam(p, 380, 0.9, 0.5)
 			g.players[1].scriptCtl = &Controls{Throttle: -0.6}
 		}},
+		{name: "28_toddler_walk_over", frames: 50, setup: func(g *Game) {
+			for i, p := range g.players {
+				g.toddlerPick(p, p.td.own[2-i])
+			}
+		}},
+		{name: "29_toddler_crane", frames: 40, setup: func(g *Game) {
+			for _, p := range g.players {
+				c, tr := p.td.own[2].(*TowerCrane), p.td.own[1].(*Truck)
+				p.td.goTo = nil
+				g.put(p, c)
+				var box *Cargo
+				for _, o := range w.Cargo {
+					if o.Kind == cargoBricks && o.Pos.Sub(c.Base).Len() < craneJibLen && !o.held {
+						box = o
+					}
+				}
+				box.held, box.truck = true, nil
+				c.held, c.heldYaw = box, 0
+				d := tr.Pos.Add(V(40, 80)).Sub(c.Base)
+				c.Slew, c.slewV, c.Trolley, c.HookLen = d.Angle(), 0, d.Len(), craneJibY-toddlerHookY-box.H-6
+				c.hook, c.hookV = c.trolleyPos(), Vec{}
+				p.td.mode, p.td.modeT = tdCarry, 0
+				driveCam(p, 520, 0.5, 0.5)
+				p.scriptCtl = &Controls{Throttle: -0.3, Steer: 0.4}
+			}
+		}},
+		{name: "30_toddler_truck_tipping", frames: 70, setup: func(g *Game) {
+			for i, p := range g.players {
+				tr := p.td.own[1].(*Truck)
+				g.put(p, tr)
+				tr.Contents = [numMat]float64{}
+				tr.Contents[[]int{MatSand, MatDirt}[i]] = 380
+				p.td.mode, p.td.pressed = tdCarry, true
+				driveCam(p, 480, 2.3, 0.45)
+				p.scriptCtl = nil
+			}
+		}},
 	}
 
 	f := 5
