@@ -64,6 +64,7 @@ type Loader struct {
 	Label    string     // display name (default "Wheel loader")
 	Color    color.RGBA // body colour (zero = construction yellow)
 	Occupied bool       // someone is in the cab (engine running, beacon on)
+	SpeedCap float64    // optional top speed limit (toddler mode); 0 = none
 }
 
 // FrontHeading / RearHeading splay around the chassis heading so the
@@ -137,6 +138,9 @@ func (l *Loader) Update(dt float64, w *World) {
 		}
 	}
 	l.Speed = clamp(l.Speed, -maxRevSpeed, maxSpeed)
+	if l.SpeedCap > 0 {
+		l.Speed = clamp(l.Speed, -l.SpeedCap*0.6, l.SpeedCap)
+	}
 
 	// --- Turning: articulated vehicles only turn while driving ---
 	wheelbase := float64(frontLen + rearLen)

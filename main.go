@@ -24,6 +24,7 @@ func main() {
 	tourDir := flag.String("tour", "", "render static views of site landmarks to this dir, then exit")
 	frames := flag.Int("frames", 0, "exit after this many frames (0 = run forever)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile to this file")
+	full := flag.Bool("full", false, "start in the full game instead of toddler mode")
 	flag.Parse()
 
 	if *cpuProfile != "" {
@@ -43,6 +44,10 @@ func main() {
 	ebiten.SetTPS(60)
 
 	g := NewGame()
+	// toddler mode is the default; dev and screenshot modes use the full game
+	if !*full && !*demo && !*coop && *shotDir == "" && *scenesDir == "" && *dumpShot == "" && *tourDir == "" {
+		g.setToddler(true)
+	}
 
 	if *demo {
 		g.auto = NewAutopilot()

@@ -26,6 +26,7 @@ type Player struct {
 	marker                  color.RGBA
 	msg                     string
 	msgT                    float64
+	td                      *toddlerState // toddler-mode state, nil otherwise
 }
 
 func newPlayer(id int, keys keyMap, at Vec, yaw float64) *Player {
@@ -111,6 +112,9 @@ func (g *Game) exit(p *Player) bool {
 }
 
 func (g *Game) toggleVehicle(p *Player) {
+	if g.toddler {
+		return // toddlers stay in their machine
+	}
 	if p.Driving != nil {
 		g.exit(p)
 		return

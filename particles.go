@@ -8,6 +8,7 @@ const (
 	pfxMaterial
 	pfxSmoke
 	pfxSpark
+	pfxConfetti
 )
 
 // Particle is a cheap billboard with a fake height (Z) for a 2.5D feel.
@@ -118,4 +119,28 @@ func (w *World) spawnExhaustAt(at Vec, z, rpm float64) {
 		Kind:  pfxSmoke,
 		Color: [3]uint8{60, 60, 64},
 	})
+}
+
+// confettiColors are the bright party colours for celebrations.
+var confettiColors = [][3]uint8{
+	{255, 70, 70}, {255, 200, 40}, {70, 200, 255}, {120, 230, 90}, {240, 110, 230}, {255, 140, 40},
+}
+
+// spawnConfetti throws a burst of colourful confetti up from a point.
+func (w *World) spawnConfetti(at Vec, height float64, n int) {
+	for i := 0; i < n; i++ {
+		a := w.rng.Float64() * 2 * math.Pi
+		w.addParticle(Particle{
+			Pos:   at.Add(dir(a).Scale(w.rng.Float64() * 10)),
+			Vel:   dir(a).Scale(20 + w.rng.Float64()*70),
+			Z:     height,
+			VZ:    120 + w.rng.Float64()*140,
+			Life:  2 + w.rng.Float64()*1.2,
+			Size:  1.4 + w.rng.Float64()*1.4,
+			Damp:  0.5,
+			SpinV: (w.rng.Float64() - 0.5) * 20,
+			Kind:  pfxConfetti,
+			Color: confettiColors[w.rng.Intn(len(confettiColors))],
+		})
+	}
 }

@@ -77,6 +77,7 @@ type Truck struct {
 	throttle, steerCmd, bedCmd float64
 	brake                      bool
 	spin, rpm, jolt            float64
+	fullT                      float64 // toddler mode: how long it has been full
 }
 
 func (t *Truck) Total() float64 {

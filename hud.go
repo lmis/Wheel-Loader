@@ -43,6 +43,13 @@ func bar(dst *ebiten.Image, x, y, w, h, frac float64, fg, bg color.RGBA) {
 
 // drawGlobalHUD draws what both players share: the job, money and minimap.
 func (g *Game) drawGlobalHUD(screen *ebiten.Image) {
+	if g.toddler {
+		if g.paused {
+			g.drawTextC(screen, "PAUSED  (F2)", g.art.Big, screenW/2, screenH/2-20, hudWhite)
+		}
+		g.drawTextC(screen, "F5: grown-up mode", g.art.Small, screenW/2, screenH-18, rgba(200, 204, 210, 120))
+		return
+	}
 	j := g.jobs.Current
 	panel(screen, 16, 16, 360, 96, hudPanel)
 	g.drawText(screen, "CURRENT JOB", g.art.Bold, 28, 24, hudAccent)
@@ -71,6 +78,10 @@ func (g *Game) drawGlobalHUD(screen *ebiten.Image) {
 
 // drawPlayerHUD draws one player's status, prompts and help into their view.
 func (g *Game) drawPlayerHUD(dst *ebiten.Image, p *Player, vw, vh float64) {
+	if g.toddler && p.td != nil {
+		g.drawToddlerHUD(dst, p, vw, vh)
+		return
+	}
 	k := &p.keys
 	if g.coop() {
 		label := fmt.Sprintf("PLAYER %d", p.ID)

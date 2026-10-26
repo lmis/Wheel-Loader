@@ -19,6 +19,15 @@ func (g *Game) handleInput() {
 	if inpTapped(ebiten.KeyF3) {
 		g.resetVehicles()
 	}
+	if inpTapped(ebiten.KeyF5) {
+		g.setToddler(!g.toddler)
+	}
+	if g.toddler {
+		for _, p := range g.players {
+			g.toddlerInput(p)
+		}
+		return
+	}
 	if inpTapped(ebiten.KeyF4) {
 		g.setCoop(!g.coop())
 	}

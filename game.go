@@ -49,6 +49,8 @@ type Game struct {
 	tour     []tourStop   // static landmark views for verification
 	script   []scriptStep // staged scenes for verification screenshots
 	scripted bool
+
+	toddler bool // simplified two-player mode (see toddler.go)
 }
 
 type tourStop struct {
@@ -208,6 +210,14 @@ func (g *Game) step(dt float64) {
 		} else {
 			v.Drive(nil)
 		}
+	}
+	if g.toddler {
+		for _, p := range g.players {
+			if l, ok := p.Driving.(*Loader); ok && p.td != nil {
+				g.toddlerAssist(p, l, dt)
+			}
+		}
+		g.toddlerTrucks(dt)
 	}
 	if g.auto != nil {
 		g.auto.Apply(g) // overrides the main loader's controls
