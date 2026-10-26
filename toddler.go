@@ -390,36 +390,11 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 
 // ---- toddler HUD ----
 
-// drawToddlerHUD: the player colour, a big load meter and the machine picker.
+// drawToddlerHUD: the player colour strip, the machine picker and the keys.
 func (g *Game) drawToddlerHUD(dst *ebiten.Image, p *Player, vw, vh float64) {
 	td := p.td
 	// player colour strip along the top
 	vector.DrawFilledRect(dst, 0, 0, float32(vw), 8, p.marker, false)
-
-	// load meter: how full the bucket or the truck is, in the material's
-	// colour
-	meter := func(frac float64, mat int, empty bool) {
-		bw, bh := vw*0.5, 30.0
-		bx, by := vw/2-bw/2, vh-bh-24
-		panel(dst, bx-8, by-8, bw+16, bh+16, hudPanel)
-		r, gg, b := matColor(mat)
-		if empty {
-			r, gg, b = 120, 120, 120
-		}
-		bar(dst, bx, by, bw, bh, frac, rgba(r, gg, b, 255), hudTrack)
-	}
-	switch v := p.Driving.(type) {
-	case *Loader:
-		meter(v.LoadFrac(), v.LoadType, v.Load < 1)
-	case *Truck:
-		mat, most := 0, 0.0
-		for m, a := range v.Contents {
-			if a > most {
-				mat, most = m, a
-			}
-		}
-		meter(v.Total()/v.Capacity, mat, most < 1)
-	}
 
 	// machine picker: three tiles with the key and a little picture, the
 	// current machine lit up
