@@ -43,7 +43,12 @@ func (g *Game) stageScenes(outDir, only string) {
 			driveCam(p1, 210, 0.7, 0.42)
 			driveCam(p2, 210, -0.7, 0.42)
 		}},
+		{name: "01c_owl_closeup", frames: 2, setup: func(g *Game) {
+			owl := g.animals[0]
+			g.tour = []tourStop{{frame: g.frame, pos: owl.Pos, zoom: 80, yaw: owl.Yaw + 0.5, pitch: 0.25, look: owl.Y + 12, shot: filepath.Join(outDir, "01c_owl_closeup.png")}}
+		}},
 		{name: "02_scooping", frames: 60, setup: func(g *Game) {
+			g.tour = nil
 			for _, p := range g.players {
 				driveCam(p, p.Driving.CamDist(), 0, 0.6)
 			}
@@ -130,12 +135,20 @@ func (g *Game) stageScenes(outDir, only string) {
 			sk := &g.wonder.skater
 			sk.s = 1500
 			at, _ := loopAt(sk.s + 22)
-			g.tour = []tourStop{{frame: g.frame, pos: at.Add(V(22, 0)), zoom: 75, yaw: 0.9, pitch: 0.22, look: 18, shot: filepath.Join(outDir, "07d_rollerblader_closeup.png")}}
+			g.tour = []tourStop{{frame: g.frame, pos: at.Add(V(22, 0)), zoom: 48, yaw: 0.7, pitch: 0.15, look: 22, shot: filepath.Join(outDir, "07d_rollerblader_closeup.png")}}
 		}},
 		{name: "07e_helicopter_closeup", frames: 2, setup: func(g *Game) {
 			g.wonder.heli.t = 9
 			pos, _, _ := g.wonder.heli.Pos()
 			g.tour = []tourStop{{frame: g.frame, pos: pos.Add(V(20, -16)), zoom: 330, yaw: 2.2, pitch: 0.2, look: heliAlt, shot: filepath.Join(outDir, "07e_helicopter_closeup.png")}}
+		}},
+		{name: "07f_owl_flying", frames: 8, setup: func(g *Game) {
+			g.putOnFoot(p1, V(1380, 1480), -math.Pi/2)
+			owl := g.animals[0]
+			owl.ride, owl.hopping, owl.flying, owl.Y = nil, false, true, 28
+			owl.Pos, owl.Yaw = owl.followPoint(), -math.Pi/2
+			at := owl.Pos
+			g.tour = []tourStop{{frame: g.frame + 6, pos: at, zoom: 110, yaw: -math.Pi/2 + 0.25, pitch: 0.5, look: 40, shot: filepath.Join(outDir, "07f_owl_flying.png")}}
 		}},
 		{name: "07_kid_portrait", frames: 20, setup: func(g *Game) {
 			g.tour = nil

@@ -359,62 +359,154 @@ func (a *Animal) renderChimp(s *Scene) {
 	})
 }
 
+// renderOwl draws a snowy owl: one soft egg shape from feathered feet to
+// a round head, a flat facial disc with big yellow eyes, folded wings
+// wrapping the sides, and dark bars on the back and wings. In flight it
+// leans forward on broad wings. It looks happy: raised brows, smiling eyes
+// and rosy cheeks.
 func (a *Animal) renderOwl(s *Scene) {
-	at0, fw, lat := a.frame()
-	at := func(x, z, y float64) Vec3 { return at0(x, z, y-12) } // feet at a.Y
+	at, fw, lat := a.frame()
 	up := Vec3{0, 1, 0}
-	white := rgba(246, 246, 242, 255)
-	speck := rgba(52, 50, 46, 255)
+	white := rgba(248, 248, 244, 255)
+	cream := rgba(236, 234, 226, 255) // wings, a touch darker than the body
+	bar := rgba(70, 66, 60, 255)
+	flying := a.flying
+	lifting := !flying && (a.hopping || a.bounce > 0)
+
+	mark := len(s.tris)
+	// feathered feet with dark talons
 	for _, z := range []float64{-1, 1} {
-		s.addEllipsoid(at(0.7, z, 12.4), fw, up, 1.0, 0.4, 0.7, rgba(80, 80, 82, 255)) // talons
-	}
-	// plump, round body
-	const bx, by, bz = 3.2, 3.9, 3.3
-	bc := at(0, 0, 16.2)
-	s.addEllipsoid(bc, fw, up, bx, by, bz, white)
-	// wings: folded and speckled, or spread and flapping in flight
-	for _, z := range []float64{-1, 1} {
-		if a.flying || a.hopping || a.bounce > 0 {
-			flap := math.Sin(a.t*9) * 0.6
-			span := lat.Scale(z * math.Cos(flap)).Add(up.Scale(math.Sin(flap)))
-			root := at(-0.4, z*2.8, 16.6)
-			s.addEllipsoid(root.Add(span.Scale(5.5)), span, fw, 5.8, 2.9, 0.45, shadeC(white, 0.95))
-			continue
+		foot := at(0.9, z*1.1, 0.55)
+		s.addEllipsoid(foot, fw, up, 1.1, 0.6, 0.8, white)
+		for _, t := range []float64{-0.45, 0, 0.45} {
+			s.addEllipsoid(foot.Add(fw.Scale(1.0)).Add(lat.Scale(t)).Add(up.Scale(-0.35)), fw, up, 0.3, 0.15, 0.12, bar)
 		}
-		s.addEllipsoid(at(-0.6, z*2.9, 15.8), fw.Scale(0.9).Add(up.Scale(-0.4)), up, 3.1, 2.4, 0.75, shadeC(white, 0.95))
 	}
+	// body: a plump egg, a ruff blending into the head, and a short tail
+	const bx, by, bz = 3.3, 4.2, 3.5
+	bc := at(0, 0, 4.7)
+	s.addEllipsoid(bc, fw, up, bx, by, bz, white)
+	s.addEllipsoid(at(0.25, 0, 7.7), fw, up, 3.0, 2.1, 3.3, white)
+	s.addEllipsoid(at(-2.9, 0, 2.2), fw.Scale(-1).Add(up.Scale(-0.5)), up, 1.8, 0.5, 1.4, cream)
+	// wings: folded along the sides, half lifted for a hop, spread to fly
+	for _, z := range []float64{-1, 1} {
+		side := lat.Scale(z)
+		shoulder := at(0.3, z*2.9, 7.3)
+		switch {
+		case flying:
+			flap := math.Sin(a.t*9) * 0.55
+			span := side.Scale(math.Cos(flap)).Add(up.Scale(math.Sin(flap)))
+			// broad wings, about two and a half times the owl's height across
+			owlWing(s, shoulder.Add(span.Scale(1.2)), span, fw, cream, bar)
+		default:
+			tip := at(-2.8, z*1.6, 1.7)
+			if lifting {
+				tip = at(-1.9, z*5.2, 3.2)
+			}
+			d := tip.Sub(shoulder)
+			mid := shoulder.Add(d.Scale(0.5)).Add(side.Scale(0.45))
+			s.addEllipsoid(mid, d, side, d.Len()/2+0.6, 0.85, 2.5, cream)
+			s.detail(func() {
+				for k := 0; k < 5; k++ {
+					p := shoulder.Add(d.Scale(0.25 + float64(k)*0.15)).Add(side.Scale(1.3))
+					s.addSpot(p, side.Add(fw.Scale(-0.3)), 0.75, 0.3, bar)
+				}
+			})
+		}
+	}
+	// a few bars across the back and sides
 	s.detail(func() {
-		for i := 0; i < 16; i++ {
-			ang := 1.2 + float64(i)*0.55
-			dy := -2.6 + float64(i%4)*1.3
-			sc := math.Sqrt(1 - (dy/by)*(dy/by))
-			p := bc.Add(fw.Scale(math.Cos(ang) * bx * sc)).Add(lat.Scale(math.Sin(ang) * bz * sc)).Add(up.Scale(dy))
-			s.addOBB2(p, fw, up, 0.22, 0.2, 0.45, speck)
+		for i := 0; i < 9; i++ {
+			th := math.Pi*0.62 + float64(i%3)*math.Pi*0.38
+			ph := -0.35 + float64(i/3)*0.4
+			p, n := ellPoint(bc, fw, up, lat, bx, by, bz, th, ph)
+			s.addSpot(p, n, 0.8, 0.28, bar)
 		}
 	})
-	// round head that swivels a long way, with a facial disc and big yellow eyes
+	// in flight the body leans forward, level with the ground
+	head := at(0.2, 0, 9.7)
+	if flying {
+		axis := up.Cross(fw)
+		s.rotateSince(mark, bc, axis, 1.05)
+		head = bc.Add(fw.Scale(4.4)).Add(up.Scale(1.3)) // at the front, looking ahead
+	}
+
+	// round head that swivels a long way
 	hy := a.Yaw + a.headYaw
 	hf := rotY(Vec3{1, 0, 0}, hy)
 	hl := rotY(Vec3{0, 0, 1}, hy)
-	hc := at(0, 0, 21.4)
-	s.addEllipsoid(hc, hf, up, 2.9, 2.5, 3.0, white)
+	s.addEllipsoid(head, hf, up, 2.9, 2.5, 3.1, white)
 	s.detail(func() {
-		disc := hc.Add(hf.Scale(2.45)).Add(up.Scale(-0.3))
-		s.addEllipsoid(disc, hf, up, 0.4, 1.95, 2.35, rgba(252, 252, 250, 255))
-		for _, z := range []float64{-1.1, 1.1} {
-			e := disc.Add(hf.Scale(0.3)).Add(hl.Scale(z)).Add(up.Scale(0.45))
+		disc := head.Add(hf.Scale(2.3)).Add(up.Scale(-0.2))
+		s.addEllipsoid(disc, hf, up, 0.55, 1.95, 2.4, rgba(255, 255, 252, 255))
+		for _, z := range []float64{-1, 1} {
+			e := disc.Add(hf.Scale(0.32)).Add(hl.Scale(z * 1.05)).Add(up.Scale(0.35))
+			// raised brows and smiling eyes: the lower lids push up into a
+			// happy squint
+			s.addEllipsoid(e.Add(up.Scale(1.05)).Add(hl.Scale(z*0.15)), hf, up.Add(hl.Scale(z*0.3)), 0.45, 0.3, 0.9, white)
+			s.addEllipsoid(e.Add(hf.Scale(-0.06)), hf, up, 0.25, 0.92, 0.92, rgba(40, 36, 30, 255)) // dark rim
 			if a.blink > 0 {
-				s.addEllipsoid(e, hf, up, 0.2, 0.14, 0.72, rgba(210, 210, 206, 255))
+				s.addEllipsoid(e.Add(hf.Scale(0.05)), hf, up, 0.25, 0.88, 0.88, white) // eyelid
 				continue
 			}
-			s.addEllipsoid(e, hf, up, 0.3, 0.72, 0.72, rgba(250, 200, 24, 255))
-			s.addSphere(e.Add(hf.Scale(0.22)), 0.36, rgba(14, 12, 10, 255))
+			s.addEllipsoid(e, hf, up, 0.32, 0.8, 0.8, rgba(250, 202, 24, 255))
+			s.addSphere(e.Add(hf.Scale(0.22)).Add(up.Scale(0.1)), 0.5, rgba(14, 12, 10, 255))
+			s.glowing(func() {
+				s.addSphere(e.Add(hf.Scale(0.62)).Add(up.Scale(0.35)).Add(hl.Scale(0.18)), 0.17, rgba(255, 255, 255, 255))
+			})
+			s.addEllipsoid(e.Add(hf.Scale(0.2)).Add(up.Scale(-0.72)), hf, up.Add(hl.Scale(-z*0.15)), 0.4, 0.48, 1.0, rgba(255, 255, 252, 255))
+			// rosy cheeks
+			s.addSpot(e.Add(hf.Scale(0.1)).Add(up.Scale(-1.1)).Add(hl.Scale(z*0.55)), hf, 0.55, 0.32, rgba(255, 168, 176, 255))
 		}
-		s.addEllipsoid(disc.Add(hf.Scale(0.45)).Add(up.Scale(-0.6)), hf, up, 0.45, 0.6, 0.32, rgba(40, 38, 36, 255)) // beak
-		for i := 0; i < 5; i++ {
-			ang := 2.2 + float64(i)*0.45
-			p := hc.Add(hf.Scale(math.Cos(ang) * 2.8)).Add(hl.Scale(math.Sin(ang) * 2.9)).Add(up.Scale(0.9))
-			s.addOBB2(p, hf, up, 0.2, 0.18, 0.4, speck)
+		s.addEllipsoid(disc.Add(hf.Scale(0.5)).Add(up.Scale(-0.6)), hf.Add(up.Scale(-0.6)), up, 0.45, 0.5, 0.28, rgba(46, 44, 42, 255)) // beak
+		// fine flecks on the crown
+		for i := 0; i < 4; i++ {
+			p, n := ellPoint(head, hf, up, hl, 2.9, 2.5, 3.1, math.Pi*0.8+float64(i)*0.3, 0.75)
+			s.addSpot(p, n, 0.35, 0.2, bar)
+		}
+	})
+}
+
+// owlWing adds a spread wing from root along span: a thin, tapering slab
+// with a straight leading edge, a scalloped trailing edge of flight feathers
+// and dark bars across them.
+func owlWing(s *Scene, root, span, fwd Vec3, col, bar color.RGBA) {
+	span = span.Norm()
+	chord := fwd.Sub(span.Scale(fwd.Dot(span))).Norm() // toward the leading edge
+	n := chord.Cross(span).Norm()
+	if n.Y < 0 {
+		n = n.Scale(-1)
+	}
+	// (along the span, across it) for matching leading and trailing points
+	lead := [][2]float64{{0, 1.7}, {2.2, 2.0}, {4.4, 2.0}, {6.6, 1.8}, {8.8, 1.4}, {11, 0.9}, {12.8, 0.3}, {14, -0.4}}
+	trail := [][2]float64{{0, -2.7}, {2.2, -3.2}, {4.4, -2.7}, {6.6, -3.3}, {8.8, -2.6}, {11, -2.8}, {12.8, -1.7}, {14, -0.9}}
+	pt := func(q [2]float64, side float64) Vec3 {
+		t := 0.42 * (1 - q[0]/16) // thinner toward the tip
+		return root.Add(span.Scale(q[0])).Add(chord.Scale(q[1])).Add(n.Scale(side * t))
+	}
+	nn := func(v Vec3) [3]Vec3 { return [3]Vec3{v, v, v} }
+	for i := 0; i+1 < len(lead); i++ {
+		for _, side := range []float64{1, -1} {
+			a, b := pt(lead[i], side), pt(lead[i+1], side)
+			c, d := pt(trail[i+1], side), pt(trail[i], side)
+			s.smoothTri([3]Vec3{a, b, c}, nn(n.Scale(side)), col)
+			s.smoothTri([3]Vec3{a, c, d}, nn(n.Scale(side)), col)
+		}
+		// leading and trailing edges
+		for _, e := range []struct {
+			p   [][2]float64
+			out Vec3
+		}{{lead, chord}, {trail, chord.Scale(-1)}} {
+			a, b := pt(e.p[i], 1), pt(e.p[i+1], 1)
+			c, d := pt(e.p[i+1], -1), pt(e.p[i], -1)
+			s.smoothTri([3]Vec3{a, b, c}, nn(e.out), col)
+			s.smoothTri([3]Vec3{a, c, d}, nn(e.out), col)
+		}
+	}
+	s.detail(func() {
+		for i := 2; i+1 < len(trail); i++ {
+			q := [2]float64{(trail[i][0] + trail[i+1][0]) / 2, (trail[i][1]+trail[i+1][1])/2 + 0.9}
+			s.addSpot(pt(q, 1), n, 0.32, 0.75, bar)
 		}
 	})
 }

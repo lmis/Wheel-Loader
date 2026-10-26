@@ -197,3 +197,49 @@ func (s *Scene) addRoundPrism(origin Vec3, yaw float64, rings []ring, col color.
 		cap(pts[len(pts)-1], 1)
 	}
 }
+
+// ellPoint is the point at azimuth th (from fwd toward the side) and
+// elevation ph on an ellipsoid, with its outward normal.
+func ellPoint(c, f, u, r Vec3, rf, ru, rs, th, ph float64) (Vec3, Vec3) {
+	cp, sp := math.Cos(ph), math.Sin(ph)
+	ct, st := math.Cos(th), math.Sin(th)
+	p := c.Add(f.Scale(rf * cp * ct)).Add(r.Scale(rs * cp * st)).Add(u.Scale(ru * sp))
+	n := f.Scale(cp * ct / rf).Add(r.Scale(cp * st / rs)).Add(u.Scale(sp / ru)).Norm()
+	return p, n
+}
+
+// addSpot adds a small flat oval marking lying on a surface with normal n,
+// stretched ra along the horizontal and rb across it.
+func (s *Scene) addSpot(c, n Vec3, ra, rb float64, col color.RGBA) {
+	n = n.Norm()
+	a := Vec3{0, 1, 0}.Cross(n)
+	if a.Len() < 1e-3 {
+		a = Vec3{1, 0, 0}
+	}
+	a = a.Norm()
+	b := n.Cross(a)
+	c = c.Add(n.Scale(0.05))
+	const k = 6
+	nn := [3]Vec3{n, n, n}
+	for i := 0; i < k; i++ {
+		t0, t1 := 2*math.Pi*float64(i)/k, 2*math.Pi*float64(i+1)/k
+		p0 := c.Add(a.Scale(ra * math.Cos(t0))).Add(b.Scale(rb * math.Sin(t0)))
+		p1 := c.Add(a.Scale(ra * math.Cos(t1))).Add(b.Scale(rb * math.Sin(t1)))
+		s.smoothTri([3]Vec3{c, p0, p1}, nn, col)
+	}
+}
+
+// rotateSince turns the triangles added since mark (a len(s.tris) taken
+// earlier) by ang about the axis through about.
+func (s *Scene) rotateSince(mark int, about, axis Vec3, ang float64) {
+	k := axis.Norm()
+	for i := mark; i < len(s.tris); i++ {
+		t := &s.tris[i]
+		for j := range t.p {
+			t.p[j] = about.Add(rotAbout(t.p[j].Sub(about), k, ang))
+			if t.n[j] != (Vec3{}) {
+				t.n[j] = rotAbout(t.n[j], k, ang)
+			}
+		}
+	}
+}
