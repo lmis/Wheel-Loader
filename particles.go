@@ -99,15 +99,18 @@ func (w *World) spawnDriveDust(at Vec, heading, intensity float64) {
 	})
 }
 
-// spawnExhaust puffs engine smoke from the stack.
-func (w *World) spawnExhaust(at Vec, rpm float64) {
+// spawnExhaust puffs engine smoke from the loader's stack.
+func (w *World) spawnExhaust(at Vec, rpm float64) { w.spawnExhaustAt(at, 60, rpm) }
+
+// spawnExhaustAt puffs engine smoke from a stack whose top is at height z.
+func (w *World) spawnExhaustAt(at Vec, z, rpm float64) {
 	if w.rng.Float64() > rpm*0.5+0.05 {
 		return
 	}
 	w.addParticle(Particle{
 		Pos:   at.Add(V((w.rng.Float64()-0.5)*4, (w.rng.Float64()-0.5)*4)),
 		Vel:   V((w.rng.Float64()-0.5)*8, (w.rng.Float64()-0.5)*8),
-		Z:     60,
+		Z:     z,
 		VZ:    18 + w.rng.Float64()*12,
 		Life:  0.9 + w.rng.Float64()*0.8,
 		Size:  5 + w.rng.Float64()*4,

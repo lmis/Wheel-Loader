@@ -381,6 +381,50 @@ func (s *Scene) addCone(c Vec3, r0, r1, h float64, sides int, col color.RGBA) {
 	}
 }
 
+// addTube adds a hollow cylinder along axis: smooth outside, ring ends and a
+// darker bore (concrete pipes, drums).
+func (s *Scene) addTube(center, axis Vec3, radius, length float64, sides int, col, bore color.RGBA) {
+	a := axis.Norm()
+	ref := Vec3{0, 1, 0}
+	if math.Abs(a.Dot(ref)) > 0.9 {
+		ref = Vec3{1, 0, 0}
+	}
+	u := a.Cross(ref).Norm()
+	v := a.Cross(u)
+	half := a.Scale(length / 2)
+	c0, c1 := center.Sub(half), center.Add(half)
+	cols := [3]color.RGBA{col, col, col}
+	for i := 0; i < sides; i++ {
+		a0 := 2 * math.Pi * float64(i) / float64(sides)
+		a1 := 2 * math.Pi * float64(i+1) / float64(sides)
+		d0 := u.Scale(math.Cos(a0)).Add(v.Scale(math.Sin(a0)))
+		d1 := u.Scale(math.Cos(a1)).Add(v.Scale(math.Sin(a1)))
+		p00, p01 := c0.Add(d0.Scale(radius)), c1.Add(d0.Scale(radius))
+		p10, p11 := c0.Add(d1.Scale(radius)), c1.Add(d1.Scale(radius))
+		t1 := [3]Vec3{p00, p11, p01}
+		t2 := [3]Vec3{p00, p10, p11}
+		n1 := [3]Vec3{d0, d1, d0}
+		n2 := [3]Vec3{d0, d1, d1}
+		if t1[1].Sub(t1[0]).Cross(t1[2].Sub(t1[0])).Dot(d0.Add(d1)) < 0 {
+			t1[1], t1[2], n1[1], n1[2] = t1[2], t1[1], n1[2], n1[1]
+			t2[1], t2[2], n2[1], n2[2] = t2[2], t2[1], n2[2], n2[1]
+		}
+		s.addTriV(t1, cols, n1, true)
+		s.addTriV(t2, cols, n2, true)
+		for _, end := range []struct {
+			c   Vec3
+			out Vec3
+		}{{c0, a.Scale(-1)}, {c1, a}} {
+			o0, o1 := end.c.Add(d0.Scale(radius)), end.c.Add(d1.Scale(radius))
+			i0, i1 := end.c.Add(d0.Scale(radius*0.78)), end.c.Add(d1.Scale(radius*0.78))
+			s.addFaceOutward([]Vec3{o0, o1, i1, i0}, end.c.Sub(end.out), shadeC(col, 0.92))
+			// the bore: a dark disc set slightly back into the pipe
+			dc := end.c.Sub(end.out.Scale(1.5))
+			s.addFaceOutward([]Vec3{dc, dc.Add(d0.Scale(radius * 0.78)), dc.Add(d1.Scale(radius * 0.78))}, end.c.Sub(end.out.Scale(10)), bore)
+		}
+	}
+}
+
 // addWheel adds a tyre lying on its side: smooth tread, rim, hub and tread
 // lugs. yaw is the rolling direction; spin rotates the lugs with travel.
 func (s *Scene) addWheel(center Vec3, radius, width, yaw, spin float64, tire, rim color.RGBA) {
@@ -428,6 +472,26 @@ func (s *Scene) addWheel(center Vec3, radius, width, yaw, spin float64, tire, ri
 		lc := center.Add(d.Scale(radius + 1.2))
 		s.addOBB2(lc, axle, d, width*0.42, 1.4, 2.6, shadeC(tire, 1.15))
 	}
+}
+
+// addSteeringWheel adds a ring-shaped wheel facing the driver: yaw is the
+// vehicle heading, tilted back so the rim leans toward the seat.
+func (s *Scene) addSteeringWheel(center Vec3, yaw, radius float64, col color.RGBA) {
+	axis := rotY(Vec3{-0.85, 0.55, 0}, yaw).Norm()
+	a := rotY(Vec3{0, 0, 1}, yaw)
+	b := axis.Cross(a).Norm()
+	const n = 10
+	pt := func(i int) Vec3 {
+		t := 2 * math.Pi * float64(i) / n
+		return center.Add(a.Scale(math.Cos(t) * radius)).Add(b.Scale(math.Sin(t) * radius))
+	}
+	for i := 0; i < n; i++ {
+		p0, p1 := pt(i), pt(i+1)
+		d := p1.Sub(p0)
+		s.addOBB2(p0.Add(d.Scale(0.5)), d, axis, d.Len()/2+0.2, 0.45, 0.45, col)
+	}
+	s.addOBB2(center, a, axis, radius, 0.3, 0.35, col) // spoke
+	s.addOBB2(center.Sub(axis.Scale(1.5)), axis, b, 1.5, 0.5, 0.5, col)
 }
 
 func (s *Scene) addBillboard(center Vec3, size float64, col color.RGBA) {

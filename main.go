@@ -18,6 +18,8 @@ func main() {
 	demo := flag.Bool("demo", false, "run the autopilot (hands-free demo)")
 	shotDir := flag.String("shots", "", "run headless autopilot and save screenshots to this dir, then exit")
 	dumpShot := flag.String("dumpshot", "", "render a loaded loader dumping into a truck to this dir, then exit")
+	scenesDir := flag.String("scenes", "", "stage and capture a screenshot of every feature to this dir, then exit")
+	coop := flag.Bool("coop", false, "start in two-player split screen")
 	tourDir := flag.String("tour", "", "render static views of site landmarks to this dir, then exit")
 	frames := flag.Int("frames", 0, "exit after this many frames (0 = run forever)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile to this file")
@@ -53,6 +55,15 @@ func main() {
 		}
 		g.auto = NewAutopilot()
 		g.shotPlan(*shotDir)
+	}
+	if *coop {
+		g.setCoop(true)
+	}
+	if *scenesDir != "" {
+		if err := os.MkdirAll(*scenesDir, 0o755); err != nil {
+			log.Fatal(err)
+		}
+		g.stageScenes(*scenesDir)
 	}
 	if *dumpShot != "" {
 		if err := os.MkdirAll(*dumpShot, 0o755); err != nil {

@@ -5,12 +5,41 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func rgba(r, g, b, a uint8) color.RGBA { return color.RGBA{r, g, b, a} }
 
-// render builds the whole 3D scene for this frame and draws it, then the HUD.
+// render draws each player's view (full screen, or side by side in co-op),
+// their HUDs, then the shared overlay.
 func (g *Game) render(screen *ebiten.Image) {
+	if !g.coop() {
+		p := g.players[0]
+		g.renderView(screen, p)
+		g.drawPlayerHUD(screen, p, screenW, screenH)
+	} else {
+		vw := screenW / 2
+		for i, p := range g.players {
+			if p.view == nil {
+				p.view = ebiten.NewImage(vw, screenH)
+			}
+			g.renderView(p.view, p)
+			g.drawPlayerHUD(p.view, p, float64(vw), screenH)
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(float64(i*vw), 0)
+			screen.DrawImage(p.view, op)
+		}
+		vector.DrawFilledRect(screen, float32(vw)-2, 0, 4, screenH, rgba(18, 20, 24, 255), false)
+	}
+	g.drawGlobalHUD(screen)
+	g.cam = g.players[0].cam
+}
+
+// renderView builds the 3D scene from one player's camera and draws it.
+func (g *Game) renderView(dst *ebiten.Image, p *Player) {
+	g.cam = p.cam
+	b := dst.Bounds()
+	g.cam.ScreenW, g.cam.ScreenH = float64(b.Dx()), float64(b.Dy())
 	g.cam.setup()
 	s := &g.scene
 	s.reset()
@@ -20,13 +49,28 @@ func (g *Game) render(screen *ebiten.Image) {
 	g.buildMaterial3D(s)
 	g.buildShadows(s)
 	g.buildProps3D(s)
-	g.buildTrucks3D(s)
-	g.buildLoader3D(s, g.loader, true)
+	for _, c := range g.world.Cargo {
+		c.Render(g, s)
+	}
+	for _, v := range g.vehicles {
+		v.Render(g, s, p.fp && p.Driving == v)
+	}
+	for _, q := range g.players {
+		if q.Driving != nil || (q == p && p.fp) {
+			continue
+		}
+		q.W.marker = rgba(0, 0, 0, 0)
+		if g.coop() {
+			q.W.marker = q.marker
+		}
+		q.W.Render(g, s)
+	}
+	for _, a := range g.animals {
+		a.Render(g, s)
+	}
 	g.buildParticles3D(s)
 
-	s.Flush(screen, g.cam, g.ground, g.skirt, g.atlas, g.art.white)
-
-	g.drawHUD(screen)
+	s.Flush(dst, g.cam, g.ground, g.skirt, g.atlas, g.art.white)
 }
 
 // ---- ground ----
@@ -226,36 +270,30 @@ func (g *Game) buildMaterial3D(s *Scene) {
 
 // ---- shadows (flat dark quads on the ground) ----
 
-func (g *Game) buildShadows(s *Scene) {
-	sh := rgba(18, 22, 20, 80)
-	off := V(12, 16) // cast offset away from the light
-	quad := func(center Vec, w, h, ang float64) {
-		cc := center.Add(off)
-		if !g.cam.inView(ground(cc, 0), math.Max(w, h)) {
-			return
-		}
-		c := dir(ang)
-		p := dir(ang + math.Pi/2)
-		a := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(-h/2)), 0.4)
-		b := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(-h/2)), 0.4)
-		d := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(h/2)), 0.4)
-		e := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(h/2)), 0.4)
-		s.addDecalQuad(a, b, d, e, sh)
+// shadow adds a soft rectangular ground shadow, offset away from the sun.
+func (g *Game) shadow(s *Scene, center Vec, w, h, ang float64) {
+	cc := center.Add(V(12, 16))
+	if !g.cam.inView(ground(cc, 0), math.Max(w, h)) {
+		return
 	}
+	c := dir(ang)
+	p := dir(ang + math.Pi/2)
+	a := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(-h/2)), 0.4)
+	b := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(-h/2)), 0.4)
+	d := ground(cc.Add(c.Scale(w/2)).Add(p.Scale(h/2)), 0.4)
+	e := ground(cc.Add(c.Scale(-w/2)).Add(p.Scale(h/2)), 0.4)
+	s.addDecalQuad(a, b, d, e, rgba(18, 22, 20, 80))
+}
+
+// buildShadows adds shadows for static props; moving things add their own.
+func (g *Game) buildShadows(s *Scene) {
 	for i := range g.world.Props {
 		p := &g.world.Props[i]
 		if p.Kind == propSign || (p.Kind == propModel && p.Tag == "tree") {
 			continue
 		}
-		quad(p.Rect.Center, p.Rect.W+8, p.Rect.H+8, p.Rect.Angle)
+		g.shadow(s, p.Rect.Center, p.Rect.W+8, p.Rect.H+8, p.Rect.Angle)
 	}
-	for _, t := range g.world.Trucks {
-		quad(t.Pos, 118, 74, t.Angle)
-	}
-	l := g.loader
-	quad(l.RearAxle().Sub(dir(l.RearHeading()).Scale(6)), rearLen+34, bodyWidth+16, l.RearHeading())
-	quad(l.FrontAxle(), frontLen+18, bodyWidth+16, l.FrontHeading())
-	quad(l.BucketPivot().Add(dir(l.FrontHeading()).Scale(16)), 34, bodyWidth+28, l.FrontHeading())
 }
 
 // ---- props ----
@@ -358,120 +396,6 @@ func (g *Game) buildProps3D(s *Scene) {
 		case propSign:
 			s.addBox(ground(rc.Center, 17), 1.5, 17, 1.5, 0, colSteel)
 			s.addOBB2(ground(rc.Center, 36), Vec3{0, 0, 1}, Vec3{1, 1, 0}, 2, rc.W*0.42, rc.W*0.42, rgba(250, 206, 40, 255))
-		case propExcavator:
-			g.buildExcavator3D(s, p)
-		case propParkedLoader:
-			parked := Loader{Joint: rc.Center, Heading: rc.Angle, Artic: 0.22, Lift: 0.02, Tilt: 0.5}
-			g.buildLoader3D(s, &parked, false)
-		}
-	}
-}
-
-func (g *Game) buildExcavator3D(s *Scene, p *Prop) {
-	rc := p.Rect
-	c := rgba(p.Color[0], p.Color[1], p.Color[2], 255)
-	side := dir(rc.Angle + math.Pi/2)
-	// crawler tracks with rounded ends
-	for _, sgn := range []float64{-1, 1} {
-		tc := rc.Center.Add(side.Scale(sgn * rc.H * 0.34))
-		s.addPrism(ground(tc, 0), rc.Angle, []ring{
-			{-rc.W/2 + 10, rc.W/2 - 10, rc.H * 0.15, 0, 2},
-			{-rc.W / 2, rc.W / 2, rc.H * 0.15, 9, 2},
-			{-rc.W/2 + 4, rc.W/2 - 4, rc.H * 0.15, 18, 2},
-		}, colDark)
-	}
-	// slewing upper structure: house with counterweight and cab
-	ha := rc.Angle + 0.35
-	o := ground(rc.Center, 20)
-	s.addPrism(o, ha, []ring{
-		{-rc.W * 0.34, rc.W * 0.26, rc.H * 0.38, 0, 6},
-		{-rc.W * 0.34, rc.W * 0.26, rc.H * 0.38, 18, 8},
-		{-rc.W * 0.3, rc.W * 0.22, rc.H * 0.33, 24, 10},
-	}, c)
-	cab := o.Add(rotY(Vec3{rc.W * 0.12, 0, -rc.H * 0.2}, ha))
-	s.addPrism(cab, ha, []ring{{-12, 12, 11, 24, 2}, {-12, 12, 11, 30, 2}}, shadeC(c, 0.9))
-	s.addPrism(cab, ha, []ring{{-11, 11, 10, 30, 2}, {-10, 9, 9, 46, 2}}, colGlass)
-	s.addPrism(cab, ha, []ring{{-12, 11, 11, 46, 3}, {-12, 11, 11, 49, 3}}, shadeC(c, 0.9))
-	// boom -> dipper -> bucket
-	f := rotY(Vec3{1, 0, 0}, ha)
-	base := o.Add(f.Scale(rc.W * 0.24)).Add(Vec3{0, 18, 0}).Add(rotY(Vec3{0, 0, 8}, ha))
-	elbow := base.Add(f.Scale(50)).Add(Vec3{0, 30, 0})
-	wrist := elbow.Add(f.Scale(38)).Add(Vec3{0, -48, 0})
-	beam := func(a, b Vec3, hh, hw float64, col color.RGBA) {
-		s.addOBB(a.Add(b.Sub(a).Scale(0.5)), b.Sub(a), b.Sub(a).Len()/2+hh*0.6, hh, hw, col)
-	}
-	beam(base, elbow, 7, 6, c)
-	beam(elbow, wrist, 5, 5, shadeC(c, 0.9))
-	beam(base.Add(Vec3{0, -6, 0}).Add(f.Scale(8)), elbow.Sub(f.Scale(18)), 2.5, 2.5, colChrom)
-	s.addOBB2(wrist.Add(f.Scale(6)), f, Vec3{0, 1, 0}, 9, 9, 14, colSteel)
-}
-
-// ---- trucks ----
-
-func (g *Game) buildTrucks3D(s *Scene) {
-	for _, t := range g.world.Trucks {
-		if !g.cam.inView(ground(t.Pos, 30), 90) {
-			continue
-		}
-		ang := t.Angle
-		fwd := dir(ang)
-		side := dir(ang + math.Pi/2)
-		at := func(x, z, y float64) Vec3 { return ground(t.Pos.Add(fwd.Scale(x)).Add(side.Scale(z)), y) }
-		body := rgba(222, 140, 32, 255)
-
-		for _, x := range []float64{36, -24, -46} {
-			for _, z := range []float64{-27, 27} {
-				s.addWheel(at(x, z, 15), 15, 12, ang, 0, colTire, colSteel)
-			}
-		}
-		// chassis rails + fuel tank
-		s.addBox(at(-4, 0, 19), 52, 5, 18, ang, colDark)
-		s.addCylinder(at(14, -22, 22), 6, 12, 10, colSteel)
-		// cab: lower body, glass band, roof
-		s.addPrismCaps(at(0, 0, 0), ang, []ring{{26, 56, 30, 22, 3}, {26, 56, 30, 38, 3}}, body, true, false)
-		s.addPrismCaps(at(0, 0, 0), ang, []ring{{26, 56, 30, 38, 3}, {28, 51, 28, 51, 3}}, colGlass, false, false)
-		s.addPrism(at(0, 0, 0), ang, []ring{{27, 52, 29.5, 51, 4}, {28, 50, 29, 55, 6}}, body)
-		s.detail(func() {
-			s.addBox(at(57.5, 0, 22), 2.5, 6, 30, ang, colDark)
-			for _, z := range []float64{-22, 22} {
-				s.addBox(at(56.8, z, 30), 0.8, 3, 4, ang, rgba(255, 246, 210, 255))
-			}
-		})
-		s.addCylinder(at(31, 32.5, 50), 2.2, 30, 8, colDark) // exhaust beside the cab
-		// dump body: floor, tapered side walls, headboard + canopy, tailgate
-		bed := t.bedRect()
-		bc := bed.Center.Sub(t.Pos).Rot(-ang)
-		bx0, bx1 := bc.X-bed.W/2, bc.X+bed.W/2
-		hw := bed.H / 2
-		s.addBox(at(bc.X, 0, 27), bed.W/2, 3, hw, ang, colSteel)
-		for _, sg := range []float64{-1, 1} {
-			s.addPrism(at(0, sg*(hw-1.5), 0), ang, []ring{{bx0, bx1, 1.8, 30, 0}, {bx0, bx1 + 1.5, 2.2, 54, 0}}, body)
-		}
-		// headboard stays clear of the cab (which starts at x=26), topped by a
-		// short cab-protector lip
-		// split at cab-roof height so neither half ties with the roof in the sort
-		s.addBox(at(bx1+0.5, 0, 41), 1.5, 14, hw, ang, body)
-		s.addBox(at(bx1+0.5, 0, 59), 1.5, 4, hw, ang, body)
-		s.addBox(at(bx1+2.5, 0, 64.5), 3.5, 1.5, hw, ang, shadeC(body, 0.9))
-		s.addBox(at(bx0-1.5, 0, 42), 2, 13, hw, ang, shadeC(body, 0.92))
-		s.detail(func() { s.addBox(at(bx0-3, 0, 14), 1, 8, hw+2, ang, colTire) }) // mud flaps
-		// contents heaped above the bed floor
-		if tot := t.Total(); tot > 1 {
-			frac := clamp(tot/t.Capacity, 0, 1)
-			dom, best := 0, 0.0
-			for ty := 1; ty < numMat; ty++ {
-				if t.Contents[ty] > best {
-					best, dom = t.Contents[ty], ty
-				}
-			}
-			r, gg, b := matColor(dom)
-			mc := rgba(r, gg, b, 255)
-			top := 30 + 6 + frac*22
-			s.addPrism(at(bc.X, 0, 0), ang, []ring{
-				{-bed.W/2 + 2, bed.W/2 - 2, hw - 3, 30, 4},
-				{-bed.W/2 + 4, bed.W/2 - 4, hw - 4, 30 + (top-30)*0.7, 8},
-				{-bed.W * 0.32, bed.W * 0.28, hw * 0.55, top, 10},
-			}, mc)
 		}
 	}
 }
@@ -483,21 +407,15 @@ const wheelR = 18.0
 // buildLoader3D builds an articulated wheel loader from the given simulated
 // state. The cab and engine sit on the rear frame (as on real loaders); the
 // front frame carries the lift arms, linkage and bucket.
-func (g *Game) buildLoader3D(s *Scene, l *Loader, live bool) {
+func (g *Game) buildLoader3D(s *Scene, l *Loader) {
 	if !g.cam.inView(ground(l.Joint, 40), 160) {
 		return
 	}
 	fh := l.FrontHeading()
 	rh := l.RearHeading()
 	J := l.Joint
-	bob := 0.0
-	if live {
-		bob = clamp(l.bounce*0.3, -3, 3)
-	}
-	yellow := rgba(240, 186, 24, 255)
-	if !live {
-		yellow = rgba(226, 150, 30, 255)
-	}
+	bob := clamp(l.bounce*0.3, -3, 3)
+	yellow := l.bodyColor()
 	yellowD := shadeC(yellow, 0.86)
 
 	rearO := ground(J, bob)
@@ -561,7 +479,7 @@ func (g *Game) buildLoader3D(s *Scene, l *Loader, live bool) {
 	})
 	s.addPrism(rearO, rh, []ring{{-27.5, -3.5, 16.5, 54, 3}, {-27, -4, 16, 58, 4}}, yellow)
 	beacon := rgba(140, 60, 20, 255)
-	if live && math.Sin(l.Beacon*2) > 0 {
+	if l.Occupied && math.Sin(l.Beacon*2) > 0 {
 		beacon = rgba(255, 150, 35, 255)
 		s.addBillboard(rAt(-15, 0, 63), 9, rgba(255, 150, 40, 70))
 	}

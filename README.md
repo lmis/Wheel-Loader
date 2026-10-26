@@ -39,34 +39,60 @@ go run .
 A window opens at 1280×720. You need a working OpenGL context (on a headless
 Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`).
 
+## The site
+
+You start in the cab of the wheel loader. Climb out and walk around as a kid
+site worker (orange hi-vis vest, yellow hard hat, blonde hair, brown eyes), and
+climb into any machine:
+
+| Machine | What it does |
+| --- | --- |
+| **Wheel loaders** (×2) | Articulated steering, independent arm lift and bucket tilt: scoop, carry, dump, push. |
+| **Dump trucks** (×3) | Car-like steering about the rear tandem; heavier when loaded. Raise the body and the load pours out the back as real material. They are the job delivery targets. |
+| **Excavator** | Tank-steered tracks, a slewing house with inertia, and a boom / stick / bucket that really digs from the heaps and loads trucks. |
+| **Tower crane** | Sit in the cab at the top of the mast: slew the jib, run the trolley, hoist a swinging hook, and lift brick pallets, steel beams, concrete pipes, crates and a container. Loads stack, and ride along on a truck bed. |
+| **Pickups** (×3) | Kenney models; quick runabouts. |
+
+A golden retriever, a Bernese mountain dog, a small chimp and a snowy owl (on
+its fence post) hang around the starting area. They look at you and get out
+of the way of moving machines.
+
+Every machine has a **first-person cab view** (`V`), and on foot you can look
+around in first person too.
+
 ## Controls
 
-| Action | Keys |
-| --- | --- |
-| Accelerate / reverse | `W` / `S` (or `↑` / `↓`) |
-| Brake | `Space` |
-| Articulated steer (bend left / right) | `A` / `D` (or `←` / `→`) |
-| Raise / lower loader arms | `R` / `F` |
-| Curl / dump bucket | `T` / `G` |
-| Zoom camera | mouse wheel or `+` / `-` |
-| Orbit camera | `Q` / `E` |
-| Tilt camera | `[` / `]` |
-| Help · Pause · Reset loader | `Tab` · `P` · `Backspace` |
+Two players share one keyboard: player 1 uses the left half, player 2 the
+right half (vim-style `HJKL`). Player 2 joins by pressing `N` (or `F4`), and
+the screen splits left / right.
 
-Press `Tab` in-game for the full control list.
+| Action | Player 1 | Player 2 |
+| --- | --- | --- |
+| Throttle / reverse (walk on foot) | `W` / `S` | `K` / `J` (or `↑` / `↓`) |
+| Steer (turn on foot) | `A` / `D` | `H` / `L` (or `←` / `→`) |
+| Brake (run on foot) | `Space` / `LShift` | `RShift` |
+| Implement 1: lift arms · dump body · boom · hoist | `R` / `F` | `I` / `,` |
+| Implement 2: bucket tilt · stick | `T` / `G` | `O` / `.` |
+| Implement 3: excavator bucket · crane hook on / off | `Z` / `X` | `P` / `;` |
+| Implement 4: excavator slew (strafe on foot) | `Q` / `E` | `Y` / `U` |
+| Get in / out | `C` | `N` |
+| Cab / first-person view | `V` | `M` |
+| Zoom | `1` / `2` (mouse wheel when solo) | `9` / `0` |
+
+Global keys: `F1` help (lists the current machine's controls, with your
+keys), `F2` pause, `F3` reset machines, `F4` co-op on/off. Solo, click to look
+around with the mouse (`Esc` frees it); arrow keys also drive.
 
 ## How to play
 
 1. Read the current job (top-left): deliver N units of a material to a truck.
 2. Drive to the matching pile. Watch the minimap (top-right).
-3. Lower the arms (`F`) and level/drop the bucket edge (`G`).
-4. Drive into the pile while curling the bucket (`T`) to scoop.
-5. Raise the arms (`R`) and keep the bucket curled to carry without spilling.
-6. Drive to the job's dump truck and position the bucket over its bed.
-7. Tip the bucket forward (`G`) to unload. You're paid when the quota is met.
+3. Load a truck with the wheel loader (scoop, lift, tip) or the excavator,
+   or drive the truck itself and tip its load elsewhere.
+4. You're paid when the job's quota is in the right truck.
 
-You can ignore the jobs entirely and just drive around, scoop dirt, push piles
-about, and make a mess — that's half the point.
+You can ignore the jobs entirely and just drive around, scoop dirt, lift
+containers, push piles about, and make a mess — that's half the point.
 
 ## Material simulation
 
@@ -85,9 +111,15 @@ partially filled and loads carry their material type.
 | `material.go` | Loose-material height grid (scoop / dump / push / slump) |
 | `world.go` | Site layout, collision, trucks, particles |
 | `jobs.go` | Job generation, progress, money / level progression |
+| `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
+| `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
+| `cargo.go` | Crane loads: falling, stacking, riding on trucks |
+| `walker.go` | The kid on foot |
+| `animals.go` | The dogs, the chimp and the owl |
+| `player.go`, `keys.go` | Players, getting in and out, cameras, key maps |
 | `g3d.go` | Software 3D pipeline: projection, clipping, sorting, mesh builders |
 | `camera.go` | Perspective chase/orbit camera |
-| `input.go` | Keyboard → loader + camera intents |
+| `input.go` | Keyboard and mouse → player controls |
 | `render.go` | Builds the 3D scene (ground, loader, props, trucks, particles) |
 | `art.go` | Procedural ground/dirt textures, grain atlas, fonts, noise |
 | `model.go` | Minimal glTF/GLB loader for the embedded Kenney models |
@@ -105,6 +137,8 @@ go run . -demo              # hands-free autopilot plays the job loop
 go run . -shots ./shots     # headless: drive a full cycle, save screenshots
 go run . -dumpshot ./shots  # headless: render a loaded loader dumping into a truck
 go run . -tour ./shots      # headless: static views of site landmarks
+go run . -scenes ./shots    # headless: stage and capture every feature (24 shots)
+go run . -coop              # start in two-player split screen
 go run . -cpuprofile cpu.prof  # write a CPU profile (combine with any mode)
 ```
 
@@ -121,6 +155,7 @@ repositories. They are embedded into the binary. See `assets/kenney/LICENSE.txt`
 ## Tests
 
 ```sh
-go test ./...   # inertia, articulated steering, scooping, dumping, full cycle
+go test ./...   # driving, scooping, dumping, entering/exiting, truck tipping,
+                # excavator dig-and-load, crane lift onto a truck, animals, co-op
 go vet ./...
 ```

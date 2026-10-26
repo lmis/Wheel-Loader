@@ -24,7 +24,7 @@ func (j *Job) Progress() float64 {
 }
 
 func (j *Job) Describe() string {
-	return fmt.Sprintf("Deliver %.0f units of %s to %s", j.Target, matNames[j.Material], j.Truck.Name)
+	return fmt.Sprintf("Deliver %.0f units of %s to %s", j.Target, matNames[j.Material], j.Truck.ID)
 }
 
 // JobBoard manages the current job, progression and money.

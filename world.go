@@ -29,8 +29,6 @@ const (
 	propBuilding
 	propBarrier
 	propCone
-	propExcavator
-	propParkedLoader
 	propTank
 	propSign
 	propModel // an imported Kenney model (Model/Scale/ModelYaw)
@@ -62,13 +60,23 @@ type RoadMark struct {
 	Dash  bool
 }
 
-// Truck is a dump truck whose bed is a delivery target.
+// Truck is a drivable dump truck whose bed is a delivery target.
 type Truck struct {
 	Pos      Vec
 	Angle    float64
 	Capacity float64
 	Contents [numMat]float64
-	Name     string
+	ID       string // e.g. "Truck A"
+
+	// driving state (see truck.go)
+	Speed    float64
+	Steer    float64 // front wheel angle
+	BedTilt  float64 // 0 = down, 1 = fully raised
+	Occupied bool
+
+	throttle, steerCmd, bedCmd float64
+	brake                      bool
+	spin, rpm, jolt            float64
 }
 
 func (t *Truck) Total() float64 {
@@ -112,7 +120,19 @@ type World struct {
 	Trucks        []*Truck
 	Zones         []LoadingZone
 	Particles     []Particle
-	rng           *rand.Rand
+	Cargo         []*Cargo // loose items the crane can lift
+
+	// obstacles are moving colliders (vehicles, walkers, cargo) registered
+	// each step by the game; CollideCircle tests against them too.
+	obstacles []obstacle
+	rng       *rand.Rand
+}
+
+// obstacle is a circular collider owned by a moving object.
+type obstacle struct {
+	c     Vec
+	r     float64
+	owner any
 }
 
 func NewWorld() *World {
@@ -167,12 +187,6 @@ func (w *World) build() {
 		Prop{Kind: propTank, Rect: Rect{V(500, 650), 90, 90, 0}, Solid: true, Color: [3]uint8{210, 120, 60}, Tag: "Fuel"},
 	)
 
-	// Parked construction equipment.
-	w.Props = append(w.Props,
-		Prop{Kind: propExcavator, Rect: Rect{V(2500, 1820), 150, 90, 2.4}, Solid: true, Color: [3]uint8{245, 190, 40}},
-		Prop{Kind: propParkedLoader, Rect: Rect{V(2650, 1980), 150, 80, 0.6}, Solid: true, Color: [3]uint8{240, 170, 30}},
-	)
-
 	// Jersey barriers lining part of the yard.
 	for i := 0; i < 8; i++ {
 		x := 900 + float64(i)*110
@@ -189,9 +203,6 @@ func (w *World) build() {
 	// Kenney CC0 models: a workshop, parked pickups, a row of houses beyond
 	// the north road, tree verges along the site edges and woodland outside.
 	w.addModel("city/building-garage", V(2380, 600), 0, 0, 150, true, "Workshop")
-	w.addModel("racing/vehicle-truck-yellow", V(2440, 410), 0.15, -math.Pi/2, 30, true, "")
-	w.addModel("racing/vehicle-truck-red", V(830, 690), -0.4, -math.Pi/2, 30, true, "")
-	w.addModel("racing/vehicle-truck-green", V(2820, 470), 1.7, -math.Pi/2, 30, true, "")
 	decor := rand.New(rand.NewSource(5))
 	houses := []string{"city/building-small-a", "city/building-small-b", "city/building-small-c", "city/building-small-d"}
 	for i, x := 0, 230.0; x < 3050; i, x = i+1, x+270 {
@@ -219,9 +230,9 @@ func (w *World) build() {
 
 	// Dump trucks parked at bays.
 	w.Trucks = append(w.Trucks,
-		&Truck{Pos: V(1600, 560), Angle: 0, Capacity: 900, Name: "Truck A"},
-		&Truck{Pos: V(1600, 1820), Angle: math.Pi, Capacity: 900, Name: "Truck B"},
-		&Truck{Pos: V(2500, 300), Angle: 0, Capacity: 900, Name: "Truck C"},
+		&Truck{Pos: V(1600, 560), Angle: 0, Capacity: 900, ID: "Truck A"},
+		&Truck{Pos: V(1600, 1820), Angle: math.Pi, Capacity: 900, ID: "Truck B"},
+		&Truck{Pos: V(2500, 300), Angle: 0, Capacity: 900, ID: "Truck C"},
 	)
 
 	// Loading zones with piles of different materials.
@@ -265,9 +276,9 @@ func (w *World) addModel(name string, at Vec, angle, modelYaw, scale float64, so
 	})
 }
 
-// CollideCircle tests a circle against solid rectangular props and trucks.
-// Returns whether it hit and a push-out normal.
-func (w *World) CollideCircle(c Vec, r float64) (bool, Vec) {
+// CollideCircle tests a circle against solid props and the moving obstacles
+// (except those owned by self). Returns whether it hit and a push-out normal.
+func (w *World) CollideCircle(c Vec, r float64, self any) (bool, Vec) {
 	check := func(rc Rect, pad float64) (bool, Vec) {
 		// transform circle into rect local space
 		d := c.Sub(rc.Center).Rot(-rc.Angle)
@@ -299,9 +310,16 @@ func (w *World) CollideCircle(c Vec, r float64) (bool, Vec) {
 			return true, n
 		}
 	}
-	for _, t := range w.Trucks {
-		if hit, n := check(Rect{t.Pos, 70, 110, t.Angle}, r*0.2); hit {
-			return true, n
+	for _, o := range w.obstacles {
+		if self != nil && o.owner == self {
+			continue
+		}
+		d := c.Sub(o.c)
+		if l := d.Len(); l < r+o.r {
+			if l < 1e-6 {
+				return true, V(1, 0)
+			}
+			return true, d.Scale(1 / l)
 		}
 	}
 	return false, Vec{}

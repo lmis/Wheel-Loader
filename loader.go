@@ -1,6 +1,9 @@
 package main
 
-import "math"
+import (
+	"image/color"
+	"math"
+)
 
 // Loader geometry (world units ~ pixels at zoom 1).
 const (
@@ -57,6 +60,10 @@ type Loader struct {
 	Beacon    float64 // rotating warning light phase
 	wheelSpin float64 // wheel rotation phase for animation
 	engineRPM float64 // 0..1 visual/audio proxy
+
+	Label    string     // display name (default "Wheel loader")
+	Color    color.RGBA // body colour (zero = construction yellow)
+	Occupied bool       // someone is in the cab (engine running, beacon on)
 }
 
 // FrontHeading / RearHeading splay around the chassis heading so the
@@ -142,7 +149,7 @@ func (l *Loader) Update(dt float64, w *World) {
 
 	// collision against solid world objects: push back & bleed speed
 	if w != nil {
-		if hit, normal := w.CollideCircle(newJoint, 30); hit {
+		if hit, normal := collideCircles(w, l.collidersAt(newJoint), l); hit {
 			newJoint = newJoint.Add(normal.Scale(3))
 			// reflect a little & lose energy -> visible lurch
 			l.Speed *= -0.25

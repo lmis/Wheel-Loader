@@ -26,6 +26,24 @@ type Camera struct {
 	shakeX, shakeY float64
 	t              float64
 	followYaw      float64 // smoothed chase yaw (before user offset)
+
+	// first-person mode: the eye and view direction are set directly
+	fp             bool
+	fpEye          Vec3
+	fpYaw, fpPitch float64
+}
+
+// SetFP puts the camera at an eye point looking along yaw/pitch.
+func (c *Camera) SetFP(eye Vec3, yaw, pitch float64) {
+	c.fp = true
+	c.fpEye, c.fpYaw, c.fpPitch = eye, yaw, clamp(pitch, -1.45, 1.45)
+	c.Target = Vec{eye.X, eye.Z}
+	c.followYaw = yaw
+}
+
+// SetLookHeight sets how high above the ground target the chase camera aims.
+func (c *Camera) SetLookHeight(h float64) {
+	c.lookHeight = lerp(c.lookHeight, h, 0.15)
 }
 
 func NewCamera(sw, sh float64) *Camera {
@@ -43,6 +61,7 @@ func NewCamera(sw, sh float64) *Camera {
 // Follow eases the camera target onto the loader and swings the chase yaw to
 // sit behind the machine's heading.
 func (c *Camera) Follow(target Vec, heading float64, dt float64) {
+	c.fp = false
 	k := 1 - math.Pow(0.0008, dt)
 	c.Target = c.Target.Add(target.Sub(c.Target).Scale(k))
 	// smoothly swing the chase yaw to follow the loader's heading, then sit
@@ -51,7 +70,10 @@ func (c *Camera) Follow(target Vec, heading float64, dt float64) {
 	c.followYaw += dd * (1 - math.Pow(0.04, dt))
 	c.Yaw = c.followYaw + math.Pi + c.UserYaw
 	c.Dist = lerp(c.Dist, c.TgtDist, 1-math.Pow(0.01, dt))
+}
 
+// Tick decays camera shake; call once per step in any camera mode.
+func (c *Camera) Tick(dt float64) {
 	c.t += dt
 	if c.shake > 0.001 {
 		c.shake *= math.Pow(0.02, dt)
@@ -71,7 +93,19 @@ func (c *Camera) Kick(amount float64) {
 // setup recomputes the camera basis for this frame.
 func (c *Camera) setup() {
 	c.aspect = c.ScreenW / c.ScreenH
-	c.f = 1 / math.Tan(c.fov/2)
+	fov := c.fov
+	if c.fp {
+		fov = 1.25 // wider in the cab, so the window frame is in view
+	}
+	c.f = 1 / math.Tan(fov/2)
+	if c.fp {
+		cp := math.Cos(c.fpPitch)
+		c.eye = c.fpEye
+		c.fwd = Vec3{cp * math.Cos(c.fpYaw), math.Sin(c.fpPitch), cp * math.Sin(c.fpYaw)}
+		c.right = c.fwd.Cross(Vec3{0, 1, 0}).Norm()
+		c.up = c.right.Cross(c.fwd)
+		return
+	}
 	if c.Pitch < 0.2 {
 		c.Pitch = 0.2
 	}
