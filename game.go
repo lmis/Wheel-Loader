@@ -41,8 +41,7 @@ type Game struct {
 	gpu    *GPU               // renderer, once a window is open (gpu.go)
 	out    rl.RenderTexture2D // the finished 1280×720 frame
 
-	paused bool
-	frame  int
+	frame int
 
 	simSpeed int     // simulation substeps per rendered frame (default 1)
 	scene    Scene   // reused 3D geometry buffer
@@ -99,8 +98,8 @@ func NewGame() *Game {
 	}
 	g.vehicles = append(g.vehicles,
 
-		&Car{Pos: V(2440, 410), Angle: 0.15, Model: "racing/vehicle-truck-yellow"},
-		&Car{Pos: V(830, 690), Angle: -0.4, Model: "racing/vehicle-truck-red"},
+		&Car{Pos: V(2470, 770), Angle: 0.15, Model: "racing/vehicle-truck-yellow"},
+		&Car{Pos: V(1010, 700), Angle: -0.4, Model: "racing/vehicle-truck-red"},
 		&Car{Pos: V(2820, 470), Angle: 1.7, Model: "racing/vehicle-truck-green"},
 	)
 	g.crane = NewTowerCrane(V(1850, 1250), -0.6)
@@ -176,7 +175,7 @@ func (g *Game) Update() error {
 	if steps < 1 {
 		steps = 1
 	}
-	for s := 0; s < steps && !g.paused; s++ {
+	for s := 0; s < steps; s++ {
 		g.step(fixedDT)
 	}
 

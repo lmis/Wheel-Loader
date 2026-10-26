@@ -82,9 +82,6 @@ type toddlerState struct {
 	avoidT    float64 // driving: keep steering round an obstacle for this long
 	cool      float64 // crane: time before the hook homes in again
 	armed     bool    // crane: space was pressed near a load; lower once over it
-	want      Vec     // single screen: the way the arrows point (zero: none)
-	idleT     float64 // single screen: time with no arrow held
-	moved     float64 // single screen: distance driven in this machine
 	avoidSide float64 // which way (+1 right, -1 left)
 	phaseT    float64 // time in that step
 	awayT     float64 // loader: time the bucket has been out of the heap
@@ -224,7 +221,7 @@ func (g *Game) toddlerTravel(p *Player, dt float64) {
 		if g.driverOf(v) == nil {
 			g.enter(p, v)
 			td.mode, td.modeT, td.dumpTruck, td.hookLen = tdCarry, 0, nil, 0
-			td.phase, td.phaseT, td.moved = exIdle, 0, 0
+			td.phase, td.phaseT = exIdle, 0
 			if _, ok := v.(*Loader); ok {
 				td.mode = tdDig
 			}
@@ -281,12 +278,6 @@ func (g *Game) toddlerStep(dt float64) {
 			continue
 		}
 		g.toddlerTravel(p, dt)
-		if g.single {
-			g.singleDrive(p, dt)
-		}
-		if td.goTo == nil {
-			g.toddlerAvoid(p, dt)
-		}
 	}
 }
 
@@ -390,7 +381,7 @@ func (g *Game) toddlerDumpTruck(p *Player, t *Truck) {
 	default:
 		t.bedCmd = 0
 		if td.pressed {
-			td.mode, td.modeT, td.moved = tdDump, 0, 0
+			td.mode, td.modeT = tdDump, 0
 		}
 	}
 }
@@ -574,81 +565,6 @@ func (g *Game) toddlerDigger(p *Player, e *Excavator, dt float64) {
 	}
 }
 
-// ---- driving forward steers round things ----
-
-// toddlerAvoid nudges the steering of a kid driving forward so the machine
-// goes round whatever is ahead instead of bumping into it: it looks ahead
-// along the way it is going, picks the nearer open side, and keeps turning
-// that way (slowing down) until the way is clear. A loader carrying a load
-// may drive right up to its own truck.
-func (g *Game) toddlerAvoid(p *Player, dt float64) {
-	td := p.td
-	td.avoidT -= dt
-	if p.ctl.Throttle <= 0 {
-		td.avoidT = 0
-		return
-	}
-	var pos Vec
-	var head, r float64
-	ignore := []any{p.Driving}
-	switch v := p.Driving.(type) {
-	case *Loader:
-		pos, head, r = v.FrontAxle(), v.FrontHeading()+v.Artic*0.5, 44 // wide: the rear swings out on a bend
-		if td.mode == tdCarry || td.mode == tdDump {
-			ignore = append(ignore, td.own[1])
-		}
-	case *Truck:
-		pos, head, r = v.Pos.Add(dir(v.Angle).Scale(40)), v.Angle+v.Steer*0.5, 34
-	case *Excavator:
-		pos, head, r = v.Pos.Add(dir(v.Heading).Scale(38)), v.Heading, 46
-	default:
-		return
-	}
-	w := g.world
-	free := func(a float64) int { // how far ahead along a is clear (0..4)
-		n := 0
-		for _, d := range []float64{40, 80, 125, 175} {
-			if w.Blocked(pos.Add(dir(a).Scale(d)), r, ignore...) {
-				break
-			}
-			n++
-		}
-		return n
-	}
-	ahead := free(head)
-	if ahead == 4 && td.avoidT <= 0 {
-		return
-	}
-	if td.avoidT <= 0 {
-		// pick the nearest open way, left or right (right is +angle)
-		best, side := ahead, 1.0
-		for _, off := range []float64{0.35, 0.7, 1.05, 1.4, 1.8} {
-			l, rr := free(head-off), free(head+off)
-			if rr > best || l > best {
-				if rr >= l {
-					best, side = rr, 1
-				} else {
-					best, side = l, -1
-				}
-			}
-			if best == 4 {
-				break
-			}
-		}
-		td.avoidSide = side
-	}
-	if ahead < 4 {
-		td.avoidT = 0.5 // keep turning a little past the obstacle
-	}
-	p.ctl.Steer = clamp(p.ctl.Steer+td.avoidSide*1.5, -1, 1)
-	switch {
-	case ahead <= 1:
-		p.ctl.Throttle *= 0.25 // close: creep round
-	case ahead <= 2:
-		p.ctl.Throttle *= 0.5
-	}
-}
-
 // ---- toddler HUD ----
 
 // drawToddlerHUD: the player colour strip, the machine picker and the keys.
@@ -674,7 +590,7 @@ func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 
 	label := td.keys.label
 	if g.single {
-		label = "Arrows: drive    Space: next machine"
+		label = "Arrows: drive    Space: do    Shift: next machine    V: view"
 	}
 	g.drawText(dst, label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
 }

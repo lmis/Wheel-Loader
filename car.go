@@ -18,7 +18,7 @@ type Car struct {
 }
 
 const (
-	carScale     = 30.0 // Kenney model units -> world
+	carScale     = 42.0 // Kenney model units -> world
 	carWheelbase = 40.0
 	carRearX     = -20.0
 	carMaxSteer  = 0.6
@@ -36,7 +36,7 @@ func (c *Car) Colliders() []obstacle { return c.collidersAt(c.Pos, c.Angle) }
 
 func (c *Car) collidersAt(p Vec, ang float64) []obstacle {
 	f := dir(ang)
-	return []obstacle{{p.Add(f.Scale(20)), 23, c}, {p.Sub(f.Scale(20)), 23, c}}
+	return []obstacle{{p.Add(f.Scale(28)), 32, c}, {p.Sub(f.Scale(28)), 32, c}}
 }
 
 func (c *Car) Drive(ctl *Controls) {

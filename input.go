@@ -5,12 +5,9 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 // Key is a raylib key code.
 type Key = int32
 
-// handleInput reads the keyboard once per frame: each kid's four direction
-// keys, button, view and machine keys (see toddlerKeys), and F2 to pause.
+// handleInput reads the keyboard once per frame. There is nothing else to
+// press: no pause, no menus (see singleInput and toddlerInput for the keys).
 func (g *Game) handleInput() {
-	if inpTapped(rl.KeyF2) {
-		g.paused = !g.paused
-	}
 	for _, p := range g.players {
 		if g.single {
 			g.singleInput(p)

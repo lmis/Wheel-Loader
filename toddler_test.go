@@ -317,35 +317,6 @@ func TestSkaterStopsOnTheSiteAndGoesOn(t *testing.T) {
 	}
 }
 
-func TestDrivingForwardSteersRoundThings(t *testing.T) {
-	g := NewGame()
-	p := g.players[1]
-	l := p.Driving.(*Loader)
-	// a parked pickup right in the way
-	var car *Car
-	for _, v := range g.vehicles {
-		if c, ok := v.(*Car); ok {
-			car = c
-			break
-		}
-	}
-	l.Joint, l.Heading = V(1700, 1600), math.Pi/2
-	car.Pos, car.Angle = V(1700, 1760), 0
-	start := l.Joint
-	bumped := false
-	for i := 0; i < 60*5; i++ {
-		p.ctl = Controls{Throttle: 1}
-		run(g, 1)
-		bumped = bumped || l.Jolt() > 40
-	}
-	if bumped {
-		t.Fatal("the loader drove into the pickup")
-	}
-	if l.Joint.Sub(start).Len() < 300 {
-		t.Fatalf("the loader should get round and carry on, went %.0f", l.Joint.Sub(start).Len())
-	}
-}
-
 func TestExcavatorDigsWithOneButton(t *testing.T) {
 	g := NewGame()
 	p := g.players[0]

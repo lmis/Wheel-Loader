@@ -5,7 +5,26 @@ import (
 	"testing"
 )
 
-func TestSingleScreenArrowGoesThatWay(t *testing.T) {
+func TestArrowControls(t *testing.T) {
+	cases := []struct {
+		up, down, left, right, crane bool
+		want                         Controls
+	}{
+		{right: true, want: Controls{Throttle: 1, Steer: 1}}, // right: turn right going forward
+		{left: true, want: Controls{Throttle: 1, Steer: -1}},
+		{up: true, want: Controls{Throttle: 1}},
+		{down: true, want: Controls{Throttle: -1}}, // down: back up
+		{down: true, right: true, want: Controls{Throttle: -1, Steer: 1}},
+		{right: true, crane: true, want: Controls{Steer: 1}}, // the crane just swings
+	}
+	for _, c := range cases {
+		if got := arrowControls(c.up, c.down, c.left, c.right, c.crane); got != c.want {
+			t.Errorf("arrows %+v: got %+v, want %+v", c, got, c.want)
+		}
+	}
+}
+
+func TestSingleScreenRightArrowTurnsRight(t *testing.T) {
 	g := NewGame()
 	g.setSingle(companionsOwl)
 	if len(g.players) != 1 || len(g.animals) != 2 {
@@ -18,16 +37,17 @@ func TestSingleScreenArrowGoesThatWay(t *testing.T) {
 	}
 	p := g.players[0]
 	l := p.Driving.(*Loader)
-	l.Joint, l.Heading = V(1250, 1750), singleYaw // open ground, facing up the screen
-	start := l.Joint
-	p.td.want = dir(singleYaw + math.Pi/2) // the right arrow: screen right
-	run(g, 60*4)
-	moved := l.Joint.Sub(start)
-	if moved.Len() < 150 || moved.Norm().Dot(dir(singleYaw+math.Pi/2)) < 0.6 {
-		t.Fatalf("holding right should drive to the right of the screen, moved %v", moved)
+	l.Joint, l.Heading = V(1250, 1650), -math.Pi/2
+	start, h0 := l.Joint, l.FrontHeading()
+	for i := 0; i < 60*2; i++ {
+		p.ctl = arrowControls(false, false, false, true, false)
+		run(g, 1)
 	}
-	if math.Abs(angleDiff(l.FrontHeading(), singleYaw+math.Pi/2)) > 0.5 {
-		t.Fatalf("it should end up facing right, heading %.2f", l.FrontHeading())
+	if l.Joint.Sub(start).Len() < 60 {
+		t.Fatal("the right arrow should drive forward")
+	}
+	if angleDiff(l.FrontHeading(), h0) < 0.5 {
+		t.Fatalf("the right arrow should turn right, heading %.2f -> %.2f", h0, l.FrontHeading())
 	}
 }
 
@@ -141,3 +161,4 @@ func TestSingleScreenCraneSpacePicksUp(t *testing.T) {
 		t.Fatal("space again should put it down")
 	}
 }
+

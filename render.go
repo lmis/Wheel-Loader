@@ -313,6 +313,10 @@ func (g *Game) buildProps3D(s *Scene) {
 			continue
 		}
 		c := rgba(p.Color[0], p.Color[1], p.Color[2], 255)
+		mark := len(s.tris)
+		if p.Size > 0 {
+			rc.W, rc.H = rc.W/p.Size, rc.H/p.Size // built at its own size, scaled up below
+		}
 		o := ground(rc.Center, 0)
 		fwd := dir(rc.Angle)
 		side := dir(rc.Angle + math.Pi/2)
@@ -394,6 +398,9 @@ func (g *Game) buildProps3D(s *Scene) {
 		case propSign:
 			s.addBox(ground(rc.Center, 17), 1.5, 17, 1.5, 0, colSteel)
 			s.addOBB2(ground(rc.Center, 36), Vec3{0, 0, 1}, Vec3{1, 1, 0}, 2, rc.W*0.42, rc.W*0.42, rgba(250, 206, 40, 255))
+		}
+		if p.Size > 0 {
+			s.scaleSince(mark, ground(rc.Center, 0), p.Size)
 		}
 	}
 }

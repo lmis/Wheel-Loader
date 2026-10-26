@@ -1,24 +1,19 @@
 package main
 
 import (
-	"math"
 	"path/filepath"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-// Single-screen play (the default): one kid, the whole screen, the arrow
-// keys, the space bar and shift. An arrow means "go that way on the
-// screen": the machine turns toward it and drives there, so one key is
-// enough. The camera keeps one fixed direction, so screen directions stay
-// put. Space does the machine's one thing (scoop or tip the loader's bucket,
-// tip the truck, dig once with the excavator, pick up or drop with the
-// crane); shift climbs out and walks over to the next machine.
-// -split-screen brings back two kids side by side.
-
-// singleYaw is the fixed way the single-screen camera looks (north, the way
-// the machines face at the start).
-const singleYaw = -math.Pi / 2
+// Single-screen play (the default): one kid, the whole screen, and only the
+// arrow keys, space, shift, 1-4 and V. Up drives forward and down backs up;
+// left and right steer while driving forward (so one key is enough to go
+// round a corner). Space does the machine's one thing (lift or tip the
+// loader's bucket, tip the truck, dig once with the excavator, pick up or
+// drop with the crane); shift climbs out and walks over to the next machine;
+// 1-4 pick a machine; V switches to the cab view. -split-screen brings back
+// two kids side by side.
 
 // Companions for single-screen play.
 const (
@@ -37,6 +32,25 @@ func (g *Game) setSingle(companions string) {
 		}
 	}
 	g.players = g.players[:1]
+	// only the kid's own machines stay: nothing on the site they cannot use
+	own := map[Vehicle]bool{}
+	for _, m := range p.td.own {
+		own[m] = true
+	}
+	var vs []Vehicle
+	for _, v := range g.vehicles {
+		if own[v] {
+			vs = append(vs, v)
+		}
+	}
+	g.vehicles = vs
+	var trucks []*Truck
+	for _, t := range g.world.Trucks {
+		if own[t] {
+			trucks = append(trucks, t)
+		}
+	}
+	g.world.Trucks = trucks
 	var keep []*Animal
 	for _, a := range g.animals {
 		dog := a.Kind == animalGolden || a.Kind == animalBernese
@@ -51,7 +65,6 @@ func (g *Game) setSingle(companions string) {
 		a.Pos, a.Y, a.Yaw = a.rideSpot(a.ride)
 	}
 	p.cam.UserYaw = 0
-	p.cam.followYaw = singleYaw
 	g.snapCamera(p)
 }
 
@@ -62,17 +75,12 @@ var (
 	arrowRight = []Key{rl.KeyRight}
 )
 
-// singleInput reads the arrows as a direction on the screen, space as the
-// machine's action and shift as "next machine".
+// singleInput reads the arrows, space, shift, 1-4 and V. Nothing else does
+// anything.
 func (g *Game) singleInput(p *Player) {
 	td := p.td
-	up := dir(singleYaw)
-	right := dir(singleYaw + math.Pi/2)
-	want := up.Scale(axis(arrowUp, arrowDown)).Add(right.Scale(axis(arrowRight, arrowLeft)))
-	if want.Len() > 0 {
-		want = want.Norm()
-	}
-	td.want = want
+	_, crane := p.Driving.(*TowerCrane)
+	p.ctl = arrowControls(keyDown(arrowUp...), keyDown(arrowDown...), keyDown(arrowLeft...), keyDown(arrowRight...), crane)
 	down := keyDown(rl.KeySpace)
 	if down && !td.button {
 		td.pressed = true
@@ -81,7 +89,31 @@ func (g *Game) singleInput(p *Player) {
 	if inpTapped(rl.KeyLeftShift) || inpTapped(rl.KeyRightShift) {
 		g.nextMachine(p)
 	}
-	p.ctl = Controls{}
+	for i, k := range []Key{rl.KeyOne, rl.KeyTwo, rl.KeyThree, rl.KeyFour} {
+		if inpTapped(k) {
+			g.toddlerPick(p, td.own[i])
+		}
+	}
+	if inpTapped(rl.KeyV) {
+		p.fp = !p.fp // cab view / chase camera
+	}
+}
+
+// arrowControls maps the arrows to controls: up forward, down back, and
+// left or right steer while driving forward (backing up when down is held
+// too). On the crane they swing the jib and run the trolley.
+func arrowControls(up, down, left, right, crane bool) Controls {
+	b := func(k bool) float64 {
+		if k {
+			return 1
+		}
+		return 0
+	}
+	c := Controls{Throttle: b(up) - b(down), Steer: b(right) - b(left)}
+	if c.Throttle == 0 && c.Steer != 0 && !crane {
+		c.Throttle = 1 // a turn on its own drives forward round the corner
+	}
+	return c
 }
 
 // nextMachine sends the kid to the next of their machines.
@@ -100,49 +132,6 @@ func (g *Game) nextMachine(p *Player) {
 	g.toddlerPick(p, td.own[0])
 }
 
-// singleDrive turns the wanted screen direction into the machine's
-// controls: turn toward it, and drive when facing roughly that way.
-func (g *Game) singleDrive(p *Player, dt float64) {
-	td := p.td
-	want := td.want
-	if want.Len() == 0 {
-		td.idleT += dt
-	} else {
-		td.idleT = 0
-	}
-	if v := p.Driving; v != nil {
-		td.moved += math.Abs(v.SpeedVal()) * dt
-	}
-	if want.Len() == 0 || td.goTo != nil {
-		return
-	}
-	a := want.Angle()
-	drive := func(heading, sharp float64, spin bool) {
-		d := angleDiff(a, heading)
-		p.ctl.Steer = clamp(d*2, -1, 1)
-		switch {
-		case math.Abs(d) < sharp:
-			p.ctl.Throttle = 1
-		case spin:
-			p.ctl.Throttle = 0 // tracks turn on the spot
-		default:
-			p.ctl.Throttle = 0.45 // wheels: keep rolling while turning
-		}
-	}
-	switch v := p.Driving.(type) {
-	case *Loader:
-		drive(v.FrontHeading(), 0.9, false)
-	case *Truck:
-		drive(v.Angle, 0.9, false)
-	case *Excavator:
-		drive(v.Heading, 0.5, true)
-	case *TowerCrane:
-		// the hook moves that way: in and out along the jib, and round it
-		p.ctl.Throttle = want.Dot(dir(v.Slew))
-		p.ctl.Steer = want.Dot(dir(v.Slew + math.Pi/2))
-	}
-}
-
 // stageSingleScenes captures single-screen play.
 func (g *Game) stageSingleScenes(outDir string) {
 	g.scripted = true
@@ -151,23 +140,24 @@ func (g *Game) stageSingleScenes(outDir string) {
 	steps := []struct {
 		name   string
 		frames int
-		want   Vec
+		ctl    Controls
 		setup  func()
 	}{
-		{"s1_start", 10, Vec{}, nil},
-		{"s2_right_arrow", 70, V(1, 0), nil},
-		{"s3_up_arrow", 50, V(0, -1), nil},
-		{"s4_shift_next_machine", 60, Vec{}, func() { g.nextMachine(p) }},
-		{"s5_truck_down_arrow", 50, V(0, 1), nil},
-		{"s6_crane", 90, Vec{}, func() { g.toddlerPick(p, p.td.own[2]) }},
-		{"s7_excavator", 90, Vec{}, func() { g.toddlerPick(p, p.td.own[3]) }},
+		{"s1_start", 10, Controls{}, nil},
+		{"s2_right_arrow", 70, Controls{Throttle: 1, Steer: 1}, nil},
+		{"s3_up_arrow", 50, Controls{Throttle: 1}, nil},
+		{"s4_shift_next_machine", 60, Controls{}, func() { g.nextMachine(p) }},
+		{"s5_truck_down_arrow", 50, Controls{Throttle: -1}, nil},
+		{"s6_crane", 90, Controls{}, func() { g.toddlerPick(p, p.td.own[2]) }},
+		{"s7_excavator", 90, Controls{}, func() { g.toddlerPick(p, p.td.own[3]) }},
 	}
 	f := 5
 	for _, st := range steps {
 		st := st
 		start := f
 		g.script = append(g.script, scriptStep{at: start, fn: func(g *Game) {
-			p.td.want = st.want
+			ctl := st.ctl
+			p.scriptCtl = &ctl
 			if st.setup != nil {
 				st.setup()
 			}

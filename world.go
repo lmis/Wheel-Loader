@@ -44,6 +44,7 @@ type Prop struct {
 	Model    string  // propModel: embedded model name, e.g. "city/building-garage"
 	Scale    float64 // propModel: model units -> world units
 	ModelYaw float64 // propModel: extra yaw so the model faces along Rect.Angle
+	Size     float64 // built props: drawn this many times bigger (Rect is the scaled footprint); 0 = 1
 }
 
 // SurfacePatch is a painted ground region.
@@ -151,8 +152,8 @@ func (w *World) build() {
 		// central gravel yard
 		SurfacePatch{Rect{V(1600, 1200), 1500, 1100, 0}, surfGravel},
 		// concrete pads
-		SurfacePatch{Rect{V(640, 560), 520, 360, 0}, surfConcrete},
-		SurfacePatch{Rect{V(2550, 520), 560, 380, 0}, surfConcrete},
+		SurfacePatch{Rect{V(660, 600), 580, 420, 0}, surfConcrete},
+		SurfacePatch{Rect{V(2450, 560), 800, 440, 0}, surfConcrete},
 		SurfacePatch{Rect{V(2560, 1900), 620, 420, 0}, surfConcrete},
 	)
 
@@ -179,10 +180,11 @@ func (w *World) build() {
 
 	// Buildings & cabins.
 	w.Props = append(w.Props,
-		Prop{Kind: propBuilding, Rect: Rect{V(640, 560), 260, 180, 0}, Solid: true, Color: [3]uint8{200, 196, 188}, Tag: "Office"},
-		Prop{Kind: propCabin, Rect: Rect{V(2550, 470), 150, 110, 0}, Solid: true, Color: [3]uint8{215, 180, 90}, Tag: "Site Cabin"},
-		Prop{Kind: propCabin, Rect: Rect{V(2680, 600), 140, 100, 0.2}, Solid: true, Color: [3]uint8{90, 150, 190}, Tag: "Cabin"},
-		Prop{Kind: propTank, Rect: Rect{V(500, 650), 90, 90, 0}, Solid: true, Color: [3]uint8{210, 120, 60}, Tag: "Fuel"},
+		// built at 1.6× so they are in proportion to the machines
+		Prop{Kind: propBuilding, Rect: Rect{V(640, 600), 416, 288, 0}, Solid: true, Color: [3]uint8{200, 196, 188}, Tag: "Office", Size: 1.6},
+		Prop{Kind: propCabin, Rect: Rect{V(2560, 480), 240, 176, 0}, Solid: true, Color: [3]uint8{215, 180, 90}, Tag: "Site Cabin", Size: 1.6},
+		Prop{Kind: propCabin, Rect: Rect{V(2720, 665), 224, 160, 0.2}, Solid: true, Color: [3]uint8{90, 150, 190}, Tag: "Cabin", Size: 1.6},
+		Prop{Kind: propTank, Rect: Rect{V(980, 520), 144, 144, 0}, Solid: true, Color: [3]uint8{210, 120, 60}, Tag: "Fuel", Size: 1.6},
 	)
 
 	// Jersey barriers lining part of the yard.
@@ -200,30 +202,31 @@ func (w *World) build() {
 
 	// Kenney CC0 models: a workshop, parked pickups, a row of houses beyond
 	// the north road, tree verges along the site edges and woodland outside.
-	w.addModel("city/building-garage", V(2380, 600), 0, 0, 150, true, "Workshop")
+	w.addModel("city/building-garage", V(2230, 560), 0, 0, 320, true, "Workshop")
 	decor := rand.New(rand.NewSource(5))
 	houses := []string{"city/building-small-a", "city/building-small-b", "city/building-small-c", "city/building-small-d"}
-	for i, x := 0, 230.0; x < 3050; i, x = i+1, x+270 {
-		w.addModel(houses[i%len(houses)], V(x, 105), math.Pi/2, 0, 135, true, "")
+	// big town houses beyond the railway
+	for i, x := 0, 180.0; x < 3200; i, x = i+1, x+560 {
+		w.addModel(houses[i%len(houses)], V(x, -170), math.Pi/2, 0, 300, true, "")
 	}
 	trees := []string{"city/grass-trees", "city/grass-trees-tall"}
 	tree := func(x, y float64) {
-		w.addModel(trees[decor.Intn(2)], V(x, y), float64(decor.Intn(4))*math.Pi/2, 0, 112, true, "tree")
+		w.addModel(trees[decor.Intn(2)], V(x, y), float64(decor.Intn(4))*math.Pi/2, 0, 250, true, "tree")
 	}
-	onRoad := func(y float64) bool { return math.Abs(y-300) < 140 || math.Abs(y-2100) < 140 }
-	for y := 450.0; y < 2000; y += 112 {
+	onRoad := func(y float64) bool { return math.Abs(y-300) < 220 || math.Abs(y-2100) < 220 }
+	for y := 560.0; y < 2000; y += 230 {
 		if !onRoad(y) {
-			tree(56, y)
+			tree(60, y)
 		}
 	}
-	for y := 60.0; y < 2350; y += 112 {
-		tree(3144, y)
+	for y := 120.0; y < 2400; y += 230 {
+		tree(3150, y)
 	}
-	for x := 170.0; x < 3090; x += 112 {
-		tree(x, 2290)
+	for x := 200.0; x < 3050; x += 230 {
+		tree(x, 2340)
 	}
 	for _, p := range []Vec{{-260, 700}, {-260, 1500}, {-300, 2300}, {3460, 400}, {3460, 1300}, {3460, 2200}, {900, 2660}, {2100, 2680}, {3300, 2700}, {-200, -250}, {3400, -250}} {
-		w.addModel("racing/decoration-forest", p, decor.Float64()*math.Pi*2, 0, 17, false, "tree")
+		w.addModel("racing/decoration-forest", p, decor.Float64()*math.Pi*2, 0, 34, false, "tree")
 	}
 
 	// Dump trucks parked at bays.
@@ -276,35 +279,6 @@ func (w *World) addModel(name string, at Vec, angle, modelYaw, scale float64, so
 
 // CollideCircle tests a circle against solid props and the moving obstacles
 // (except those owned by self). Returns whether it hit and a push-out normal.
-// Blocked reports whether a circle at c overlaps anything solid, ignoring
-// the given owners.
-func (w *World) Blocked(c Vec, r float64, ignore ...any) bool {
-	for i := range w.Props {
-		p := &w.Props[i]
-		if !p.Solid {
-			continue
-		}
-		d := c.Sub(p.Rect.Center).Rot(-p.Rect.Angle)
-		dx := math.Max(0, math.Abs(d.X)-p.Rect.W/2)
-		dy := math.Max(0, math.Abs(d.Y)-p.Rect.H/2)
-		if math.Hypot(dx, dy) < r {
-			return true
-		}
-	}
-next:
-	for _, o := range w.obstacles {
-		for _, ig := range ignore {
-			if o.owner == ig {
-				continue next
-			}
-		}
-		if c.Sub(o.c).Len() < r+o.r {
-			return true
-		}
-	}
-	return false
-}
-
 func (w *World) CollideCircle(c Vec, r float64, self any) (bool, Vec) {
 	check := func(rc Rect, pad float64) (bool, Vec) {
 		// transform circle into rect local space

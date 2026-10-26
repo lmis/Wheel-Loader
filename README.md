@@ -61,17 +61,21 @@ On a headless Linux box, run under `xvfb-run` with `LIBGL_ALWAYS_SOFTWARE=1`
 ## How to play
 
 The game starts in **single-screen play** for one kid, made for a laptop
-keyboard with picture keycaps: just the arrow keys, the space bar and shift.
+keyboard with picture keycaps. These are the only keys that do anything:
 
 | Key | What it does |
 | --- | --- |
-| Arrows | Go that way on the screen: the machine turns toward it and drives there (one key is enough) |
+| ↑ / ↓ | Drive forward / back up |
+| ← / → | Steer left / right while driving forward (one key goes round a corner) |
 | Space | The machine's one thing: lift or tip the loader's bucket, tip the dump truck, dig once with the excavator, pick up or drop with the crane |
 | Shift | Climb out and walk over to the next machine (loader → truck → crane → excavator) |
+| 1 2 3 4 | Go to the loader, truck, crane or excavator |
+| V | Cab view / chase camera |
 
-The camera keeps one fixed direction, so "right" always means right on the
-screen. The animal friends come along: the owl and the chimp, or start with
-`./run.sh --doggo` for the two dogs (`--owl` is the default).
+On the crane, ← → swing the jib and ↑ ↓ run the hook out and in. There is
+no pause and nothing else to press. Only the kid's own four machines are on
+the site. The animal friends come along: the owl and the chimp, or start
+with `./run.sh --doggo` for the two dogs (`--owl` is the default).
 
 ### Split screen
 
@@ -85,7 +89,7 @@ with their own machines and animals:
 | Pick loader / truck / crane / excavator | `1` `2` `3` `4` | `8` `9` `0` `-` (or numpad `1`–`4`) |
 | Cab view / chase camera | `V` | `M` (or numpad `0`) |
 
-`F2` pauses. The view key switches between the chase camera and looking
+The view key switches between the chase camera and looking
 out of the cab: the loader's dashboard, steering wheel and windscreen frame
 with the arms and bucket ahead, the truck's wheel and dash, and the crane
 cab's desk, screens and joysticks above its glass floor, looking down at the
@@ -107,9 +111,6 @@ machines do the fiddly parts themselves:
 - **Excavator:** the direction keys drive the tracks; one press of the
   button digs: reach out in front, fill the bucket, lift, swing to your
   truck if it is in reach (or out to the side), tip it in and swing back.
-- **Driving forward steers round things:** loaders, trucks and excavators
-  turn round whatever is ahead and slow down to squeeze past; a loader
-  with a full bucket may still drive right up to its own truck.
 
 Each truck takes about five bucket loads before it is full; it stays full
 until its kid drives it somewhere and tips it out (and the new heap can be

@@ -36,9 +36,5 @@ func circle(dst canvas, x, y, r float64, c color.RGBA) {
 	rl.DrawCircleV(rl.NewVector2(float32(dst.x+x), float32(dst.y+y)), float32(r), rlc(c))
 }
 
-// drawGlobalHUD draws over both views: the pause notice.
-func (g *Game) drawGlobalHUD(screen canvas) {
-	if g.paused {
-		g.drawTextC(screen, "PAUSED  (F2)", g.art.Big, screenW/2, screenH/2-20, hudWhite)
-	}
-}
+// drawGlobalHUD draws over both views (nothing for now: no pause, no menus).
+func (g *Game) drawGlobalHUD(screen canvas) {}
