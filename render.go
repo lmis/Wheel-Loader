@@ -54,6 +54,9 @@ func (g *Game) renderView(dst *ebiten.Image, p *Player) {
 	for _, v := range g.vehicles {
 		v.Render(g, s)
 	}
+	if st, ok := p.Driving.(seated); ok && p.fp {
+		st.RenderCockpit(s)
+	}
 	for _, q := range g.players {
 		if q.Driving != nil {
 			continue

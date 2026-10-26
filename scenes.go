@@ -156,6 +156,37 @@ func (g *Game) stageScenes(outDir, only string) {
 			walkerCam(p1, 46, math.Pi+0.35, 0.16)
 			p1.cam.lookHeight = 15
 		}},
+		{name: "08a_cab_view_loaders", frames: 24, setup: func(g *Game) {
+			g.tour = nil
+			for i, p := range g.players {
+				l := p.td.own[0].(*Loader)
+				l.Joint, l.Heading, l.Artic, l.Speed = []Vec{V(1490, 1330), V(1710, 1330)}[i], -math.Pi/2, 0, 0
+				l.Lift, l.Tilt, l.Load, l.LoadType = 0.05, 0.45, 0, MatSand
+				g.put(p, l)
+				p.td.goTo, p.td.mode, p.fp, p.scriptCtl = nil, tdDig, true, nil
+			}
+		}},
+		{name: "08b_cab_view_trucks", frames: 24, setup: func(g *Game) {
+			for i, p := range g.players {
+				tr := p.td.own[1].(*Truck)
+				tr.Pos, tr.Angle, tr.Speed, tr.BedTilt = []Vec{V(1300, 1150), V(1895, 1150)}[i], -math.Pi/2, 0, 0
+				g.put(p, tr)
+				p.td.mode = tdCarry
+			}
+		}},
+		{name: "08c_cab_view_cranes", frames: 30, setup: func(g *Game) {
+			for _, p := range g.players {
+				c := p.td.own[2].(*TowerCrane)
+				g.put(p, c)
+				p.td.mode, p.td.modeT = tdCarry, 0
+			}
+		}},
+		{name: "08d_chase_view_cranes", frames: 6, setup: func(g *Game) {
+			for _, p := range g.players {
+				p.fp = false
+				g.snapCamera(p)
+			}
+		}},
 		still("08_workshop_yard", V(2520, 520), 520, 1.2, 0.62),
 		still("09_houses_and_trees", V(1250, 170), 640, 1.85, 0.42),
 		still("10_site_overview", V(1600, 1250), 1550, 1.1, 0.72),

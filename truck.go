@@ -44,6 +44,16 @@ func (t *Truck) local(x, z, y float64) Vec3 {
 	return ground(t.Pos.Add(dir(t.Angle).Scale(x)).Add(dir(t.Angle+math.Pi/2).Scale(z)), y)
 }
 
+func (t *Truck) Seat() (Vec3, float64) { return t.local(40, -11, 47), t.Angle }
+func (t *Truck) SeatPitch() float64    { return -0.1 }
+
+// RenderCockpit: a dashboard across the windscreen base and the steering
+// wheel at the left seat.
+func (t *Truck) RenderCockpit(s *Scene) {
+	s.addRoundPrism(t.local(0, 0, 0), t.Angle, []ring{{52, 56, 27, 34, 1.2}, {52.5, 55.5, 27, 37.5, 1.2}}, rgba(62, 64, 70, 255), false, true)
+	s.addSteeringWheel(t.local(47, -11, 39.5), t.Angle, 2.4, rgba(30, 30, 33, 255))
+}
+
 func (t *Truck) ExitPoint(side float64) Vec {
 	return t.Pos.Add(dir(t.Angle).Scale(36)).Add(dir(t.Angle + math.Pi/2).Scale(-side * 52))
 }

@@ -53,8 +53,13 @@ truck right in front of them, and their crane and a stack of loads nearby.
 | Drive / steer (crane: swing and trolley) | `W` `A` `S` `D` | arrow keys (or `H` `J` `K` `L`) |
 | The button | `Space` | `Enter` |
 | Pick loader / truck / crane | `1` `2` `3` | `8` `9` `0` (or numpad `1` `2` `3`) |
+| Cab view / chase camera | `V` | `M` (or numpad `0`) |
 
-`F2` pauses. Picking a machine makes the kid stop, climb out, walk over
+`F2` pauses. The view key switches between the chase camera and looking
+out of the cab: the loader's dashboard, steering wheel and windscreen frame
+with the arms and bucket ahead, the truck's wheel and dash, and the crane
+cab's desk, screens and joysticks above its glass floor, looking down at the
+hook. Picking a machine makes the kid stop, climb out, walk over
 (round anything in the way) and climb in; there is no other way out. The
 machines do the fiddly parts themselves:
 

@@ -173,6 +173,7 @@ func (g *Game) Update() error {
 			ts := &g.tour[i]
 			if ts.shot != "" && g.frame >= ts.frame {
 				c := g.players[0].cam
+				c.fp = false
 				c.Target = ts.pos
 				c.Dist, c.TgtDist = ts.zoom, ts.zoom
 				c.Yaw, c.Pitch = 0.85, 0.62

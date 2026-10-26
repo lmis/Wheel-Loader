@@ -71,6 +71,48 @@ func (c *TowerCrane) CamTarget() (Vec, float64, float64) {
 	return c.hook, math.Max(c.HookY()-20, 20), c.Slew
 }
 
+// Seat: the cab hangs off the side of the slewing unit, looking along the
+// jib and down at the hook.
+func (c *TowerCrane) Seat() (Vec3, float64) { return c.jibAt(20.5, -17, craneMastH-9), c.Slew }
+func (c *TowerCrane) SeatPitch() float64    { return -0.5 }
+
+// RenderCockpit adds the inside of the crane cab: a framed front window and
+// glass floor, a desk with two screens, and joysticks on the armrests.
+func (c *TowerCrane) RenderCockpit(s *Scene) {
+	const z0, H = -17.0, craneMastH
+	at := func(x, z, y float64) Vec3 { return c.jibAt(x, z0+z, y) }
+	trim := rgba(56, 58, 64, 255)
+	fw := rotY(Vec3{1, 0, 0}, c.Slew)
+	up := Vec3{0, 1, 0}
+	// window frame round the front glass, and the frame of the glass floor
+	for _, z := range []float64{-8.4, 8.4} {
+		s.addCapsule(at(31.6, z, H-24), at(31.6, z, H-1), 0.7, 0.7, trim) // corner pillars
+		s.addCapsule(at(31.6, z, H-23.6), at(14, z, H-23.6), 0.5, 0.5, trim)
+	}
+	s.addCapsule(at(31.6, -8.4, H-1.2), at(31.6, 8.4, H-1.2), 0.7, 0.7, trim)   // header
+	s.addCapsule(at(31.6, -8.4, H-16.5), at(31.6, 8.4, H-16.5), 0.5, 0.5, trim) // sill between window and floor glass
+	s.addCapsule(at(31.6, -8.4, H-23.6), at(31.6, 8.4, H-23.6), 0.5, 0.5, trim) // front edge of the floor
+	s.addCapsule(at(24, -8.4, H-23.6), at(24, 8.4, H-23.6), 0.4, 0.4, trim)     // floor glass bar
+	s.addOBB2(at(17, 0, H-23.8), fw, up, 5, 0.3, 8.6, rgba(70, 72, 78, 255))    // solid floor under the seat
+	// desk with two glowing screens
+	s.addRoundPrism(at(0, 0, 0), c.Slew, []ring{{27.5, 30.5, 6, H - 19, 1}, {27.8, 30.2, 6, H - 16.8, 1}}, rgba(70, 72, 78, 255), false, true)
+	for _, z := range []float64{-3, 3} {
+		s.addOBB2(at(28.6, z, H-15.6), fw.Add(up.Scale(0.6)), up, 0.15, 1.1, 1.8, colDark)
+		s.detail(func() {
+			s.glowing(func() {
+				s.addOBB2(at(28.75, z, H-15.55), fw.Add(up.Scale(0.6)), up, 0.05, 0.9, 1.6, rgba(120, 200, 255, 255))
+			})
+		})
+	}
+	// armrests with joysticks either side of the seat
+	for _, z := range []float64{-4.6, 4.6} {
+		s.addRoundPrism(at(0, z, 0), c.Slew, []ring{{19, 25.5, 1.1, H - 16, 0.6}, {19, 25.5, 1.1, H - 14.6, 0.6}}, colDark, false, true)
+		base := at(24.6, z, H-14.6)
+		s.addCapsule(base, base.Add(Vec3{0, 1.6, 0}), 0.22, 0.2, colDark)
+		s.addSphere(base.Add(Vec3{0, 1.85, 0}), 0.45, rgba(220, 40, 36, 255))
+	}
+}
+
 func (c *TowerCrane) ExitPoint(side float64) Vec {
 	return c.Base.Add(dir(c.Slew + math.Pi/2).Scale(-side * 42))
 }

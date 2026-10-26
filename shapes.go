@@ -244,6 +244,25 @@ func (s *Scene) rotateSince(mark int, about, axis Vec3, ang float64) {
 	}
 }
 
+// addSteeringWheel adds a round steering wheel tilted toward the driver,
+// with a spoke and its column.
+func (s *Scene) addSteeringWheel(center Vec3, yaw, radius float64, col color.RGBA) {
+	axis := rotY(Vec3{-0.85, 0.55, 0}, yaw).Norm()
+	a := rotY(Vec3{0, 0, 1}, yaw)
+	b := axis.Cross(a).Norm()
+	const n = 14
+	pt := func(i int) Vec3 {
+		t := 2 * math.Pi * float64(i) / n
+		return center.Add(a.Scale(math.Cos(t) * radius)).Add(b.Scale(math.Sin(t) * radius))
+	}
+	rim := radius * 0.1
+	for i := 0; i < n; i++ {
+		s.addCapsule(pt(i), pt(i+1), rim, rim, col)
+	}
+	s.addCapsule(center.Sub(a.Scale(radius)), center.Add(a.Scale(radius)), rim*0.7, rim*0.7, col) // spoke
+	s.addCapsule(center, center.Sub(axis.Scale(radius*0.8)), rim*1.2, rim*1.2, col)               // column
+}
+
 // loftStation is one elliptical cross-section of a loft: at x along the
 // loft's forward axis, centred y above its origin, with half width hw and
 // half height hh.

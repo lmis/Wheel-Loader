@@ -246,3 +246,26 @@ func TestFullTruckStaysFullAndOverflows(t *testing.T) {
 		t.Fatal("a full truck should stay full until it is tipped")
 	}
 }
+
+func TestViewKeySwitchesToTheCab(t *testing.T) {
+	g := NewGame()
+	p := g.players[0]
+	run(g, 2)
+	if p.cam.fp {
+		t.Fatal("the game starts in the chase camera")
+	}
+	p.fp = true
+	for _, v := range p.td.own {
+		g.put(p, v)
+		run(g, 2)
+		eye, _ := v.(seated).Seat()
+		if !p.cam.fp || p.cam.fpEye.Sub(eye).Len() > 1 {
+			t.Fatalf("%T: camera should sit at the driver's seat", v)
+		}
+	}
+	g.putOnFoot(p, V(1400, 1400), 0)
+	run(g, 2)
+	if p.cam.fp {
+		t.Fatal("on foot the chase camera follows the kid")
+	}
+}

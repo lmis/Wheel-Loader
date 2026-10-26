@@ -14,6 +14,7 @@ type Player struct {
 	W       *Walker
 	Driving Vehicle
 	cam     *Camera
+	fp      bool // looking out of the cab instead of the chase camera
 
 	distWalker, distVehicle float64 // chase-camera distances per mode
 	ctl                     Controls
@@ -119,7 +120,11 @@ func (g *Game) snapCamera(p *Player) {
 // updatePlayerCamera places this player's camera for the current mode.
 func (g *Game) updatePlayerCamera(p *Player, dt float64) {
 	c := p.cam
+	st, inCab := p.Driving.(seated)
 	switch {
+	case p.fp && inCab:
+		eye, yaw := st.Seat()
+		c.SetFP(eye, yaw, st.SeatPitch())
 	case p.Driving != nil:
 		v := p.Driving
 		tgt, h, head := v.Center(), 40.0, v.Facing()

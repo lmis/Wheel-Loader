@@ -33,6 +33,13 @@ type Vehicle interface {
 	CamDist() float64 // preferred chase-camera distance
 }
 
+// seated is a vehicle with a driver's seat to look out of in the cab view.
+type seated interface {
+	Seat() (eye Vec3, yaw float64) // eye point and forward yaw
+	SeatPitch() float64            // how far down the driver looks
+	RenderCockpit(s *Scene)        // what the driver sees inside the cab
+}
+
 // collideCircles tests a set of circles against the world (ignoring self)
 // and returns the push-out normal of the first hit.
 func collideCircles(w *World, circles []obstacle, self any) (bool, Vec) {
@@ -76,6 +83,42 @@ func (l *Loader) collidersAt(j Vec) []obstacle {
 }
 
 func (l *Loader) Colliders() []obstacle { return l.collidersAt(l.Joint) }
+
+// Seat is the operator's eye: in the cab on the rear frame, looking along it.
+func (l *Loader) Seat() (Vec3, float64) {
+	rh := l.RearHeading()
+	return ground(l.Joint.Sub(dir(rh).Scale(16)), 51+clamp(l.bounce*0.3, -3, 3)), rh
+}
+
+func (l *Loader) SeatPitch() float64 { return -0.34 } // down over the hood to the bucket
+
+// RenderCockpit adds the inside of the cab: dashboard and steering wheel,
+// the windscreen frame and pillars, the roof lining and a mirror.
+func (l *Loader) RenderCockpit(s *Scene) {
+	rh := l.RearHeading()
+	at := func(x, z, y float64) Vec3 { return ground(l.Joint, 0).Add(rotY(Vec3{x, y, z}, rh)) }
+	trim := rgba(44, 46, 52, 255)
+	fw := rotY(Vec3{1, 0, 0}, rh)
+	up := Vec3{0, 1, 0}
+	// dashboard under the windscreen, with two gauges
+	s.addRoundPrism(at(0, 0, 0), rh, []ring{{-7.5, -4.6, 12.5, 31, 1.2}, {-7, -4.8, 12.5, 37, 1.2}}, colDark, false, true)
+	s.detail(func() {
+		for _, z := range []float64{-3, 3} {
+			s.addEllipsoid(at(-7.05, z, 35.6), fw, up, 0.12, 0.75, 0.75, rgba(20, 20, 24, 255))
+			s.glowing(func() { s.addEllipsoid(at(-7.15, z, 35.6), fw, up, 0.08, 0.5, 0.5, rgba(90, 170, 210, 255)) })
+		}
+	})
+	s.addSteeringWheel(at(-9.5, 0, 40), rh, 2.6, rgba(30, 30, 33, 255))
+	// windscreen frame: pillars, header and sill
+	for _, z := range []float64{-11.5, 11.5} {
+		s.addCapsule(at(-4.6, z, 37), at(-5.2, z, 54), 0.9, 0.9, trim)
+	}
+	s.addCapsule(at(-5.2, -11.5, 53.6), at(-5.2, 11.5, 53.6), 0.9, 0.9, trim)
+	s.addCapsule(at(-4.6, -11.5, 37.2), at(-4.6, 11.5, 37.2), 0.6, 0.6, trim)
+	// roof lining and a small mirror
+	s.addOBB2(at(-15, 0, 54.6), fw, up, 10.5, 0.4, 13.5, rgba(88, 90, 96, 255))
+	s.addEllipsoid(at(-6.2, 0, 52.4), fw, up, 0.3, 0.7, 1.8, trim)
+}
 
 func (l *Loader) ExitPoint(side float64) Vec {
 	rh := l.RearHeading()

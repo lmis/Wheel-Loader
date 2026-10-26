@@ -24,6 +24,7 @@ import (
 // toddlerKeys is one player's tiny control set.
 type toddlerKeys struct {
 	fwd, back, left, right, button []ebiten.Key
+	view                           []ebiten.Key    // cab view / chase camera
 	pick                           [3][]ebiten.Key // loader, truck, crane
 	label                          string
 	pickLabels                     [3]string
@@ -34,16 +35,18 @@ var (
 		fwd: []ebiten.Key{ebiten.KeyW}, back: []ebiten.Key{ebiten.KeyS},
 		left: []ebiten.Key{ebiten.KeyA}, right: []ebiten.Key{ebiten.KeyD},
 		button: []ebiten.Key{ebiten.KeySpace, ebiten.KeyShiftLeft},
+		view:   []ebiten.Key{ebiten.KeyV},
 		pick:   [3][]ebiten.Key{{ebiten.KeyDigit1}, {ebiten.KeyDigit2}, {ebiten.KeyDigit3}},
-		label:  "W A S D  +  Space", pickLabels: [3]string{"1", "2", "3"},
+		label:  "W A S D  +  Space    V: view", pickLabels: [3]string{"1", "2", "3"},
 	}
 	toddlerP2 = toddlerKeys{
 		fwd: []ebiten.Key{ebiten.KeyArrowUp, ebiten.KeyK}, back: []ebiten.Key{ebiten.KeyArrowDown, ebiten.KeyJ},
 		left: []ebiten.Key{ebiten.KeyArrowLeft, ebiten.KeyH}, right: []ebiten.Key{ebiten.KeyArrowRight, ebiten.KeyL},
 		button: []ebiten.Key{ebiten.KeyEnter, ebiten.KeyShiftRight},
+		view:   []ebiten.Key{ebiten.KeyM, ebiten.KeyNumpad0},
 		pick: [3][]ebiten.Key{{ebiten.KeyDigit8, ebiten.KeyNumpad1}, {ebiten.KeyDigit9, ebiten.KeyNumpad2},
 			{ebiten.KeyDigit0, ebiten.KeyNumpad3}},
-		label: "Arrows  +  Enter", pickLabels: [3]string{"8", "9", "0"},
+		label: "Arrows  +  Enter    M: view", pickLabels: [3]string{"8", "9", "0"},
 	}
 )
 
@@ -147,6 +150,11 @@ func (g *Game) toddlerInput(p *Player) {
 			if inpTapped(key) {
 				g.toddlerPick(p, td.own[i])
 			}
+		}
+	}
+	for _, key := range k.view {
+		if inpTapped(key) {
+			p.fp = !p.fp
 		}
 	}
 	p.ctl = Controls{Throttle: axis(k.fwd, k.back), Steer: axis(k.right, k.left)}
