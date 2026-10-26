@@ -80,6 +80,24 @@ hop up onto the next machine: on the cab roof and the engine hood of the
 loader, on the truck's cab roof, and on the crane's footing. An excavator, a
 third dump truck and three Kenney pickups stand parked around the site.
 
+## A little wonder
+
+Things happen around the site just to look at:
+
+- **The animals** bounce up and down on the spot every couple of seconds
+  (the owl flaps its wings).
+- **A train** of a red locomotive and five coloured carriages runs along a
+  line in the distance, between the north road and the houses, every so
+  often. It stops and waits if anything is standing on the track.
+- **A red helicopter** flies low over the middle of the site now and then,
+  rotors spinning, its shadow sweeping across the ground.
+- **A rollerblader** laps the roads at speed, right down the road between
+  the two kids: white helmet, long brown hair streaming behind, blue
+  glasses, and red rollerblades whose wheels glow and leave a red trail. He
+  swerves round anything in his way.
+
+They are in `wonder.go`.
+
 ## Material simulation
 
 Loose material is a coarse height grid (`material.go`). Scooping removes amount
@@ -99,6 +117,7 @@ partially filled and loads carry their material type.
 | `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
 | `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
+| `wonder.go` | The train, the helicopter and the rollerblader |
 | `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over |
 | `walker.go` | The kid on foot |
 | `animals.go` | The dogs, the chimp and the owl: riding, following, hopping |

@@ -20,6 +20,7 @@ type Game struct {
 	vehicles []Vehicle
 	crane    *TowerCrane // player 2's crane, by the cargo yard
 	crane2   *TowerCrane // player 1's crane, its mirror image
+	wonder   *wonders    // train, helicopter, rollerblader (wonder.go)
 	animals  []*Animal
 	players  []*Player
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
@@ -52,6 +53,7 @@ type tourStop struct {
 	zoom  float64 // camera distance
 	yaw   float64 // 0 = default angle
 	pitch float64 // 0 = default angle
+	look  float64 // height looked at; 0 = keep
 	shot  string
 }
 
@@ -71,6 +73,7 @@ func NewGame() *Game {
 		art:      NewArt(),
 		shots:    map[int]string{},
 		simSpeed: 1,
+		wonder:   newWonders(),
 	}
 	g.ground = buildGround(w)
 	g.skirt = buildDirtTile()
@@ -178,6 +181,9 @@ func (g *Game) Update() error {
 				if ts.pitch != 0 {
 					c.Pitch = ts.pitch
 				}
+				if ts.look != 0 {
+					c.lookHeight = ts.look
+				}
 				g.shots[g.frame] = ts.shot
 				ts.shot = ""
 				break
@@ -238,6 +244,7 @@ func (g *Game) step(dt float64) {
 	for _, a := range g.animals {
 		a.Update(dt)
 	}
+	g.updateWonders(dt)
 	w.Update(dt)
 	for _, v := range g.vehicles {
 		v.Effects(w)

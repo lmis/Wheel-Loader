@@ -128,6 +128,7 @@ type Scene struct {
 
 	eye  Vec3    // camera position this frame (for level of detail)
 	bias float64 // sort bias applied to geometry added while it is set
+	glow bool    // geometry added while set is unlit: it glows
 
 	// reusable buffers
 	keys  []sortKey
@@ -177,6 +178,9 @@ func (s *Scene) push(t tri) {
 	if l0 <= limit && l1 <= limit && l2 <= limit {
 		if t.bias == 0 {
 			t.bias = s.bias
+		}
+		if s.glow {
+			t.shade = false
 		}
 		s.tris = append(s.tris, t)
 		return
@@ -507,6 +511,14 @@ func (s *Scene) scaleSince(mark int, about Vec3, k float64) {
 			p[j] = about.Add(p[j].Sub(about).Scale(k))
 		}
 	}
+}
+
+// glowing adds geometry built by fn unlit, so it shines at full colour.
+func (s *Scene) glowing(fn func()) {
+	prev := s.glow
+	s.glow = true
+	fn()
+	s.glow = prev
 }
 
 func (s *Scene) detail(fn func()) {

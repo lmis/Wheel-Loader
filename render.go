@@ -64,6 +64,7 @@ func (g *Game) renderView(dst *ebiten.Image, p *Player) {
 	for _, a := range g.animals {
 		a.Render(g, s)
 	}
+	g.renderWonders(s)
 	g.buildParticles3D(s)
 
 	s.Flush(dst, g.cam, g.ground, g.skirt, g.atlas, g.art.white)

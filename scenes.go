@@ -105,7 +105,40 @@ func (g *Game) stageScenes(outDir, only string) {
 				p.scriptCtl = nil
 			}
 		}},
+		{name: "07a_rollerblader_zooms_by", frames: 14, setup: func(g *Game) {
+			for i, p := range g.players {
+				g.put(p, p.td.own[0])
+				p.td.goTo = nil
+				p.scriptCtl = nil
+				driveCam(p, p.Driving.CamDist(), []float64{0.5, -0.5}[i], 0.5)
+			}
+			sk := &g.wonder.skater
+			sk.s, sk.off = 760, 22
+			sk.Pos, sk.Yaw = loopAt(sk.s)
+		}},
+		{name: "07b_helicopter_overhead", frames: 14, setup: func(g *Game) {
+			g.wonder.heli.t = 12.5
+			for _, p := range g.players {
+				driveCam(p, p.Driving.CamDist(), 0, 0.5)
+			}
+		}},
+		{name: "07c_train_in_the_distance", frames: 2, setup: func(g *Game) {
+			g.wonder.train.X, g.wonder.train.wait = 1750, 0
+			g.tour = []tourStop{{frame: g.frame, pos: V(1450, 330), zoom: 520, yaw: math.Pi/2 + 0.35, pitch: 0.3, look: 25, shot: filepath.Join(outDir, "07c_train_in_the_distance.png")}}
+		}},
+		{name: "07d_rollerblader_closeup", frames: 2, setup: func(g *Game) {
+			sk := &g.wonder.skater
+			sk.s = 1500
+			at, _ := loopAt(sk.s + 22)
+			g.tour = []tourStop{{frame: g.frame, pos: at.Add(V(22, 0)), zoom: 75, yaw: 0.9, pitch: 0.22, look: 18, shot: filepath.Join(outDir, "07d_rollerblader_closeup.png")}}
+		}},
+		{name: "07e_helicopter_closeup", frames: 2, setup: func(g *Game) {
+			g.wonder.heli.t = 9
+			pos, _, _ := g.wonder.heli.Pos()
+			g.tour = []tourStop{{frame: g.frame, pos: pos.Add(V(20, -16)), zoom: 330, yaw: 2.2, pitch: 0.2, look: heliAlt, shot: filepath.Join(outDir, "07e_helicopter_closeup.png")}}
+		}},
 		{name: "07_kid_portrait", frames: 20, setup: func(g *Game) {
+			g.tour = nil
 			g.putOnFoot(p1, V(1600, 1312), math.Pi/2)
 			walkerCam(p1, 46, math.Pi+0.35, 0.16)
 			p1.cam.lookHeight = 15

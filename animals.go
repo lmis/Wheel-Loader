@@ -35,6 +35,8 @@ type Animal struct {
 	hopRide            Vehicle // machine it lands on, if any
 
 	flying  bool    // the owl, in the air beside its kid
+	bounce  float64 // height of a little happy hop on the spot
+	jumpT   float64 // time into that hop (<0: waiting for the next one)
 	t       float64 // idle animation clock
 	phase   float64 // gait cycle
 	speed   float64
@@ -44,7 +46,29 @@ type Animal struct {
 }
 
 func newAnimal(kind int, owner *Player, slot int, seed int64) *Animal {
-	return &Animal{Kind: kind, owner: owner, slot: slot, rng: rand.New(rand.NewSource(seed))}
+	return &Animal{Kind: kind, owner: owner, slot: slot, rng: rand.New(rand.NewSource(seed)), jumpT: -float64(seed)}
+}
+
+const jumpLen = 0.42 // seconds a happy hop takes
+
+// hopAbout makes the animal bounce up and down every couple of seconds while
+// it sits or stands still.
+func (a *Animal) hopAbout(dt float64) {
+	if a.hopping || a.speed > 20 {
+		a.bounce = 0
+		return
+	}
+	a.jumpT += dt
+	if a.jumpT < 0 {
+		a.bounce = 0
+		return
+	}
+	k := a.jumpT / jumpLen
+	if k >= 1 {
+		a.bounce, a.jumpT = 0, -(1.2 + a.rng.Float64()*2.5)
+		return
+	}
+	a.bounce = 9 * 4 * k * (1 - k)
 }
 
 // rideSpot is where the animal sits on machine v: its ground position,
@@ -121,6 +145,7 @@ func (a *Animal) Update(dt float64) {
 		return
 	}
 
+	defer a.hopAbout(dt)
 	switch {
 	case a.ride != nil && a.ride == p.Driving:
 		// sitting on the kid's machine
@@ -219,7 +244,9 @@ func (a *Animal) Render(g *Game, s *Scene) {
 
 func (a *Animal) frame() (func(x, z, y float64) Vec3, Vec3, Vec3) {
 	f, r := dir(a.Yaw), dir(a.Yaw+math.Pi/2)
-	at := func(x, z, y float64) Vec3 { return ground(a.Pos.Add(f.Scale(x)).Add(r.Scale(z)), a.Y+y) }
+	at := func(x, z, y float64) Vec3 {
+		return ground(a.Pos.Add(f.Scale(x)).Add(r.Scale(z)), a.Y+a.bounce/animalScale+y)
+	}
 	return at, rotY(Vec3{1, 0, 0}, a.Yaw), rotY(Vec3{0, 0, 1}, a.Yaw)
 }
 
@@ -362,7 +389,7 @@ func (a *Animal) renderOwl(s *Scene) {
 	s.addCone(at(0, 0, 17.8), 3.3, 2.7, 2, 14, white)
 	// wings: folded and speckled, or spread and flapping in flight
 	for _, z := range []float64{-1, 1} {
-		if a.flying || a.hopping {
+		if a.flying || a.hopping || a.bounce > 0 {
 			flap := math.Sin(a.t*9) * 0.6
 			span := lat.Scale(z * math.Cos(flap)).Add(up.Scale(math.Sin(flap)))
 			root := at(-0.4, z*2.8, 16.2)
