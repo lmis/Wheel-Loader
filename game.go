@@ -108,15 +108,15 @@ func NewGame() *Game {
 	for _, c := range w.Cargo[:len(w.Cargo)] {
 		w.Cargo = append(w.Cargo, newCargo(c.Kind, V(2*mid-c.Pos.X, c.Pos.Y), math.Pi-c.Yaw))
 	}
-	// the animals that come along with the kids
-	g.animals = []*Animal{
-		newAnimal(animalGolden, V(1700, 1270), 2.6, 1),
-		newAnimal(animalBernese, V(1495, 1295), 0.4, 2),
-		newAnimal(animalChimp, V(1715, 1150), 3.4, 3),
-		newAnimal(animalOwl, V(1488, 1150), 0, 4),
-	}
-
 	g.players = []*Player{newPlayer(1, l.Joint, l.Heading), newPlayer(2, l.Joint, l.Heading)}
+	// the animals that come along with the kids
+	p1, p2 := g.players[0], g.players[1]
+	g.animals = []*Animal{
+		newAnimal(animalOwl, p1, 0, 1),
+		newAnimal(animalChimp, p1, 1, 2),
+		newAnimal(animalGolden, p2, 0, 3),
+		newAnimal(animalBernese, p2, 1, 4),
+	}
 	g.setupLanes()
 	g.cam = g.players[0].cam
 	return g
@@ -225,19 +225,19 @@ func (g *Game) step(dt float64) {
 	for _, c := range w.Cargo {
 		c.Update(dt, w)
 	}
-	for _, a := range g.animals {
-		var look *Vec
-		best := math.Inf(1)
-		for _, p := range g.players {
-			pos := p.W.Pos
-			if p.Driving != nil {
-				pos = p.Driving.Center()
+	for _, p := range g.players {
+		// the path each walking kid takes, for their animals to follow
+		if p.Driving == nil {
+			if n := len(p.trail); n == 0 || p.W.Pos.Sub(p.trail[n-1]).Len() > 5 {
+				p.trail = append(p.trail, p.W.Pos)
 			}
-			if d := pos.Sub(a.Pos).Len(); d < best {
-				best, look = d, &pos
+			if len(p.trail) > 60 {
+				p.trail = append(p.trail[:0], p.trail[len(p.trail)-40:]...)
 			}
 		}
-		a.Update(dt, w, look, g.vehicles)
+	}
+	for _, a := range g.animals {
+		a.Update(dt)
 	}
 	w.Update(dt)
 	for _, v := range g.vehicles {
@@ -261,9 +261,6 @@ func (g *Game) rebuildObstacles() {
 		if o, ok := c.collider(); ok {
 			obs = append(obs, o)
 		}
-	}
-	for _, a := range g.animals {
-		obs = append(obs, a.collider())
 	}
 	w.obstacles = obs
 }

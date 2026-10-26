@@ -23,7 +23,7 @@ func (t *Truck) Facing() float64       { return t.Angle }
 func (t *Truck) SpeedVal() float64     { return t.Speed }
 func (t *Truck) SetOccupied(b bool)    { t.Occupied = b }
 func (t *Truck) Jolt() float64         { return t.jolt }
-func (t *Truck) CamDist() float64      { return 560 }
+func (t *Truck) CamDist() float64      { return 450 }
 func (t *Truck) Colliders() []obstacle { return t.collidersAt(t.Pos, t.Angle) }
 
 func (t *Truck) collidersAt(p Vec, ang float64) []obstacle {

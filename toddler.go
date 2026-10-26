@@ -109,7 +109,7 @@ func (g *Game) setupLanes() {
 		ln.truck.SpeedCap = toddlerTruckCap
 		ln.crane.Easy = true
 		g.put(p, l)
-		p.distVehicle = 430
+		p.distVehicle = l.CamDist()
 		p.cam.Pitch, p.cam.UserYaw = 0.6, 0
 		g.snapCamera(p)
 		ln.truck.Pos, ln.truck.Angle, ln.truck.Speed, ln.truck.BedTilt = ln.truckAt, ln.truckFacing, 0, 0
@@ -122,10 +122,10 @@ func (g *Game) setupLanes() {
 	for _, t := range w.Trucks {
 		t.Capacity = toddlerTruckSize
 	}
-	// the animals watch from behind the start, out of the driving lanes
-	homes := []Vec{V(1600, 1420), V(1530, 1470), V(1670, 1460), V(1600, 1520)}
-	for i, a := range g.animals {
-		a.home, a.Pos, a.walking, a.timer = homes[i], homes[i], false, 2
+	// each kid's animals sit on their loader
+	for _, a := range g.animals {
+		a.ride, a.hopping, a.flying = a.owner.Driving, false, false
+		a.Pos, a.Y, a.Yaw = a.rideSpot(a.ride)
 	}
 }
 

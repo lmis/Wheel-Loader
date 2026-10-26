@@ -39,7 +39,14 @@ func (g *Game) stageScenes(outDir, only string) {
 
 	scenes := []sceneSpec{
 		{name: "01_start", frames: 20},
+		{name: "01b_animals_riding", frames: 12, setup: func(g *Game) {
+			driveCam(p1, 210, 0.7, 0.42)
+			driveCam(p2, 210, -0.7, 0.42)
+		}},
 		{name: "02_scooping", frames: 60, setup: func(g *Game) {
+			for _, p := range g.players {
+				driveCam(p, p.Driving.CamDist(), 0, 0.6)
+			}
 			p2.scriptCtl = &Controls{Throttle: 1, Steer: 0.1}
 		}, ctl: &Controls{Throttle: 1, Steer: -0.05}},
 		{name: "03_loading_the_truck", frames: 34, setup: func(g *Game) {
@@ -51,11 +58,12 @@ func (g *Game) stageScenes(outDir, only string) {
 			driveCam(p1, 380, 0.9, 0.5)
 			p2.scriptCtl = &Controls{Throttle: -0.6}
 		}},
-		{name: "04_walk_over", frames: 50, setup: func(g *Game) {
+		{name: "04_walk_over", frames: 46, setup: func(g *Game) {
 			for i, p := range g.players {
 				g.toddlerPick(p, p.td.own[2-i])
 			}
 		}},
+		{name: "04b_hopping_on", frames: 40},
 		{name: "05_cranes", frames: 40, setup: func(g *Game) {
 			for _, p := range g.players {
 				c, tr := p.td.own[2].(*TowerCrane), p.td.own[1].(*Truck)

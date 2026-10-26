@@ -204,29 +204,3 @@ func TestCraneLiftsCargoOntoTruck(t *testing.T) {
 		t.Fatalf("load did not ride with the truck: item %v truck %v", item.Pos, tr.Pos)
 	}
 }
-
-func TestAnimalsGetOutOfTheWay(t *testing.T) {
-	g := NewGame()
-	dog := g.animals[0]
-	l := g.loader
-	start := dog.Pos
-	// drive the loader at the dog
-	l.Joint = dog.Pos.Add(V(-200, 0))
-	l.Heading, l.Artic = 0, 0
-	g.players[0].ctl = Controls{Throttle: 1}
-	hitDog := false
-	for i := 0; i < 240; i++ {
-		g.step(fixedDT)
-		for _, c := range l.Colliders() {
-			if c.c.Sub(dog.Pos).Len() < c.r+dog.radius()-2 {
-				hitDog = true
-			}
-		}
-	}
-	if hitDog {
-		t.Fatal("loader drove through the dog")
-	}
-	if dog.Pos.Sub(start).Len() < 20 {
-		t.Fatal("dog did not move out of the way")
-	}
-}

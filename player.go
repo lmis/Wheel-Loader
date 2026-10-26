@@ -21,6 +21,7 @@ type Player struct {
 	view                    *ebiten.Image
 	marker                  color.RGBA
 	td                      *toddlerState
+	trail                   []Vec // where the kid walked, for the animals to follow
 }
 
 func newPlayer(id int, at Vec, yaw float64) *Player {
@@ -72,6 +73,7 @@ func (g *Game) exit(p *Player) bool {
 			continue
 		}
 		p.W.Pos, p.W.Yaw, p.W.vel = pt, v.Facing(), Vec{}
+		p.trail = append(p.trail[:0], pt)
 		v.SetOccupied(false)
 		p.Driving = nil
 		p.cam.Pitch = 0.38

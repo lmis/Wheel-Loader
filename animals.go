@@ -6,24 +6,35 @@ import (
 	"math/rand"
 )
 
-// Animal kinds hanging around the starting area.
+// Animal kinds. Each kid has two companions: player 1 the owl and the
+// chimp, player 2 the two dogs.
 const (
 	animalGolden  = iota // golden retriever
 	animalBernese        // Bernese mountain dog
 	animalChimp          // small chimpanzee
-	animalOwl            // snowy owl on a fence post
+	animalOwl            // snowy owl
 )
 
-// Animal is a simple wandering critter. It idles, ambles to a nearby spot,
-// turns its head toward the closest kid, and trots clear of moving vehicles.
+// Animal is a kid's companion. It rides along on the kid's machine; when the
+// kid climbs out to switch machines it hops down, runs (or, the owl, flies)
+// alongside, and hops up onto the next machine with them.
 type Animal struct {
-	Kind    int
-	Pos     Vec
-	Yaw     float64
-	home    Vec
-	target  Vec
-	walking bool
-	timer   float64
+	Kind  int
+	Pos   Vec
+	Y     float64 // height of its feet above the ground
+	Yaw   float64
+	owner *Player
+	slot  int     // 0 or 1: which riding spot and place in the line
+	ride  Vehicle // machine it is sitting on, if any
+
+	// a hop (or the owl's glide) from one spot to another
+	hopping            bool
+	hopFrom, hopTo     Vec
+	hopY0, hopY1, hopT float64
+	hopLen             float64
+	hopRide            Vehicle // machine it lands on, if any
+
+	flying  bool    // the owl, in the air beside its kid
 	t       float64 // idle animation clock
 	phase   float64 // gait cycle
 	speed   float64
@@ -32,98 +43,168 @@ type Animal struct {
 	rng     *rand.Rand
 }
 
-func newAnimal(kind int, at Vec, yaw float64, seed int64) *Animal {
-	return &Animal{Kind: kind, Pos: at, home: at, Yaw: yaw, rng: rand.New(rand.NewSource(seed)), timer: 1 + float64(seed%3)}
+func newAnimal(kind int, owner *Player, slot int, seed int64) *Animal {
+	return &Animal{Kind: kind, owner: owner, slot: slot, rng: rand.New(rand.NewSource(seed))}
 }
 
-func (a *Animal) radius() float64 {
-	switch a.Kind {
-	case animalOwl:
-		return 4
-	case animalChimp:
-		return 6
+// rideSpot is where the animal sits on machine v: its ground position,
+// height and facing.
+func (a *Animal) rideSpot(v Vehicle) (Vec, float64, float64) {
+	on := func(o Vec, yaw, x, z, y float64) (Vec, float64, float64) {
+		return o.Add(dir(yaw).Scale(x)).Add(dir(yaw + math.Pi/2).Scale(z)), y, yaw
 	}
-	return 8
+	switch m := v.(type) {
+	case *Loader:
+		rh := m.RearHeading()
+		if a.slot == 0 {
+			return on(m.Joint, rh, -15, 0, 58) // cab roof
+		}
+		return on(m.Joint, rh, -52, 0, 45) // engine hood
+	case *Truck:
+		return on(m.Pos, m.Angle, 39, []float64{-12, 12}[a.slot], 55) // cab roof
+	case *TowerCrane:
+		// on the concrete footing, either side of the mast
+		return on(m.Base, math.Pi/2, 22, []float64{-22, 22}[a.slot], 8)
+	}
+	return v.Center(), 0, v.Facing()
 }
 
-func (a *Animal) collider() obstacle { return obstacle{a.Pos, a.radius(), a} }
+// hop starts a jump (or glide) to a spot, landing on machine onto if set.
+func (a *Animal) hop(to Vec, y float64, onto Vehicle) {
+	a.hopping, a.hopFrom, a.hopTo, a.hopY0, a.hopY1, a.hopT = true, a.Pos, to, a.Y, y, 0
+	a.hopLen = 0.35 + to.Sub(a.Pos).Len()/320
+	a.hopRide, a.ride = onto, nil
+}
 
-// Update moves the animal. lookAt is the nearest kid (if any) and threats are
-// vehicles to keep away from.
-func (a *Animal) Update(dt float64, w *World, lookAt *Vec, threats []Vehicle) {
+// Update moves the companion along with its kid.
+func (a *Animal) Update(dt float64) {
 	a.t += dt
 	a.blink -= dt
 	if a.blink < -4-a.rng.Float64()*4 {
 		a.blink = 0.1
 	}
-	// head turns toward the nearest kid within range
-	want := 0.0
-	if lookAt != nil && lookAt.Sub(a.Pos).Len() < 260 {
-		want = angleDiff(lookAt.Sub(a.Pos).Angle(), a.Yaw)
-		lim := 1.1
-		if a.Kind == animalOwl {
-			lim = 2.6 // owls can turn their heads a very long way
-		}
-		want = clamp(want, -lim, lim)
-	} else {
-		want = math.Sin(a.t*0.7+float64(a.Kind)) * 0.5
+	p := a.owner
+	kid := p.W.Pos
+	if p.Driving != nil {
+		kid = p.Driving.Center()
 	}
-	a.headYaw += (want - a.headYaw) * (1 - math.Pow(0.03, dt))
+	// head turns toward its kid, or looks about while riding
+	want := math.Sin(a.t*0.7+float64(a.Kind)) * 0.5
+	if a.ride == nil && kid.Sub(a.Pos).Len() > 4 {
+		want = angleDiff(kid.Sub(a.Pos).Angle(), a.Yaw)
+	}
+	lim := 1.1
 	if a.Kind == animalOwl {
-		return // perched
+		lim = 2.6 // owls can turn their heads a very long way
 	}
+	want = clamp(want, -lim, lim)
+	a.headYaw += (want - a.headYaw) * (1 - math.Pow(0.03, dt))
 
-	maxSpeed := 34.0
-	if a.Kind == animalChimp {
-		maxSpeed = 26
-	}
-	// trot clear of anything big that is moving nearby
-	for _, v := range threats {
-		d := a.Pos.Sub(v.Center())
-		if d.Len() < 150 && math.Abs(v.SpeedVal()) > 25 {
-			a.target = a.Pos.Add(d.Norm().Scale(140))
-			a.walking, a.timer = true, 3
-			maxSpeed *= 2.2
-			break
+	if a.hopping {
+		a.hopT += dt
+		k := math.Min(1, a.hopT/a.hopLen)
+		to := a.hopTo
+		if a.hopRide != nil {
+			to, a.hopY1, _ = a.rideSpot(a.hopRide) // the machine may be moving
 		}
-	}
-	a.timer -= dt
-	if a.timer <= 0 {
-		if a.walking {
-			a.walking, a.timer = false, 2+a.rng.Float64()*4
-		} else {
-			ang := a.rng.Float64() * 2 * math.Pi
-			a.target = a.home.Add(dir(ang).Scale(30 + a.rng.Float64()*90))
-			a.walking, a.timer = true, 6
+		a.Pos = a.hopFrom.Add(to.Sub(a.hopFrom).Scale(k))
+		arc := 10 + to.Sub(a.hopFrom).Len()*0.15
+		a.Y = lerp(a.hopY0, a.hopY1, k) + arc*4*k*(1-k)
+		if d := to.Sub(a.hopFrom); d.Len() > 1 {
+			a.Yaw += angleDiff(d.Angle(), a.Yaw) * (1 - math.Pow(0.001, dt))
 		}
-	}
-	goal := 0.0
-	if a.walking {
-		to := a.target.Sub(a.Pos)
-		if to.Len() < 8 {
-			a.walking, a.timer = false, 2+a.rng.Float64()*4
-		} else {
-			a.Yaw += angleDiff(to.Angle(), a.Yaw) * (1 - math.Pow(0.05, dt))
-			goal = maxSpeed
+		a.speed = 0
+		if k >= 1 {
+			a.hopping, a.ride = false, a.hopRide
+			a.flying = a.Kind == animalOwl && a.ride == nil
 		}
-	}
-	a.speed = approach(a.speed, goal, 80*dt)
-	np := a.Pos.Add(dir(a.Yaw).Scale(a.speed * dt))
-	if w != nil {
-		if hit, _ := w.CollideCircle(np, a.radius(), a); hit {
-			a.walking, a.timer, a.speed = false, 1, 0
-			np = a.Pos
-		}
-	}
-	a.Pos = np
-	a.phase += a.speed * dt * 0.5
-}
-
-func (a *Animal) Render(g *Game, s *Scene) {
-	g.shadow(s, a.Pos, 18, 10, a.Yaw)
-	if !g.cam.inView(ground(a.Pos, 8), 20) {
 		return
 	}
+
+	switch {
+	case a.ride != nil && a.ride == p.Driving:
+		// sitting on the kid's machine
+		a.Pos, a.Y, a.Yaw = a.rideSpot(a.ride)
+		a.speed = 0
+	case p.Driving != nil:
+		// the kid got in another machine: catch up, then hop on
+		spot, y, _ := a.rideSpot(p.Driving)
+		if d := spot.Sub(a.Pos).Len(); d < 80 || d > 400 || a.ride != nil {
+			a.hop(spot, y, p.Driving)
+			return
+		}
+		a.runTo(spot, dt)
+	case a.ride != nil:
+		// the kid climbed out: hop down beside them
+		land := p.W.Pos.Sub(dir(p.W.Yaw).Scale(24 + 24*float64(a.slot)))
+		y := 0.0
+		if a.Kind == animalOwl {
+			y = 28
+		}
+		a.hop(land, y, nil)
+	default:
+		a.runTo(a.followPoint(), dt)
+	}
+}
+
+// followPoint is where the companion wants to be while its kid walks: just
+// behind the kid, one on each side (the owl flies on the right).
+func (a *Animal) followPoint() Vec {
+	k := a.owner.W
+	side := []float64{1, -1}[a.slot]
+	if a.Kind == animalOwl {
+		return k.Pos.Add(dir(k.Yaw + math.Pi/2).Scale(28)).Sub(dir(k.Yaw).Scale(4))
+	}
+	// a point a little way back along the kid's path, stepped to the side
+	back := 22.0
+	trail := a.owner.trail
+	at := k.Pos
+	for i := len(trail) - 1; i >= 0 && back > 0; i-- {
+		d := at.Sub(trail[i]).Len()
+		if d >= back {
+			at = at.Add(trail[i].Sub(at).Scale(back / d))
+			break
+		}
+		back -= d
+		at = trail[i]
+	}
+	return at.Add(dir(k.Yaw + math.Pi/2).Scale(side * 22))
+}
+
+// runTo moves toward a point at up to a sprint, easing off as it arrives.
+func (a *Animal) runTo(to Vec, dt float64) {
+	d := to.Sub(a.Pos)
+	goal := clamp(d.Len()*5, 0, 160)
+	if d.Len() > 2 {
+		a.Yaw += angleDiff(d.Angle(), a.Yaw) * (1 - math.Pow(0.002, dt))
+	}
+	a.speed = approach(a.speed, goal, 400*dt)
+	step := math.Min(a.speed*dt, d.Len())
+	if d.Len() > 0.01 {
+		a.Pos = a.Pos.Add(d.Norm().Scale(step))
+	}
+	a.phase += a.speed * dt * 0.5
+	if a.flying {
+		a.Y = 28 + math.Sin(a.t*3)*2
+	} else {
+		a.Y = 0
+	}
+}
+
+// animalScale enlarges the animals a little beyond life size, so they are
+// easy to spot on the machines from the chase cameras.
+const animalScale = 2.0
+
+func (a *Animal) Render(g *Game, s *Scene) {
+	if a.ride == nil {
+		r := animalScale / (1 + a.Y/30) // smaller, softer shadow when up in the air
+		g.shadow(s, a.Pos, 18*r, 10*r, a.Yaw)
+	}
+	if !g.cam.inView(ground(a.Pos, a.Y+12), 36) {
+		return
+	}
+	mark := len(s.tris)
+	defer s.scaleSince(mark, ground(a.Pos, a.Y), animalScale)
 	switch a.Kind {
 	case animalGolden:
 		a.renderDog(s, rgba(222, 168, 82, 255), rgba(240, 200, 128, 255), rgba(196, 140, 64, 255), false, 1)
@@ -138,7 +219,7 @@ func (a *Animal) Render(g *Game, s *Scene) {
 
 func (a *Animal) frame() (func(x, z, y float64) Vec3, Vec3, Vec3) {
 	f, r := dir(a.Yaw), dir(a.Yaw+math.Pi/2)
-	at := func(x, z, y float64) Vec3 { return ground(a.Pos.Add(f.Scale(x)).Add(r.Scale(z)), y) }
+	at := func(x, z, y float64) Vec3 { return ground(a.Pos.Add(f.Scale(x)).Add(r.Scale(z)), a.Y+y) }
 	return at, rotY(Vec3{1, 0, 0}, a.Yaw), rotY(Vec3{0, 0, 1}, a.Yaw)
 }
 
@@ -223,7 +304,7 @@ func (a *Animal) renderChimp(s *Scene) {
 	face := rgba(196, 156, 124, 255)
 	moving := clamp(a.speed/20, 0, 1.5)
 	hop := 0.0
-	if !a.walking {
+	if a.speed < 5 && !a.hopping {
 		hop = math.Max(0, math.Sin(a.t*2.1)-0.92) * 18 // the odd excited bounce
 	}
 	at2 := func(x, z, y float64) Vec3 { return at(x, z, y+hop) }
@@ -240,7 +321,7 @@ func (a *Animal) renderChimp(s *Scene) {
 		sw := -math.Sin(a.phase*2+float64(i)*math.Pi) * 0.4 * moving
 		sh := at2(1.8, z, 8.6)
 		var hand Vec3
-		if i == 1 && !a.walking && math.Sin(a.t*0.9) > 0.6 {
+		if i == 1 && a.speed < 5 && math.Sin(a.t*0.9) > 0.6 {
 			// scratching its head
 			hand = at2(1.6, 1.8, 12.6)
 		} else {
@@ -269,19 +350,25 @@ func (a *Animal) renderChimp(s *Scene) {
 }
 
 func (a *Animal) renderOwl(s *Scene) {
-	at, fw, lat := a.frame()
+	at0, fw, lat := a.frame()
+	at := func(x, z, y float64) Vec3 { return at0(x, z, y-12) } // feet at a.Y
 	up := Vec3{0, 1, 0}
 	white := rgba(246, 246, 242, 255)
 	speck := rgba(52, 50, 46, 255)
-	// fence post perch
-	s.addCylinder(at(0, 0, 6), 2.2, 12, 8, rgba(120, 86, 52, 255))
 	s.addOBB2(at(0.6, 0, 12.3), fw, up, 1.4, 0.4, 1.8, rgba(80, 80, 82, 255)) // talons
 	// plump, rounded body
 	s.addCone(at(0, 0, 13.2), 2.2, 3.2, 2.4, 14, white)
 	s.addCone(at(0, 0, 15.6), 3.2, 3.3, 2.4, 14, white)
 	s.addCone(at(0, 0, 17.8), 3.3, 2.7, 2, 14, white)
-	// folded wings, speckled
+	// wings: folded and speckled, or spread and flapping in flight
 	for _, z := range []float64{-1, 1} {
+		if a.flying || a.hopping {
+			flap := math.Sin(a.t*9) * 0.6
+			span := lat.Scale(z * math.Cos(flap)).Add(up.Scale(math.Sin(flap)))
+			root := at(-0.4, z*2.8, 16.2)
+			s.addOBB2(root.Add(span.Scale(5.5)), span, fw, 5.5, 3, 0.4, shadeC(white, 0.95))
+			continue
+		}
 		wc := at(-0.6, z*3.1, 15.8)
 		s.addOBB2(wc, fw.Scale(0.9).Add(up.Scale(-0.4)), lat.Scale(z), 3, 0.5, 3, shadeC(white, 0.95))
 	}

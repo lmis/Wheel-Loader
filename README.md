@@ -71,9 +71,13 @@ every crane load set on a truck. Parked full trucks empty themselves. The
 machines are speed-limited and stop when no key is held.
 
 The kids are site workers in orange hi-vis vests and yellow hard hats, with
-blonde hair and brown eyes. A golden retriever, a Bernese mountain dog, a
-small chimp and a snowy owl hang around the start. An excavator, a third
-dump truck and three Kenney pickups stand parked around the site.
+blonde hair and brown eyes. Each kid has two animal friends who ride on
+their machine: a snowy owl and a small chimp for player 1, a golden
+retriever and a Bernese mountain dog for player 2. When the kid switches
+machines, the animals hop down, run along beside them (the owl flies), and
+hop up onto the next machine: on the cab roof and the engine hood of the
+loader, on the truck's cab roof, and on the crane's footing. An excavator, a
+third dump truck and three Kenney pickups stand parked around the site.
 
 ## Material simulation
 
@@ -96,7 +100,7 @@ partially filled and loads carry their material type.
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
 | `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over, confetti |
 | `walker.go` | The kid on foot |
-| `animals.go` | The dogs, the chimp and the owl |
+| `animals.go` | The dogs, the chimp and the owl: riding, following, hopping |
 | `player.go` | Players, getting in and out, cameras |
 | `g3d.go` | Software 3D pipeline: projection, clipping, sorting, mesh builders |
 | `camera.go` | Perspective chase/orbit camera |
@@ -133,7 +137,8 @@ repositories. They are embedded into the binary. See `assets/kenney/LICENSE.txt`
 
 ```sh
 go test ./...   # driving, scooping, dumping, entering/exiting, truck tipping,
-                # excavator dig-and-load, crane lift onto a truck, animals,
-                # toddler mode: loading, tipping, crane lifts, walking over
+                # excavator dig-and-load, crane lift onto a truck,
+                # toddler mode: loading, tipping, crane lifts, walking over,
+                # the animals riding and coming along
 go vet ./...
 ```

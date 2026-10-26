@@ -498,6 +498,17 @@ func (s *Scene) addDecalQuad(a, b, c, d Vec3, col color.RGBA) {
 
 // detail adds geometry built by fn with a sort bias, for parts mounted on a
 // larger surface (doors, windows, ribs, grilles) so they draw on top of it.
+// scaleSince scales the triangles added since mark (a len(s.tris) taken
+// earlier) about a point. Uniform scaling keeps normals and culling valid.
+func (s *Scene) scaleSince(mark int, about Vec3, k float64) {
+	for i := mark; i < len(s.tris); i++ {
+		p := &s.tris[i].p
+		for j := range p {
+			p[j] = about.Add(p[j].Sub(about).Scale(k))
+		}
+	}
+}
+
 func (s *Scene) detail(fn func()) {
 	prev := s.bias
 	s.bias = 4

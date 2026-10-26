@@ -159,3 +159,64 @@ func TestToddlerCraneLiftsOntoTruck(t *testing.T) {
 		}
 	}
 }
+
+func TestAnimalsComeAlong(t *testing.T) {
+	g := NewGame()
+	owners := map[int][]int{1: {animalOwl, animalChimp}, 2: {animalGolden, animalBernese}}
+	for _, a := range g.animals {
+		if a.ride != a.owner.Driving || a.Y < 40 {
+			t.Fatalf("animal %d should start on its kid's loader (y %.0f)", a.Kind, a.Y)
+		}
+		found := false
+		for _, k := range owners[a.owner.ID] {
+			found = found || k == a.Kind
+		}
+		if !found {
+			t.Fatalf("animal %d belongs to the wrong kid", a.Kind)
+		}
+	}
+	want := map[*Player]Vehicle{}
+	for i, p := range g.players {
+		want[p] = p.td.own[1+i] // player 1 to the truck, player 2 to the crane
+		g.toddlerPick(p, want[p])
+	}
+	walkedAlong := map[*Animal]bool{}
+	for i := 0; i < 60*12; i++ {
+		run(g, 1)
+		for _, a := range g.animals {
+			p := a.owner
+			if p.Driving == nil && a.ride == nil && !a.hopping && p.W.Pos.Sub(a.Pos).Len() < 70 {
+				walkedAlong[a] = true
+			}
+			if a.Kind == animalOwl && p.Driving == nil && !a.hopping && a.Y < 15 {
+				t.Fatal("the owl should fly while its kid walks")
+			}
+		}
+	}
+	for _, a := range g.animals {
+		if !walkedAlong[a] {
+			t.Fatalf("animal %d did not keep up with its kid", a.Kind)
+		}
+		if a.ride != a.owner.Driving || a.owner.Driving != want[a.owner] {
+			t.Fatalf("animal %d should be sitting on its kid's new machine", a.Kind)
+		}
+	}
+	// and they ride along on a moving machine
+	p := g.players[1]
+	g.toddlerPick(p, p.td.own[1])
+	for i := 0; i < 60*12 && p.Driving != p.td.own[1]; i++ {
+		run(g, 1)
+	}
+	run(g, 120)
+	tr := p.Driving.(*Truck)
+	p.ctl = Controls{Throttle: 1}
+	for i := 0; i < 60; i++ {
+		run(g, 1)
+	}
+	for _, a := range g.animals[2:] {
+		spot, y, _ := a.rideSpot(tr)
+		if a.ride != tr || a.Pos.Sub(spot).Len() > 1 || a.Y != y {
+			t.Fatalf("dog %d should ride on the truck's roof", a.Kind)
+		}
+	}
+}

@@ -51,7 +51,7 @@ func (l *Loader) Facing() float64    { return l.Heading }
 func (l *Loader) SpeedVal() float64  { return l.Speed }
 func (l *Loader) SetOccupied(b bool) { l.Occupied = b }
 func (l *Loader) Jolt() float64      { return math.Abs(l.bounceV) }
-func (l *Loader) CamDist() float64   { return 520 }
+func (l *Loader) CamDist() float64   { return 400 }
 
 func (l *Loader) Drive(c *Controls) {
 	if c == nil {
