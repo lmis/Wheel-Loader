@@ -36,11 +36,9 @@ const (
 	excCapacity  = 90.0
 )
 
-func (e *Excavator) Name() string          { return "Excavator" }
 func (e *Excavator) Center() Vec           { return e.Pos }
 func (e *Excavator) Facing() float64       { return e.Heading + e.Slew }
 func (e *Excavator) SpeedVal() float64     { return e.Speed }
-func (e *Excavator) EnterRadius() float64  { return 105 }
 func (e *Excavator) SetOccupied(b bool)    { e.Occupied = b }
 func (e *Excavator) Jolt() float64         { return e.jolt }
 func (e *Excavator) CamDist() float64      { return 600 }
@@ -97,8 +95,6 @@ func (e *Excavator) Tip() (Vec, float64) {
 	h := e.houseYaw()
 	return e.Pos.Add(dir(h).Scale(p3[0])).Add(dir(h + math.Pi/2).Scale(excArmZ)), p3[1]
 }
-
-func (e *Excavator) Seat() (Vec3, float64) { return e.houseAt(16, -18, 61), e.houseYaw() }
 
 func (e *Excavator) ExitPoint(side float64) Vec {
 	return e.Pos.Add(dir(e.Heading + math.Pi/2).Scale(-side * 78))
@@ -206,32 +202,7 @@ func (e *Excavator) Effects(w *World) {
 	}
 }
 
-func (e *Excavator) ControlHelp() []string {
-	return []string{
-		"{T}\ttracks forward / back",
-		"{S}\tturn tracks",
-		"{B}\tbrake",
-		"{1}\tboom up / down",
-		"{2}\tstick out / in",
-		"{3}\tcurl / open bucket",
-		"{4}\tswing house left / right",
-	}
-}
-
-func (e *Excavator) Gauges() []gauge {
-	load := "empty"
-	if e.Load >= 1 {
-		load = matNames[e.LoadTyp]
-	}
-	return []gauge{
-		{"BUCKET", e.Load / excCapacity, load},
-		{"BOOM", e.Boom, ""},
-		{"STICK", 1 - e.Stick, ""},
-		{"CURL", e.Bucket, ""},
-	}
-}
-
-func (e *Excavator) Render(g *Game, s *Scene, cockpit bool) {
+func (e *Excavator) Render(g *Game, s *Scene) {
 	g.shadow(s, e.Pos, excTrackLen+8, excTrackW+8, e.Heading)
 	if !g.cam.inView(ground(e.Pos, 50), 200) {
 		return
@@ -282,9 +253,6 @@ func (e *Excavator) Render(g *Game, s *Scene, cockpit bool) {
 		beacon = rgba(255, 150, 35, 255)
 	}
 	s.addCylinder(e.houseAt(8, -18, excHouseY+52), 2.4, 5, 8, beacon)
-	if cockpit {
-		s.addBox(e.houseAt(27, -18, excHouseY+31), 1.5, 1.5, 7, ha, colDark)
-	}
 
 	// arm chain
 	p0, p1, p2, p3 := e.armPoints(e.Boom, e.Stick, e.Bucket)

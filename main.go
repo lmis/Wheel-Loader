@@ -15,16 +15,11 @@ import (
 )
 
 func main() {
-	demo := flag.Bool("demo", false, "run the autopilot (hands-free demo)")
-	shotDir := flag.String("shots", "", "run headless autopilot and save screenshots to this dir, then exit")
-	dumpShot := flag.String("dumpshot", "", "render a loaded loader dumping into a truck to this dir, then exit")
 	scenesDir := flag.String("scenes", "", "stage and capture a screenshot of every feature to this dir, then exit")
 	only := flag.String("only", "", "with -scenes: capture only scenes whose name contains this")
-	coop := flag.Bool("coop", false, "start in two-player split screen")
 	tourDir := flag.String("tour", "", "render static views of site landmarks to this dir, then exit")
 	frames := flag.Int("frames", 0, "exit after this many frames (0 = run forever)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile to this file")
-	full := flag.Bool("full", false, "start in the full game instead of toddler mode")
 	flag.Parse()
 
 	if *cpuProfile != "" {
@@ -44,38 +39,14 @@ func main() {
 	ebiten.SetTPS(60)
 
 	g := NewGame()
-	// toddler mode is the default; dev and screenshot modes use the full game
-	if !*full && !*demo && !*coop && *shotDir == "" && *scenesDir == "" && *dumpShot == "" && *tourDir == "" {
-		g.setToddler(true)
-	}
-
-	if *demo {
-		g.auto = NewAutopilot()
-	}
 	if *frames > 0 {
 		g.exitFrame = *frames
-	}
-	if *shotDir != "" {
-		if err := os.MkdirAll(*shotDir, 0o755); err != nil {
-			log.Fatal(err)
-		}
-		g.auto = NewAutopilot()
-		g.shotPlan(*shotDir)
-	}
-	if *coop {
-		g.setCoop(true)
 	}
 	if *scenesDir != "" {
 		if err := os.MkdirAll(*scenesDir, 0o755); err != nil {
 			log.Fatal(err)
 		}
 		g.stageScenes(*scenesDir, *only)
-	}
-	if *dumpShot != "" {
-		if err := os.MkdirAll(*dumpShot, 0o755); err != nil {
-			log.Fatal(err)
-		}
-		g.dumpScene(*dumpShot)
 	}
 	if *tourDir != "" {
 		if err := os.MkdirAll(*tourDir, 0o755); err != nil {
@@ -100,61 +71,6 @@ func main() {
 	if g.done {
 		fmt.Println("finished")
 	}
-}
-
-// shotPlan schedules screenshots across a full autopilot job cycle. Shots
-// are keyed by target simulation step; with simSpeed substeps per rendered
-// frame, software-GL capture reaches each state in far fewer draws.
-func (g *Game) shotPlan(dir string) {
-	g.simSpeed = 6
-	plan := map[int]string{
-		60:   "01_start.png",
-		260:  "02_driving.png",
-		520:  "03_approach_pile.png",
-		680:  "04_digging.png",
-		760:  "05_loaded.png",
-		1080: "06_to_truck.png",
-		1380: "07_dumping.png",
-		1600: "08_cycle.png",
-	}
-	last := 0
-	for simStep, name := range plan {
-		f := simStep / g.simSpeed
-		g.shots[f] = filepath.Join(dir, name)
-		if f > last {
-			last = f
-		}
-	}
-	g.exitFrame = last + 10
-}
-
-// dumpScene positions a loaded loader just in front of a truck and tips the
-// bucket, producing screenshots of material being delivered into the bed.
-func (g *Game) dumpScene(outDir string) {
-	g.simSpeed = 2
-	truck := g.world.Trucks[2] // Truck C
-	l := g.loader
-	l.Joint = truck.Pos.Add(dir(truck.Angle).Scale(118))
-	l.Heading = truck.Pos.Sub(l.Joint).Angle()
-	l.Lift = 0.82
-	l.Tilt = 0.92
-	l.Load = 95
-	l.LoadType = MatSand
-	g.jobs.Current.Truck = truck
-	g.jobs.Current.Material = MatSand
-	g.jobs.Current.startTot = truck.Contents[MatSand]
-	ap := NewAutopilot()
-	ap.state = apDump
-	ap.truck = truck
-	g.auto = ap
-	g.cam.Target = l.Joint
-	g.cam.followYaw = l.Heading
-	g.cam.Dist, g.cam.TgtDist = 300, 300
-	g.shots[3] = filepath.Join(outDir, "dump_0.png")
-	g.shots[16] = filepath.Join(outDir, "dump_1.png")
-	g.shots[40] = filepath.Join(outDir, "dump_2.png")
-	g.shots[70] = filepath.Join(outDir, "dump_3.png")
-	g.exitFrame = 90
 }
 
 func (g *Game) maybeCapture(screen *ebiten.Image) {

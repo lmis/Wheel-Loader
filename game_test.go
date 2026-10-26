@@ -123,34 +123,6 @@ func TestDumpIntoTruck(t *testing.T) {
 	}
 }
 
-func TestAutopilotCompletesCycle(t *testing.T) {
-	g := NewGame()
-	g.auto = NewAutopilot()
-	// run ~40 simulated seconds and ensure the loader both loads and delivers
-	maxLoad := 0.0
-	delivered := false
-	for i := 0; i < 60*60; i++ {
-		g.auto.Apply(g)
-		g.loader.Update(fixedDT, g.world)
-		g.world.Update(fixedDT)
-		g.jobs.Update(fixedDT)
-		if g.loader.Load > maxLoad {
-			maxLoad = g.loader.Load
-		}
-		for _, tr := range g.world.Trucks {
-			if tr.Total() > 20 {
-				delivered = true
-			}
-		}
-	}
-	if maxLoad < 30 {
-		t.Fatalf("autopilot never loaded the bucket (max=%f)", maxLoad)
-	}
-	if !delivered {
-		t.Fatalf("autopilot never delivered material to a truck")
-	}
-}
-
 func totalMaterial(w *World) float64 {
 	var s float64
 	for i := range w.Grid.cells {

@@ -16,31 +16,25 @@ const (
 // Game is the top-level Ebitengine game.
 type Game struct {
 	world    *World
-	loader   *Loader // the main loader (autopilot, demo modes)
+	loader   *Loader // player 1's loader
 	vehicles []Vehicle
-	crane    *TowerCrane
-	crane2   *TowerCrane // player 1's crane in toddler mode
+	crane    *TowerCrane // player 2's crane, by the cargo yard
+	crane2   *TowerCrane // player 1's crane, its mirror image
 	animals  []*Animal
 	players  []*Player
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
-	jobs     *JobBoard
 
 	ground *ebiten.Image // baked site ground texture
 	skirt  *ebiten.Image // repeating dirt for the land beyond the site
 	atlas  *ebiten.Image // object-pass texture: white block + material grain
 	art    *Art
 
-	showHelp bool
-	paused   bool
-	frame    int
+	paused bool
+	frame  int
 
-	auto     *Autopilot // non-nil in demo/shot mode
-	simSpeed int        // simulation substeps per rendered frame (default 1)
-	scene    Scene      // reused 3D geometry buffer
-	renderMS float64    // smoothed CPU time per rendered frame
-
-	mouseCaptured  bool
-	lastMX, lastMY int
+	simSpeed int     // simulation substeps per rendered frame (default 1)
+	scene    Scene   // reused 3D geometry buffer
+	renderMS float64 // smoothed CPU time per rendered frame
 
 	// screenshot scheduling
 	shots     map[int]string
@@ -50,8 +44,6 @@ type Game struct {
 	tour     []tourStop   // static landmark views for verification
 	script   []scriptStep // staged scenes for verification screenshots
 	scripted bool
-
-	toddler bool // simplified two-player mode (see toddler.go)
 }
 
 type tourStop struct {
@@ -76,7 +68,6 @@ func NewGame() *Game {
 	g := &Game{
 		world:    w,
 		loader:   l,
-		jobs:     NewJobBoard(w),
 		art:      NewArt(),
 		shots:    map[int]string{},
 		simSpeed: 1,
@@ -87,15 +78,15 @@ func NewGame() *Game {
 
 	// the fleet
 	g.vehicles = append(g.vehicles, l,
-		&Loader{Joint: V(2650, 1980), Heading: 0.6, Artic: 0.22, Lift: 0.02, Tilt: 0.5, Label: "Wheel loader 2", Color: rgba(226, 150, 30, 255)})
+		&Loader{Joint: V(2650, 1980), Heading: 0.6, Artic: 0.22, Lift: 0.02, Tilt: 0.5, Color: rgba(226, 150, 30, 255)})
 	for _, t := range w.Trucks {
 		g.vehicles = append(g.vehicles, t)
 	}
 	g.vehicles = append(g.vehicles,
 		&Excavator{Pos: V(2500, 1820), Heading: 2.4, Slew: 0.35, Boom: 0.55, Stick: 0.45, Bucket: 0.5},
-		&Car{Pos: V(2440, 410), Angle: 0.15, Model: "racing/vehicle-truck-yellow", Label: "Yellow pickup"},
-		&Car{Pos: V(830, 690), Angle: -0.4, Model: "racing/vehicle-truck-red", Label: "Red pickup"},
-		&Car{Pos: V(2820, 470), Angle: 1.7, Model: "racing/vehicle-truck-green", Label: "Green pickup"},
+		&Car{Pos: V(2440, 410), Angle: 0.15, Model: "racing/vehicle-truck-yellow"},
+		&Car{Pos: V(830, 690), Angle: -0.4, Model: "racing/vehicle-truck-red"},
+		&Car{Pos: V(2820, 470), Angle: 1.7, Model: "racing/vehicle-truck-green"},
 	)
 	g.crane = NewTowerCrane(V(1850, 1250), -0.6)
 	g.vehicles = append(g.vehicles, g.crane)
@@ -109,7 +100,15 @@ func NewGame() *Game {
 		newCargo(cargoCrate, V(2075, 1235), 0),
 		newCargo(cargoContainer, V(2110, 1360), 0.9),
 	)
-	// the welcoming committee near the start
+	// player 1's crane mirrors the site crane across the road, with its own
+	// loads
+	const mid = 1600.0
+	g.crane2 = NewTowerCrane(V(2*mid-g.crane.Base.X, g.crane.Base.Y), math.Pi-g.crane.Slew)
+	g.vehicles = append(g.vehicles, g.crane2)
+	for _, c := range w.Cargo[:len(w.Cargo)] {
+		w.Cargo = append(w.Cargo, newCargo(c.Kind, V(2*mid-c.Pos.X, c.Pos.Y), math.Pi-c.Yaw))
+	}
+	// the animals that come along with the kids
 	g.animals = []*Animal{
 		newAnimal(animalGolden, V(1700, 1270), 2.6, 1),
 		newAnimal(animalBernese, V(1495, 1295), 0.4, 2),
@@ -117,10 +116,9 @@ func NewGame() *Game {
 		newAnimal(animalOwl, V(1488, 1150), 0, 4),
 	}
 
-	p1 := newPlayer(1, p1Keys.solo(), l.Joint, l.Heading)
-	g.players = []*Player{p1}
-	g.enter(p1, l)
-	g.cam = p1.cam
+	g.players = []*Player{newPlayer(1, l.Joint, l.Heading), newPlayer(2, l.Joint, l.Heading)}
+	g.setupLanes()
+	g.cam = g.players[0].cam
 	return g
 }
 
@@ -146,16 +144,14 @@ func (g *Game) Update() error {
 		}
 	}
 
-	switch {
-	case g.scripted:
+	if g.scripted {
 		for _, p := range g.players {
 			p.ctl = Controls{}
 			if p.scriptCtl != nil {
 				p.ctl = *p.scriptCtl
 			}
-			p.near = g.nearestVehicle(p)
 		}
-	case g.auto == nil:
+	} else {
 		g.handleInput()
 	}
 
@@ -173,7 +169,6 @@ func (g *Game) Update() error {
 			ts := &g.tour[i]
 			if ts.shot != "" && g.frame >= ts.frame {
 				c := g.players[0].cam
-				c.fp = false
 				c.Target = ts.pos
 				c.Dist, c.TgtDist = ts.zoom, ts.zoom
 				c.Yaw, c.Pitch = 0.85, 0.62
@@ -205,9 +200,7 @@ func (g *Game) Update() error {
 // step advances the whole simulation by one fixed timestep.
 func (g *Game) step(dt float64) {
 	w := g.world
-	if g.toddler {
-		g.toddlerStep(dt)
-	}
+	g.toddlerStep(dt)
 	for _, v := range g.vehicles {
 		if p := g.driverOf(v); p != nil {
 			v.Drive(&p.ctl)
@@ -215,15 +208,10 @@ func (g *Game) step(dt float64) {
 			v.Drive(nil)
 		}
 	}
-	if g.toddler {
-		for _, p := range g.players {
-			g.toddlerAssist(p, dt)
-		}
-		g.toddlerTrucks(dt)
+	for _, p := range g.players {
+		g.toddlerAssist(p, dt)
 	}
-	if g.auto != nil {
-		g.auto.Apply(g) // overrides the main loader's controls
-	}
+	g.toddlerTrucks(dt)
 	g.rebuildObstacles()
 	for _, v := range g.vehicles {
 		v.Update(dt, w)
@@ -252,7 +240,6 @@ func (g *Game) step(dt float64) {
 		a.Update(dt, w, look, g.vehicles)
 	}
 	w.Update(dt)
-	g.jobs.Update(dt)
 	for _, v := range g.vehicles {
 		v.Effects(w)
 	}

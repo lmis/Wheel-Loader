@@ -474,26 +474,6 @@ func (s *Scene) addWheel(center Vec3, radius, width, yaw, spin float64, tire, ri
 	}
 }
 
-// addSteeringWheel adds a ring-shaped wheel facing the driver: yaw is the
-// vehicle heading, tilted back so the rim leans toward the seat.
-func (s *Scene) addSteeringWheel(center Vec3, yaw, radius float64, col color.RGBA) {
-	axis := rotY(Vec3{-0.85, 0.55, 0}, yaw).Norm()
-	a := rotY(Vec3{0, 0, 1}, yaw)
-	b := axis.Cross(a).Norm()
-	const n = 10
-	pt := func(i int) Vec3 {
-		t := 2 * math.Pi * float64(i) / n
-		return center.Add(a.Scale(math.Cos(t) * radius)).Add(b.Scale(math.Sin(t) * radius))
-	}
-	for i := 0; i < n; i++ {
-		p0, p1 := pt(i), pt(i+1)
-		d := p1.Sub(p0)
-		s.addOBB2(p0.Add(d.Scale(0.5)), d, axis, d.Len()/2+0.2, 0.45, 0.45, col)
-	}
-	s.addOBB2(center, a, axis, radius, 0.3, 0.35, col) // spoke
-	s.addOBB2(center.Sub(axis.Scale(1.5)), axis, b, 1.5, 0.5, 0.5, col)
-}
-
 func (s *Scene) addBillboard(center Vec3, size float64, col color.RGBA) {
 	s.bills = append(s.bills, billboard{center, size, col})
 }

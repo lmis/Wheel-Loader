@@ -10,7 +10,6 @@ type Car struct {
 	Speed    float64
 	Steer    float64
 	Model    string // embedded model name
-	Label    string
 	Occupied bool
 
 	throttle, steerCmd float64
@@ -27,15 +26,12 @@ const (
 	carMaxRev    = 120.0
 )
 
-func (c *Car) Name() string          { return c.Label }
 func (c *Car) Center() Vec           { return c.Pos }
 func (c *Car) Facing() float64       { return c.Angle }
 func (c *Car) SpeedVal() float64     { return c.Speed }
-func (c *Car) EnterRadius() float64  { return 70 }
 func (c *Car) SetOccupied(b bool)    { c.Occupied = b }
 func (c *Car) Jolt() float64         { return c.jolt }
 func (c *Car) CamDist() float64      { return 380 }
-func (c *Car) Gauges() []gauge       { return nil }
 func (c *Car) Colliders() []obstacle { return c.collidersAt(c.Pos, c.Angle) }
 
 func (c *Car) collidersAt(p Vec, ang float64) []obstacle {
@@ -54,8 +50,6 @@ func (c *Car) Drive(ctl *Controls) {
 func (c *Car) local(x, z, y float64) Vec3 {
 	return ground(c.Pos.Add(dir(c.Angle).Scale(x)).Add(dir(c.Angle+math.Pi/2).Scale(z)), y)
 }
-
-func (c *Car) Seat() (Vec3, float64) { return c.local(0, -8, 31), c.Angle }
 
 func (c *Car) ExitPoint(side float64) Vec {
 	return c.Pos.Add(dir(c.Angle + math.Pi/2).Scale(-side * 40))
@@ -105,11 +99,7 @@ func (c *Car) Effects(w *World) {
 	}
 }
 
-func (c *Car) ControlHelp() []string {
-	return []string{"{T}\taccelerate / reverse", "{S}\tsteer", "{B}\tbrake"}
-}
-
-func (c *Car) Render(g *Game, s *Scene, cockpit bool) {
+func (c *Car) Render(g *Game, s *Scene) {
 	g.shadow(s, c.Pos, 92, 50, c.Angle)
 	if !g.cam.inView(ground(c.Pos, 20), 70) {
 		return
@@ -117,9 +107,5 @@ func (c *Car) Render(g *Game, s *Scene, cockpit bool) {
 	if m, err := loadModel(c.Model); err == nil {
 		// Kenney vehicles face +Z
 		s.addMesh(m, ground(c.Pos, 0), c.Angle-math.Pi/2, carScale)
-	}
-	if cockpit {
-		s.addBox(c.local(12, -8, 23.5), 2, 1.5, 8, c.Angle, colDark)
-		s.addSteeringWheel(c.local(8.5, -8, 26), c.Angle, 3.5, rgba(30, 30, 33, 255))
 	}
 }

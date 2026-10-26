@@ -30,15 +30,11 @@ func TestExitAndEnter(t *testing.T) {
 	if hit, _ := g.world.CollideCircle(p.W.Pos, kidRadius, p.W); hit {
 		t.Fatalf("kid was placed inside something at %v", p.W.Pos)
 	}
-	if d := p.W.Pos.Sub(g.loader.Joint).Len(); d > g.loader.EnterRadius() {
+	if d := p.W.Pos.Sub(g.loader.Joint).Len(); d > 95 {
 		t.Fatalf("exit point too far from the loader: %f", d)
 	}
-	g.rebuildObstacles()
-	if v := g.nearestVehicle(p); v != Vehicle(g.loader) {
-		t.Fatalf("nearest vehicle should be the loader, got %v", v)
-	}
-	g.toggleVehicle(p)
-	if p.Driving != g.loader {
+	g.enter(p, g.loader)
+	if p.Driving != g.loader || !g.loader.Occupied {
 		t.Fatal("could not climb back in")
 	}
 }
@@ -54,6 +50,7 @@ func TestCannotExitAtSpeed(t *testing.T) {
 func TestWalkerBlockedBySolids(t *testing.T) {
 	g := NewGame()
 	p := g.players[0]
+	p.td = nil // work the machine's own controls, without the toddler helpers
 	g.exit(p)
 	// walk straight at the parked dump truck A
 	tr := g.world.Trucks[0]
@@ -72,6 +69,7 @@ func TestWalkerBlockedBySolids(t *testing.T) {
 func TestDriveTruckAndTip(t *testing.T) {
 	g := NewGame()
 	p := g.players[0]
+	p.td = nil // work the machine's own controls, without the toddler helpers
 	g.exit(p)
 	tr := g.world.Trucks[1]
 	g.enter(p, tr)
@@ -120,6 +118,7 @@ func TestExcavatorDigsAndLoadsTruck(t *testing.T) {
 	ex.Heading, ex.Slew = 0, 0
 	ex.Boom, ex.Stick, ex.Bucket = 0.6, 0.3, 0.2
 	p := g.players[0]
+	p.td = nil // work the machine's own controls, without the toddler helpers
 	g.exit(p)
 	g.enter(p, ex)
 	// lower the boom, then curl and pull in
@@ -169,6 +168,7 @@ func TestCraneLiftsCargoOntoTruck(t *testing.T) {
 	c.hook, c.hookV = c.trolleyPos(), Vec{}
 	c.HookLen = craneJibY - 6 - (item.Y + item.H) - 4
 	p := g.players[0]
+	p.td = nil // work the machine's own controls, without the toddler helpers
 	g.exit(p)
 	p.W.Pos = c.Base.Add(V(40, 0))
 	g.enter(p, c)
@@ -228,22 +228,5 @@ func TestAnimalsGetOutOfTheWay(t *testing.T) {
 	}
 	if dog.Pos.Sub(start).Len() < 20 {
 		t.Fatal("dog did not move out of the way")
-	}
-}
-
-func TestCoopJoinAndLeave(t *testing.T) {
-	g := NewGame()
-	g.setCoop(true)
-	if len(g.players) != 2 {
-		t.Fatal("player 2 did not join")
-	}
-	p2 := g.players[1]
-	if hit, _ := g.world.CollideCircle(p2.W.Pos, kidRadius, p2.W); hit {
-		t.Fatalf("player 2 spawned inside something at %v", p2.W.Pos)
-	}
-	run(g, 10)
-	g.setCoop(false)
-	if len(g.players) != 1 {
-		t.Fatal("player 2 did not leave")
 	}
 }

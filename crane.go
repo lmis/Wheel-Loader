@@ -39,11 +39,9 @@ func NewTowerCrane(base Vec, slew float64) *TowerCrane {
 	return c
 }
 
-func (c *TowerCrane) Name() string          { return "Tower crane" }
 func (c *TowerCrane) Center() Vec           { return c.Base }
 func (c *TowerCrane) Facing() float64       { return c.Slew }
 func (c *TowerCrane) SpeedVal() float64     { return 0 }
-func (c *TowerCrane) EnterRadius() float64  { return 70 }
 func (c *TowerCrane) SetOccupied(b bool)    { c.Occupied = b }
 func (c *TowerCrane) Jolt() float64         { return 0 }
 func (c *TowerCrane) CamDist() float64      { return 700 }
@@ -67,10 +65,6 @@ func (c *TowerCrane) HookY() float64 { return craneJibY - 6 - c.HookLen }
 func (c *TowerCrane) jibAt(x, z, y float64) Vec3 {
 	return ground(c.Base.Add(dir(c.Slew).Scale(x)).Add(dir(c.Slew+math.Pi/2).Scale(z)), y)
 }
-
-// Seat: the cab hangs off the side of the slewing unit, looking along the jib.
-func (c *TowerCrane) Seat() (Vec3, float64) { return c.jibAt(26, -17, craneMastH-10), c.Slew }
-func (c *TowerCrane) SeatPitch() float64    { return -0.6 }
 
 // CamTarget aims the third-person camera at the hook rather than the mast.
 func (c *TowerCrane) CamTarget() (Vec, float64, float64) {
@@ -166,35 +160,7 @@ func (c *TowerCrane) attach(w *World) {
 	}
 }
 
-func (c *TowerCrane) ControlHelp() []string {
-	return []string{
-		"{S}\tslew left / right",
-		"{T}\ttrolley out / in",
-		"{1}\thoist up / down",
-		"{3}\thook on / release load",
-	}
-}
-
-func (c *TowerCrane) Gauges() []gauge {
-	load := "-"
-	if c.held != nil {
-		load = c.held.Name()
-	}
-	return []gauge{
-		{"TROLLEY", (c.Trolley - 70) / (craneJibLen - 84), ""},
-		{"HOOK", c.HookY() / craneJibY, ""},
-		{"LOAD", b2f(c.held != nil), load},
-	}
-}
-
-func b2f(b bool) float64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-func (c *TowerCrane) Render(g *Game, s *Scene, cockpit bool) {
+func (c *TowerCrane) Render(g *Game, s *Scene) {
 	g.shadow(s, c.Base, 70, 70, 0)
 	g.shadow(s, c.hook, 9, 9, c.Slew) // helps to aim the hook
 	yellow := rgba(246, 192, 22, 255)

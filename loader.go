@@ -61,7 +61,6 @@ type Loader struct {
 	wheelSpin float64 // wheel rotation phase for animation
 	engineRPM float64 // 0..1 visual/audio proxy
 
-	Label    string     // display name (default "Wheel loader")
 	Color    color.RGBA // body colour (zero = construction yellow)
 	Occupied bool       // someone is in the cab (engine running, beacon on)
 	SpeedCap float64    // optional top speed limit (toddler mode); 0 = none

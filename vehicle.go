@@ -5,41 +5,31 @@ import (
 	"math"
 )
 
-// Controls are the player's driving intents for one step. Each vehicle maps
-// them onto its own machine; nil means nobody is at the controls.
+// Controls are the driving intents for one step. Each vehicle maps them
+// onto its own machine; nil means nobody is at the controls. The kids only
+// steer and drive; the toddler assistants (toddler.go) work the rest.
 type Controls struct {
-	Throttle float64 // -1..1 (W/S)
-	Steer    float64 // -1..1 (A/D)
-	Brake    bool    // Space
-	// Implement axes, each -1..1: R/F, T/G, Y/H and Z/X.
+	Throttle float64 // -1..1
+	Steer    float64 // -1..1
+	Brake    bool    // brake; run when on foot
+	// Implement axes, each -1..1 (see each machine's Drive).
 	A1, A2, A3, A4 float64
 }
 
-// gauge is one bar in the HUD status panel.
-type gauge struct {
-	Label string
-	Value float64 // 0..1
-	Text  string  // optional text after the bar
-}
-
-// Vehicle is anything the player can climb into and drive.
+// Vehicle is a machine on the site; the kids climb into the loaders, trucks
+// and cranes, the rest stand parked.
 type Vehicle interface {
-	Name() string
 	Center() Vec
 	Facing() float64   // heading the chase camera sits behind
 	SpeedVal() float64 // signed speed in world units/s
 	Drive(c *Controls) // apply controls (nil when unoccupied)
 	Update(dt float64, w *World)
 	Colliders() []obstacle
-	Seat() (eye Vec3, yaw float64) // first-person eye point and forward yaw
-	ExitPoint(side float64) Vec    // where the driver steps out (side ±1)
-	EnterRadius() float64
+	ExitPoint(side float64) Vec // where the driver steps out (side ±1)
 	SetOccupied(bool)
-	Render(g *Game, s *Scene, cockpit bool) // cockpit: player sits inside in first person
-	Effects(w *World)                       // dust and exhaust
-	Jolt() float64                          // recent impact strength, for camera shake
-	ControlHelp() []string
-	Gauges() []gauge
+	Render(g *Game, s *Scene)
+	Effects(w *World) // dust and exhaust
+	Jolt() float64    // recent impact strength, for camera shake
 	CamDist() float64 // preferred chase-camera distance
 }
 
@@ -56,20 +46,12 @@ func collideCircles(w *World, circles []obstacle, self any) (bool, Vec) {
 
 // ---- the wheel loader as a Vehicle ----
 
-func (l *Loader) Name() string {
-	if l.Label != "" {
-		return l.Label
-	}
-	return "Wheel loader"
-}
-
-func (l *Loader) Center() Vec          { return l.Joint }
-func (l *Loader) Facing() float64      { return l.Heading }
-func (l *Loader) SpeedVal() float64    { return l.Speed }
-func (l *Loader) EnterRadius() float64 { return 95 }
-func (l *Loader) SetOccupied(b bool)   { l.Occupied = b }
-func (l *Loader) Jolt() float64        { return math.Abs(l.bounceV) }
-func (l *Loader) CamDist() float64     { return 520 }
+func (l *Loader) Center() Vec        { return l.Joint }
+func (l *Loader) Facing() float64    { return l.Heading }
+func (l *Loader) SpeedVal() float64  { return l.Speed }
+func (l *Loader) SetOccupied(b bool) { l.Occupied = b }
+func (l *Loader) Jolt() float64      { return math.Abs(l.bounceV) }
+func (l *Loader) CamDist() float64   { return 520 }
 
 func (l *Loader) Drive(c *Controls) {
 	if c == nil {
@@ -95,29 +77,17 @@ func (l *Loader) collidersAt(j Vec) []obstacle {
 
 func (l *Loader) Colliders() []obstacle { return l.collidersAt(l.Joint) }
 
-// Seat is the operator's eye: in the cab on the rear frame, looking along it.
-func (l *Loader) Seat() (Vec3, float64) {
-	rh := l.RearHeading()
-	return ground(l.Joint.Sub(dir(rh).Scale(13)), 50+clamp(l.bounce*0.3, -3, 3)), rh
-}
-
 func (l *Loader) ExitPoint(side float64) Vec {
 	rh := l.RearHeading()
 	return l.Joint.Sub(dir(rh).Scale(14)).Add(dir(rh - side*math.Pi/2).Scale(bodyWidth/2 + 24))
 }
 
-func (l *Loader) Render(g *Game, s *Scene, cockpit bool) {
+func (l *Loader) Render(g *Game, s *Scene) {
 	rh, fh := l.RearHeading(), l.FrontHeading()
 	g.shadow(s, l.RearAxle().Sub(dir(rh).Scale(6)), rearLen+34, bodyWidth+16, rh)
 	g.shadow(s, l.FrontAxle(), frontLen+18, bodyWidth+16, fh)
 	g.shadow(s, l.BucketPivot().Add(dir(fh).Scale(16)), 34, bodyWidth+28, fh)
 	g.buildLoader3D(s, l)
-	if cockpit {
-		// dashboard and steering wheel in front of the seat
-		at := func(x, z, y float64) Vec3 { return ground(l.Joint, 0).Add(rotY(Vec3{x, y, z}, rh)) }
-		s.addBox(at(-6, 0, 38), 2.5, 5, 12, rh, colDark)
-		s.addSteeringWheel(at(-7, 0, 43), rh, 4, rgba(30, 30, 33, 255))
-	}
 }
 
 func (l *Loader) Effects(w *World) {
@@ -133,38 +103,6 @@ func (l *Loader) Effects(w *World) {
 		// exhaust stack on the engine hood (matches buildLoader3D)
 		stack := l.Joint.Sub(dir(l.RearHeading()).Scale(36)).Add(dir(l.RearHeading() + math.Pi/2).Scale(7))
 		w.spawnExhaust(stack, l.engineRPM)
-	}
-}
-
-func (l *Loader) ControlHelp() []string {
-	return []string{
-		"{T}\taccelerate / reverse",
-		"{S}\tarticulate left / right",
-		"{B}\tbrake",
-		"{1}\traise / lower arms",
-		"{2}\tcurl / dump bucket",
-	}
-}
-
-func (l *Loader) Gauges() []gauge {
-	pos := "RAISED"
-	if l.Lift < 0.28 {
-		pos = "GROUND"
-	}
-	tilt := "DUMP"
-	if l.Tilt > 0.6 {
-		tilt = "CARRY"
-	} else if l.Tilt > 0.35 {
-		tilt = "LEVEL"
-	}
-	load := "empty"
-	if l.Load >= 1 {
-		load = matNames[l.LoadType]
-	}
-	return []gauge{
-		{"BUCKET", l.LoadFrac(), load},
-		{"LIFT", l.Lift, pos},
-		{"TILT", l.Tilt, tilt},
 	}
 }
 

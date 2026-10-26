@@ -10,13 +10,12 @@ import (
 
 func rgba(r, g, b, a uint8) color.RGBA { return color.RGBA{r, g, b, a} }
 
-// render draws each player's view (full screen, or side by side in co-op),
-// their HUDs, then the shared overlay.
+// render draws the two players' views side by side with their HUDs, then
+// the shared overlay. Landmark shots (tours) use player 1's camera full
+// screen.
 func (g *Game) render(screen *ebiten.Image) {
-	if !g.coop() {
-		p := g.players[0]
-		g.renderView(screen, p)
-		g.drawPlayerHUD(screen, p, screenW, screenH)
+	if len(g.tour) > 0 {
+		g.renderView(screen, g.players[0])
 	} else {
 		vw := screenW / 2
 		for i, p := range g.players {
@@ -24,7 +23,7 @@ func (g *Game) render(screen *ebiten.Image) {
 				p.view = ebiten.NewImage(vw, screenH)
 			}
 			g.renderView(p.view, p)
-			g.drawPlayerHUD(p.view, p, float64(vw), screenH)
+			g.drawToddlerHUD(p.view, p, float64(vw), screenH)
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(i*vw), 0)
 			screen.DrawImage(p.view, op)
@@ -53,16 +52,13 @@ func (g *Game) renderView(dst *ebiten.Image, p *Player) {
 		c.Render(g, s)
 	}
 	for _, v := range g.vehicles {
-		v.Render(g, s, p.fp && p.Driving == v)
+		v.Render(g, s)
 	}
 	for _, q := range g.players {
-		if q.Driving != nil || (q == p && p.fp) {
+		if q.Driving != nil {
 			continue
 		}
-		q.W.marker = rgba(0, 0, 0, 0)
-		if g.coop() {
-			q.W.marker = q.marker
-		}
+		q.W.marker = q.marker
 		q.W.Render(g, s)
 	}
 	for _, a := range g.animals {

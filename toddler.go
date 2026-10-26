@@ -8,8 +8,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// Toddler mode: two players, each with their own wheel loader, dump truck
-// and tower crane, four direction keys and one button. The machines do the
+// Toddler mode, the whole game: two players, each with their own wheel
+// loader, dump truck and tower crane, four direction keys and one button. The machines do the
 // fiddly parts themselves:
 //
 //   - loader: the bucket scoops while driving into a pile, lifts when full
@@ -80,34 +80,10 @@ type toddlerState struct {
 	hookLen   float64 // crane rope length last step, to see the hook land
 }
 
-// setToddler switches toddler mode on (two players in loaders, simple
-// controls, trucks and piles right by the start) or back to the full game.
-func (g *Game) setToddler(on bool) {
-	g.toddler = on
+// setupLanes puts each kid in their loader, with a heap and their truck
+// right by the start and their crane and its loads behind.
+func (g *Game) setupLanes() {
 	w := g.world
-	if !on {
-		for _, p := range g.players {
-			p.td = nil
-		}
-		for _, v := range g.vehicles {
-			switch v := v.(type) {
-			case *Loader:
-				v.SpeedCap = 0
-			case *Truck:
-				v.SpeedCap = 0
-			case *TowerCrane:
-				v.Easy = false
-			}
-		}
-		for _, t := range w.Trucks {
-			t.Capacity = 900
-		}
-		if g.coop() {
-			g.players[0].keys = p1Keys
-		}
-		return
-	}
-	g.setCoop(true)
 	l2 := g.secondLoader()
 	type lane struct {
 		loader      *Loader
@@ -121,7 +97,7 @@ func (g *Game) setToddler(on bool) {
 		truckFacing float64
 	}
 	lanes := []lane{
-		{g.loader, V(1490, 1300), V(1450, 1040), w.Trucks[0], V(1300, 1120), g.toddlerCrane(), &toddlerP1, MatSand, -math.Pi / 2, -math.Pi / 2},
+		{g.loader, V(1490, 1300), V(1450, 1040), w.Trucks[0], V(1300, 1120), g.crane2, &toddlerP1, MatSand, -math.Pi / 2, -math.Pi / 2},
 		{l2, V(1710, 1300), V(1750, 1040), w.Trucks[1], V(1895, 1110), g.crane, &toddlerP2, MatDirt, -math.Pi / 2, -math.Pi / 2},
 	}
 	for i, ln := range lanes {
@@ -133,7 +109,6 @@ func (g *Game) setToddler(on bool) {
 		ln.truck.SpeedCap = toddlerTruckCap
 		ln.crane.Easy = true
 		g.put(p, l)
-		p.fp = false
 		p.distVehicle = 430
 		p.cam.Pitch, p.cam.UserYaw = 0.6, 0
 		g.snapCamera(p)
@@ -152,24 +127,6 @@ func (g *Game) setToddler(on bool) {
 	for i, a := range g.animals {
 		a.home, a.Pos, a.walking, a.timer = homes[i], homes[i], false, 2
 	}
-}
-
-// toddlerCrane returns player 1's tower crane, mirroring the site crane on
-// the other side of the road, with its own loads. It is built the first time
-// toddler mode starts.
-func (g *Game) toddlerCrane() *TowerCrane {
-	if g.crane2 != nil {
-		return g.crane2
-	}
-	const mid = 1600.0 // the site road, the mirror line
-	b := g.crane.Base
-	g.crane2 = NewTowerCrane(V(2*mid-b.X, b.Y), math.Pi-g.crane.Slew)
-	g.vehicles = append(g.vehicles, g.crane2)
-	w := g.world
-	for _, c := range w.Cargo[:len(w.Cargo)] {
-		w.Cargo = append(w.Cargo, newCargo(c.Kind, V(2*mid-c.Pos.X, c.Pos.Y), math.Pi-c.Yaw))
-	}
-	return g.crane2
 }
 
 func (g *Game) secondLoader() *Loader {

@@ -30,9 +30,8 @@ func toddlerDrive(g *Game, p *Player, target Vec, back bool, maxSteps int, done 
 
 func TestToddlerModeLoadsTruck(t *testing.T) {
 	g := NewGame()
-	g.setToddler(true)
-	if !g.coop() || len(g.players) != 2 {
-		t.Fatal("toddler mode should start two players")
+	if len(g.players) != 2 {
+		t.Fatal("the game should start with two players")
 	}
 	for _, p := range g.players {
 		if _, ok := p.Driving.(*Loader); !ok {
@@ -59,7 +58,6 @@ func TestToddlerModeLoadsTruck(t *testing.T) {
 
 func TestToddlerButtonDumps(t *testing.T) {
 	g := NewGame()
-	g.setToddler(true)
 	p := g.players[1]
 	l := p.Driving.(*Loader)
 	tr := p.td.own[1].(*Truck)
@@ -80,25 +78,8 @@ func TestToddlerButtonDumps(t *testing.T) {
 	}
 }
 
-func TestToddlerNoExit(t *testing.T) {
-	g := NewGame()
-	g.setToddler(true)
-	for _, p := range g.players {
-		v := p.Driving
-		g.toggleVehicle(p)
-		if p.Driving != v {
-			t.Fatalf("player %d climbed out in toddler mode", p.ID)
-		}
-	}
-	g.setToddler(false)
-	if g.exit(g.players[0]) == false {
-		t.Fatal("grown-up mode should allow climbing out again")
-	}
-}
-
 func TestToddlerWalksOverToPickedMachine(t *testing.T) {
 	g := NewGame()
-	g.setToddler(true)
 	p := g.players[0]
 	tr := p.td.own[1].(*Truck)
 	g.toddlerPick(p, tr)
@@ -120,7 +101,6 @@ func TestToddlerWalksOverToPickedMachine(t *testing.T) {
 
 func TestToddlerTruckTipsWithOneButton(t *testing.T) {
 	g := NewGame()
-	g.setToddler(true)
 	p := g.players[0]
 	tr := p.td.own[1].(*Truck)
 	g.put(p, tr)
@@ -146,7 +126,6 @@ func aimHook(c *TowerCrane, at Vec) {
 func TestToddlerCraneLiftsOntoTruck(t *testing.T) {
 	for _, pi := range []int{0, 1} {
 		g := NewGame()
-		g.setToddler(true)
 		p := g.players[pi]
 		c := p.td.own[2].(*TowerCrane)
 		tr := p.td.own[1].(*Truck)

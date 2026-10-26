@@ -8,12 +8,11 @@ import (
 // Walker is a player on foot: a kid site worker in an orange vest and a
 // yellow hard hat, with blonde hair and brown eyes.
 type Walker struct {
-	Pos   Vec
-	Yaw   float64
-	Pitch float64 // first-person look pitch
+	Pos Vec
+	Yaw float64
 
-	move, strafe, turn, look float64
-	run                      bool
+	move, turn float64
+	run        bool
 
 	vel    Vec
 	phase  float64 // walk cycle
@@ -24,25 +23,19 @@ type Walker struct {
 const (
 	kidWalk   = 42.0
 	kidRun    = 100.0
-	kidEyeH   = 16.6
 	kidRadius = 6.0
 )
 
-// steer applies this step's on-foot controls: forward/back, turn, strafe,
-// look up/down and run.
+// steer applies this step's on-foot controls: forward/back, turn and run.
 func (k *Walker) steer(c Controls) {
-	k.move, k.turn, k.strafe, k.look, k.run = c.Throttle, c.Steer, c.A4, c.A1, c.Brake
+	k.move, k.turn, k.run = c.Throttle, c.Steer, c.Brake
 }
 
 func (k *Walker) Colliders() []obstacle { return []obstacle{{k.Pos, kidRadius, k}} }
 
 func (k *Walker) Update(dt float64, w *World) {
 	k.Yaw += k.turn * 2.6 * dt
-	k.Pitch = clamp(k.Pitch+k.look*1.3*dt, -1.2, 1.1)
-	want := dir(k.Yaw).Scale(k.move).Add(dir(k.Yaw + math.Pi/2).Scale(k.strafe))
-	if want.Len() > 1 {
-		want = want.Norm()
-	}
+	want := dir(k.Yaw).Scale(k.move)
 	speed := kidWalk
 	if k.run {
 		speed = kidRun

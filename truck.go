@@ -18,11 +18,9 @@ const (
 	truckBedFloorY = 30.0
 )
 
-func (t *Truck) Name() string          { return "Dump " + t.ID }
 func (t *Truck) Center() Vec           { return t.Pos }
 func (t *Truck) Facing() float64       { return t.Angle }
 func (t *Truck) SpeedVal() float64     { return t.Speed }
-func (t *Truck) EnterRadius() float64  { return 95 }
 func (t *Truck) SetOccupied(b bool)    { t.Occupied = b }
 func (t *Truck) Jolt() float64         { return t.jolt }
 func (t *Truck) CamDist() float64      { return 560 }
@@ -45,8 +43,6 @@ func (t *Truck) Drive(c *Controls) {
 func (t *Truck) local(x, z, y float64) Vec3 {
 	return ground(t.Pos.Add(dir(t.Angle).Scale(x)).Add(dir(t.Angle+math.Pi/2).Scale(z)), y)
 }
-
-func (t *Truck) Seat() (Vec3, float64) { return t.local(40, -11, 47), t.Angle }
 
 func (t *Truck) ExitPoint(side float64) Vec {
 	return t.Pos.Add(dir(t.Angle).Scale(36)).Add(dir(t.Angle + math.Pi/2).Scale(-side * 52))
@@ -146,43 +142,9 @@ func (t *Truck) Effects(w *World) {
 	}
 }
 
-func (t *Truck) ControlHelp() []string {
-	return []string{
-		"{T}\taccelerate / reverse",
-		"{S}\tsteer",
-		"{B}\tbrake",
-		"{1}\traise / lower dump body",
-	}
-}
-
-func (t *Truck) Gauges() []gauge {
-	tot := t.Total()
-	dom := 0
-	best := 0.0
-	for ty := 1; ty < numMat; ty++ {
-		if t.Contents[ty] > best {
-			best, dom = t.Contents[ty], ty
-		}
-	}
-	load := "empty"
-	if tot >= 1 {
-		load = matNames[dom]
-	}
-	bed := "DOWN"
-	if t.BedTilt > 0.3 {
-		bed = "TIPPING"
-	} else if t.BedTilt > 0.02 {
-		bed = "RAISED"
-	}
-	return []gauge{
-		{"LOAD", tot / t.Capacity, load},
-		{"BODY", t.BedTilt, bed},
-	}
-}
-
 // Render draws the truck: steering front wheels, cab, chassis and a dump
 // body that pivots about its rear hinge.
-func (t *Truck) Render(g *Game, s *Scene, cockpit bool) {
+func (t *Truck) Render(g *Game, s *Scene) {
 	g.shadow(s, t.Pos, 118, 74, t.Angle)
 	if !g.cam.inView(ground(t.Pos, 30), 110) {
 		return
@@ -215,11 +177,6 @@ func (t *Truck) Render(g *Game, s *Scene, cockpit bool) {
 		}
 	})
 	s.addCylinder(at(31, 32.5, 50), 2.2, 30, 8, colDark) // exhaust beside the cab
-	if cockpit {
-		// dashboard across the windscreen base, steering wheel at the left seat
-		s.addBox(at(53, 0, 39), 3, 1.5, 27, ang, rgba(62, 64, 70, 255))
-		s.addSteeringWheel(at(47.5, -11, 41), ang, 4, rgba(30, 30, 33, 255))
-	}
 
 	// ---- dump body, pivoting about the rear hinge ----
 	bed := t.bedRect()
