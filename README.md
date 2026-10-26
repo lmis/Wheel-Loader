@@ -31,6 +31,18 @@ dump body and the crane hook for the kids.
 
 ## Running
 
+On Linux, clone it and run the script; it installs what is missing, builds
+and starts the game:
+
+```sh
+git clone https://github.com/lmis/wheel-loader.git
+cd wheel-loader
+./run.sh
+```
+
+Next time just run `./run.sh` again (it only rebuilds when the code
+changed). Elsewhere, or by hand:
+
 ```sh
 go run .
 ```
