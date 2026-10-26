@@ -245,10 +245,10 @@ func (s *Scene) rotateSince(mark int, about, axis Vec3, ang float64) {
 }
 
 // addSteeringWheel adds a round steering wheel tilted toward the driver,
-// with a spoke and its column.
-func (s *Scene) addSteeringWheel(center Vec3, yaw, radius float64, col color.RGBA) {
+// with a spoke and its column, turned by turn radians (positive: right).
+func (s *Scene) addSteeringWheel(center Vec3, yaw, radius, turn float64, col color.RGBA) {
 	axis := rotY(Vec3{-0.85, 0.55, 0}, yaw).Norm()
-	a := rotY(Vec3{0, 0, 1}, yaw)
+	a := rotAbout(rotY(Vec3{0, 0, 1}, yaw), axis, -turn)
 	b := axis.Cross(a).Norm()
 	const n = 14
 	pt := func(i int) Vec3 {

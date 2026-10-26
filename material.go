@@ -80,6 +80,19 @@ func (g *Grid) at(cx, cy int) *Cell {
 	return &g.cells[g.idx(cx, cy)]
 }
 
+// AmountNear is the most loose material in any cell within radius of (x,y).
+func (g *Grid) AmountNear(x, y, radius float64) float64 {
+	most := 0.0
+	for dy := -radius; dy <= radius; dy += g.CellSize / 2 {
+		for dx := -radius; dx <= radius; dx += g.CellSize / 2 {
+			if cx, cy, ok := g.cellAt(x+dx, y+dy); ok {
+				most = math.Max(most, g.at(cx, cy).Amount)
+			}
+		}
+	}
+	return most
+}
+
 // Add deposits amount of type t at world position (x,y).
 func (g *Grid) Add(x, y, amount float64, t int) {
 	cx, cy, ok := g.cellAt(x, y)

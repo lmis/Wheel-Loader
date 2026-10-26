@@ -51,7 +51,7 @@ func (g *Game) enter(p *Player, v Vehicle) {
 	p.Driving = v
 	v.SetOccupied(true)
 	p.distVehicle = v.CamDist()
-	p.cam.Pitch = 0.62
+	p.cam.Pitch = 0.52
 	p.cam.UserYaw = 0
 }
 

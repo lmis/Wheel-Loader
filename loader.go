@@ -61,9 +61,10 @@ type Loader struct {
 	wheelSpin float64 // wheel rotation phase for animation
 	engineRPM float64 // 0..1 visual/audio proxy
 
-	Color    color.RGBA // body colour (zero = construction yellow)
-	Occupied bool       // someone is in the cab (engine running, beacon on)
-	SpeedCap float64    // optional top speed limit (toddler mode); 0 = none
+	Color       color.RGBA // body colour (zero = construction yellow)
+	Occupied    bool       // someone is in the cab (engine running, beacon on)
+	SpeedCap    float64    // optional top speed limit (toddler mode); 0 = none
+	ScoopAssist bool       // toddler mode: scoop briskly whenever the kid drives or turns into a heap
 }
 
 // FrontHeading / RearHeading splay around the chassis heading so the
@@ -211,6 +212,9 @@ func (l *Loader) interactMaterial(dt float64, w *World) {
 	if grounded && l.Load < bucketCap {
 		// rate depends on forward motion into pile and on curling the bucket
 		drive := math.Max(0, l.Speed) / maxSpeed
+		if l.ScoopAssist {
+			drive = math.Max(drive, 0.8) // even creeping or turning into the heap
+		}
 		curl := math.Max(0, l.tiltCmd) // actively curling scoops hard
 		rate := (drive*70 + curl*90) * dt
 		if rate > 0 {

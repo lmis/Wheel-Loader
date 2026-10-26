@@ -121,7 +121,15 @@ func (g *Game) stageScenes(outDir, only string) {
 			sk.s, sk.off = 760, 22
 			sk.Pos, sk.Yaw = loopAt(sk.s)
 		}},
+		{name: "07ab_skater_stops_to_look", frames: 80, setup: func(g *Game) {
+			sk := &g.wonder.skater
+			sk.s, sk.stopS, sk.speed, sk.waitT, sk.off = skaterStop-300, skaterStop, skaterSpeed, 0, 22
+			sk.Pos, sk.Yaw = loopAt(sk.s)
+			at, _ := loopAt(skaterStop)
+			g.tour = []tourStop{{frame: g.frame + 75, pos: at.Add(V(-skaterOff, 0)), zoom: 70, yaw: -2.4, pitch: 0.25, look: 20, shot: filepath.Join(outDir, "07ab_skater_stops_to_look.png")}}
+		}},
 		{name: "07b_helicopter_overhead", frames: 14, setup: func(g *Game) {
+			g.tour = nil
 			g.wonder.heli.t = 12.5
 			for _, p := range g.players {
 				driveCam(p, p.Driving.CamDist(), 0, 0.5)
@@ -160,14 +168,16 @@ func (g *Game) stageScenes(outDir, only string) {
 			g.tour = nil
 			for i, p := range g.players {
 				l := p.td.own[0].(*Loader)
-				l.Joint, l.Heading, l.Artic, l.Speed = []Vec{V(1490, 1330), V(1710, 1330)}[i], -math.Pi/2, 0, 0
+				l.Joint, l.Heading, l.Artic, l.Speed = []Vec{V(1490, 1330), V(1710, 1330)}[i], -math.Pi/2, []float64{0.45, -0.45}[i], 0
 				l.Lift, l.Tilt, l.Load, l.LoadType = 0.05, 0.45, 0, MatSand
 				g.put(p, l)
-				p.td.goTo, p.td.mode, p.fp, p.scriptCtl = nil, tdDig, true, nil
+				p.td.goTo, p.td.mode, p.fp = nil, tdDig, true
+				p.scriptCtl = &Controls{Steer: []float64{1, -1}[i]} // turning: the wheel turns
 			}
-		}},
+		}, ctl: &Controls{Steer: 1}},
 		{name: "08b_cab_view_trucks", frames: 24, setup: func(g *Game) {
 			for i, p := range g.players {
+				p.scriptCtl = &Controls{Steer: []float64{1, -1}[i]}
 				tr := p.td.own[1].(*Truck)
 				tr.Pos, tr.Angle, tr.Speed, tr.BedTilt = []Vec{V(1300, 1150), V(1895, 1150)}[i], -math.Pi/2, 0, 0
 				g.put(p, tr)

@@ -79,7 +79,8 @@ hook. Picking a machine makes the kid stop, climb out, walk over
 (round anything in the way) and climb in; there is no other way out. The
 machines do the fiddly parts themselves:
 
-- **Loader:** drive into the heap and the bucket fills, then lifts. Drive up
+- **Loader:** drive (or turn) into the heap and the bucket fills, then
+  lifts, also when the kid turns away with a part-full bucket. Drive up
   to the truck and it tips in. The button dumps the bucket anywhere.
 - **Dump truck:** the button tips the body all the way, the load pours out,
   and the body comes back down.
@@ -115,7 +116,8 @@ Things happen around the site just to look at:
 - **A rollerblader** laps the roads at speed, right down the road between
   the two kids: dark helmet, long brown hair streaming behind, blue
   glasses, and red rollerblades whose wheels glow and leave a red trail. He
-  swerves round anything in his way.
+  swerves round anything in his way. Once a lap he rolls off the road onto
+  the site between the kids, stops, has a good look around, and skates on.
 
 They are in `wonder.go`.
 

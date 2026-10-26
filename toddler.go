@@ -78,6 +78,7 @@ type toddlerState struct {
 	pressed   bool    // pressed since the assistant last looked
 	dumpTruck *Truck  // truck under the bucket when the dump started
 	modeT     float64 // time in the current mode
+	awayT     float64 // loader: time the bucket has been out of the heap
 	hookLen   float64 // crane rope length last step, to see the hook land
 }
 
@@ -111,7 +112,7 @@ func (g *Game) setupLanes() {
 		ln.crane.Easy = true
 		g.put(p, l)
 		p.distVehicle = l.CamDist()
-		p.cam.Pitch, p.cam.UserYaw = 0.6, 0
+		p.cam.Pitch, p.cam.UserYaw = 0.52, 0
 		g.snapCamera(p)
 		ln.truck.Pos, ln.truck.Angle, ln.truck.Speed, ln.truck.BedTilt = ln.truckAt, ln.truckFacing, 0, 0
 		ln.truck.Contents = [numMat]float64{}
@@ -195,9 +196,9 @@ func (g *Game) toddlerTravel(p *Player, dt float64) {
 			p.Driving = nil
 		}
 		if p.Driving == nil {
-			// a high camera that keeps the kid and the machines in view
+			// a camera close enough to see the kid (and the animals) walk over
 			td.walkT = 0
-			p.distWalker, p.cam.Pitch, p.cam.UserYaw = 300, 0.9, 0
+			p.distWalker, p.cam.Pitch, p.cam.UserYaw = 165, 0.6, 0
 		}
 		return
 	}
@@ -307,11 +308,21 @@ func (g *Game) toddlerLoader(p *Player, l *Loader) {
 	if over == nil {
 		over = w.TruckAt(l.BucketPivot())
 	}
+	tip := l.BucketTip()
+	inHeap := w.Grid.AmountNear(tip.X, tip.Y, 24) > 3
+	l.ScoopAssist = td.mode == tdDig && inHeap && (p.ctl.Throttle > 0 || p.ctl.Steer != 0)
 	switch td.mode {
 	case tdDig:
 		l.liftCmd, l.tiltCmd = toward(l.Lift, 0), toward(l.Tilt, 0.45)
+		if inHeap || l.Load < 1 {
+			td.awayT = 0
+		} else {
+			td.awayT += 1.0 / 60
+		}
 		switch {
-		case l.Load > bucketCap*0.8, l.Load > 12 && l.Speed < -5:
+		// full, backing out, or turned away from the heap with something in
+		// the bucket: lift it
+		case l.Load > bucketCap*0.8, l.Load > 12 && l.Speed < -5, l.Load > 15 && td.awayT > 0.35:
 			td.mode = tdCarry
 		case l.Load > 5 && td.button:
 			td.mode, td.dumpTruck = tdDump, nil

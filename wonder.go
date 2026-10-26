@@ -223,6 +223,8 @@ func (g *Game) renderHelicopter(s *Scene, h *Helicopter) {
 
 // Skater laps the site roads at speed: down the middle road between the
 // kids, along the south road, up the west road and back along the north.
+// Once a lap he rolls off the middle road onto the site, stops, has a good
+// look around, and pushes off again.
 type Skater struct {
 	s     float64 // distance along the loop
 	off   float64 // sideways offset from the road centre (to the right)
@@ -231,11 +233,30 @@ type Skater struct {
 	Pos   Vec
 	Yaw   float64
 	lean  float64
+
+	stopS float64 // loop distance of the next stop
+	waitT float64 // time left standing still
+	lookT float64 // clock for looking around while stopped
+	look  float64 // head turn (radians, left positive)
 }
 
 var skateLoop = []Vec{V(1600, 300), V(1600, 2100), V(300, 2100), V(300, 300)}
 
-const skaterSpeed = 280.0
+const (
+	skaterSpeed = 280.0
+	skaterStop  = 1350.0 // where he stops on each lap: on the middle road, past the kids
+	skaterWait  = 3.6    // seconds he stands and looks around
+	skaterOff   = 82.0   // how far off the road centre he stands (onto the site)
+)
+
+// loopLen is the length of the skating loop.
+func loopLen() float64 {
+	total := 0.0
+	for i := range skateLoop {
+		total += skateLoop[(i+1)%len(skateLoop)].Sub(skateLoop[i]).Len()
+	}
+	return total
+}
 
 // loopAt returns the point and heading at distance d along the loop.
 func loopAt(d float64) (Vec, float64) {
@@ -260,20 +281,53 @@ func loopAt(d float64) (Vec, float64) {
 }
 
 func (k *Skater) Update(dt float64, w *World) {
-	k.speed = approach(k.speed, skaterSpeed, 120*dt)
+	for k.stopS < k.s-1 {
+		k.stopS += loopLen()
+	}
+	dist := k.stopS - k.s
+	if k.waitT > 0 {
+		// standing on the site, looking around
+		k.waitT -= dt
+		k.speed = 0
+		k.lookT += dt
+		k.look = math.Sin(k.lookT*1.7) * 1.05
+		if k.waitT <= 0 {
+			k.stopS += loopLen()
+		}
+	} else {
+		k.look = approach(k.look, 0, 2*dt)
+		want := skaterSpeed
+		if dist < 450 {
+			want = math.Min(want, math.Sqrt(2*240*dist)) // braking to a stop
+		}
+		if want > k.speed {
+			k.speed = approach(k.speed, want, 140*dt)
+		} else {
+			k.speed = approach(k.speed, want, 400*dt)
+		}
+		if dist < 0.5 && k.speed < 25 {
+			k.s, k.speed, k.waitT, k.lookT = k.stopS, 0, skaterWait, 0
+		}
+	}
 	k.s += k.speed * dt
+	// near the stop he rolls off the road onto the site
+	since := loopLen() - (k.stopS - k.s) // distance travelled since the last stop
+	side := 22.0
+	if dist < 260 || k.waitT > 0 || since < 220 {
+		side = skaterOff
+	}
 	// steer for a point a little ahead (rounds the corners), swerving round
 	// anything in the way
 	ahead, head := loopAt(k.s + 60)
 	right := dir(head + math.Pi/2)
-	want := 22.0
-	for _, off := range []float64{22, 52, -10, -40, 80} {
+	want := side
+	for _, off := range []float64{side, 52, -10, -40, 80} {
 		if hit, _ := w.CollideCircle(ahead.Add(right.Scale(off)), 14, nil); !hit {
 			want = off
 			break
 		}
 	}
-	k.off = approach(k.off, want, 90*dt)
+	k.off = approach(k.off, want, 70*dt)
 	center, h := loopAt(k.s)
 	target := center.Add(dir(h + math.Pi/2).Scale(k.off))
 	prev := k.Yaw
@@ -284,8 +338,12 @@ func (k *Skater) Update(dt float64, w *World) {
 	turn := angleDiff(k.Yaw, prev) / dt
 	k.lean = approach(k.lean, clamp(turn*0.35, -0.5, 0.5), 2*dt)
 	k.phase += k.speed * dt / 55
+	if k.speed < 30 {
+		// coming to a stand with his feet together
+		k.phase = approach(k.phase, math.Round(k.phase/math.Pi)*math.Pi, 3*dt)
+	}
 	// red sparks of light trail off the wheels
-	if w.rng.Float64() < 0.5 {
+	if k.speed > 40 && w.rng.Float64() < 0.5 {
 		foot := k.Pos.Add(dir(k.Yaw + math.Pi/2).Scale(math.Sin(k.phase) * 4))
 		w.addParticle(Particle{
 			Pos: foot, Vel: dir(k.Yaw).Scale(-30), Z: 1, VZ: 4,
@@ -362,6 +420,8 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		s.addCapsule(elbow, hand, 1.1, 0.95, skin)
 		s.addSphere(hand, 1.05, skin)
 	}
+	headMark := len(s.tris)
+	neck := at(0, 0, 25)
 	// head with a full beard, blue glasses, long hair and a dark helmet
 	s.addCapsule(at(0, 0, 25), at(0.2, 0, 27), 1.2, 1.15, skin)
 	head := at(0.4, 0, 29)
@@ -405,6 +465,7 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 	s.detail(func() {
 		s.addEllipsoid(head.Add(tilt.Scale(4.15)), bf, tilt, 2.2, 0.2, 0.45, glowRed)
 	})
+	s.rotateSince(headMark, neck, tilt, k.look) // looking around
 }
 
 // ---- wiring ----
@@ -418,7 +479,7 @@ type wonders struct {
 
 func newWonders() *wonders {
 	wd := &wonders{train: Train{X: 1100, speed: trainSpeed}, heli: Helicopter{t: heliPeriod - 6}}
-	wd.skater.s = 300
+	wd.skater.s, wd.skater.stopS = 300, skaterStop
 	wd.skater.Pos, wd.skater.Yaw = loopAt(wd.skater.s)
 	wd.skater.speed = skaterSpeed
 	return wd

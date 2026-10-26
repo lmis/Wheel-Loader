@@ -58,7 +58,7 @@ func (l *Loader) Facing() float64    { return l.Heading }
 func (l *Loader) SpeedVal() float64  { return l.Speed }
 func (l *Loader) SetOccupied(b bool) { l.Occupied = b }
 func (l *Loader) Jolt() float64      { return math.Abs(l.bounceV) }
-func (l *Loader) CamDist() float64   { return 400 }
+func (l *Loader) CamDist() float64   { return 290 }
 
 func (l *Loader) Drive(c *Controls) {
 	if c == nil {
@@ -108,7 +108,7 @@ func (l *Loader) RenderCockpit(s *Scene) {
 			s.glowing(func() { s.addEllipsoid(at(-7.15, z, 35.6), fw, up, 0.08, 0.5, 0.5, rgba(90, 170, 210, 255)) })
 		}
 	})
-	s.addSteeringWheel(at(-9.5, 0, 40), rh, 2.6, rgba(30, 30, 33, 255))
+	s.addSteeringWheel(at(-9.5, 0, 40), rh, 2.6, l.Artic*2.2, rgba(30, 30, 33, 255))
 	// windscreen frame: pillars, header and sill
 	for _, z := range []float64{-11.5, 11.5} {
 		s.addCapsule(at(-4.6, z, 37), at(-5.2, z, 54), 0.9, 0.9, trim)

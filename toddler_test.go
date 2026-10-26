@@ -269,3 +269,50 @@ func TestViewKeySwitchesToTheCab(t *testing.T) {
 		t.Fatal("on foot the chase camera follows the kid")
 	}
 }
+
+func TestTurningIntoHeapScoopsAndLifts(t *testing.T) {
+	g := NewGame()
+	p := g.players[0]
+	l := p.Driving.(*Loader)
+	// creep at the side of the sand heap while turning into it, then turn
+	// away: the bucket fills and lifts by itself
+	l.Joint, l.Heading = V(1360, 1110), -0.6
+	most := 0.0
+	for i := 0; i < 60*6 && p.td.mode != tdCarry; i++ {
+		p.ctl = Controls{Throttle: 0.35, Steer: -1}
+		run(g, 1)
+		most = math.Max(most, l.Load)
+	}
+	if p.td.mode != tdCarry {
+		t.Fatalf("bucket should lift after turning through the heap: load %.1f (most %.1f)", l.Load, most)
+	}
+	run(g, 60)
+	if l.Lift < 0.45 || l.Load < 15 {
+		t.Fatalf("bucket should be up and holding sand: lift %.2f load %.1f", l.Lift, l.Load)
+	}
+}
+
+func TestSkaterStopsOnTheSiteAndGoesOn(t *testing.T) {
+	g := NewGame()
+	k := &g.wonder.skater
+	stopped := false
+	for i := 0; i < 60*20 && !stopped; i++ {
+		run(g, 1)
+		stopped = k.waitT > 0
+	}
+	if !stopped {
+		t.Fatal("the skater never stopped")
+	}
+	at := k.Pos
+	run(g, 60)
+	if k.Pos.Sub(at).Len() > 1 {
+		t.Fatal("he should stand still while looking around")
+	}
+	if math.Abs(k.Pos.X-1600) < 50 {
+		t.Fatalf("he should stop off the road, on the site (x %.0f)", k.Pos.X)
+	}
+	run(g, 60*5)
+	if k.waitT > 0 || k.speed < 100 {
+		t.Fatalf("he should skate on again (speed %.0f)", k.speed)
+	}
+}

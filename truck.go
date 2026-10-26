@@ -24,7 +24,7 @@ func (t *Truck) Facing() float64       { return t.Angle }
 func (t *Truck) SpeedVal() float64     { return t.Speed }
 func (t *Truck) SetOccupied(b bool)    { t.Occupied = b }
 func (t *Truck) Jolt() float64         { return t.jolt }
-func (t *Truck) CamDist() float64      { return 450 }
+func (t *Truck) CamDist() float64      { return 330 }
 func (t *Truck) Colliders() []obstacle { return t.collidersAt(t.Pos, t.Angle) }
 
 func (t *Truck) collidersAt(p Vec, ang float64) []obstacle {
@@ -52,7 +52,7 @@ func (t *Truck) SeatPitch() float64    { return -0.1 }
 // wheel at the left seat.
 func (t *Truck) RenderCockpit(s *Scene) {
 	s.addRoundPrism(t.local(0, 0, 0), t.Angle, []ring{{52, 56, 27, 34, 1.2}, {52.5, 55.5, 27, 37.5, 1.2}}, rgba(62, 64, 70, 255), false, true)
-	s.addSteeringWheel(t.local(47, -11, 39.5), t.Angle, 2.4, rgba(30, 30, 33, 255))
+	s.addSteeringWheel(t.local(47, -11, 39.5), t.Angle, 2.4, t.Steer*2.9, rgba(30, 30, 33, 255))
 	fw := rotY(Vec3{1, 0, 0}, t.Angle)
 	up := Vec3{0, 1, 0}
 	s.detail(func() {

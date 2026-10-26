@@ -44,7 +44,7 @@ func (c *TowerCrane) Facing() float64       { return c.Slew }
 func (c *TowerCrane) SpeedVal() float64     { return 0 }
 func (c *TowerCrane) SetOccupied(b bool)    { c.Occupied = b }
 func (c *TowerCrane) Jolt() float64         { return 0 }
-func (c *TowerCrane) CamDist() float64      { return 700 }
+func (c *TowerCrane) CamDist() float64      { return 520 }
 func (c *TowerCrane) Effects(w *World)      {}
 func (c *TowerCrane) Colliders() []obstacle { return []obstacle{{c.Base, 22, c}} }
 
