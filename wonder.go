@@ -21,7 +21,8 @@ const (
 	carLen      = 72.0
 	carGap      = 7.0
 	trainCars   = 5
-	trainLength = locoLen + trainCars*(carLen+carGap)
+	trainScale  = 1.8 // the train is modelled small and drawn this much bigger
+	trainLength = (locoLen + trainCars*(carLen+carGap)) * trainScale
 )
 
 // Train runs east along the track, waits off in the fog, and comes again.
@@ -37,10 +38,10 @@ func (t *Train) Update(dt float64, w *World) {
 		t.wait -= dt
 		return
 	}
-	front := V(t.X+26, trackY)
+	front := V(t.X+26*trainScale, trackY)
 	blocked := false
 	if front.X > 0 && front.X < w.Width {
-		blocked, _ = w.CollideCircle(front, 24, nil)
+		blocked, _ = w.CollideCircle(front, 24*trainScale, nil)
 	}
 	if blocked {
 		t.speed = approach(t.speed, 0, 220*dt)
@@ -58,16 +59,22 @@ func (g *Game) renderTrack(s *Scene) {
 	rail := rgba(176, 178, 184, 255)
 	for x := trackStart; x < trackEnd; x += 200 {
 		x1 := x + 200
-		if !g.cam.inView(ground(V(x+100, trackY), 0), 110) {
+		if !g.cam.inView(ground(V(x+100, trackY), 0), 130) {
 			continue
 		}
 		strip := func(z0, z1 float64, c color.RGBA) {
 			s.addDecalQuad(ground(V(x, trackY+z0), 0.5), ground(V(x1, trackY+z0), 0.5),
 				ground(V(x1, trackY+z1), 0.5), ground(V(x, trackY+z1), 0.5), c)
 		}
-		strip(-17, 17, ballast)
-		strip(-8, -6.5, rail)
-		strip(6.5, 8, rail)
+		// ballast, sleepers and rails at the train's scale
+		const k = trainScale
+		strip(-17*k, 17*k, ballast)
+		for sx := x + 8; sx < x1; sx += 16 * k {
+			s.addDecalQuad(ground(V(sx, trackY-11*k), 0.55), ground(V(sx+4*k, trackY-11*k), 0.55),
+				ground(V(sx+4*k, trackY+11*k), 0.55), ground(V(sx, trackY+11*k), 0.55), rgba(92, 70, 52, 230))
+		}
+		strip(-8*k, -6.5*k, rail)
+		strip(6.5*k, 8*k, rail)
 	}
 }
 
@@ -75,6 +82,12 @@ func (g *Game) renderTrain(s *Scene, t *Train) {
 	if t.wait > 0 {
 		return
 	}
+	// built at model size from the front of the locomotive, then scaled up
+	// about it; sc maps a model x to where it ends up
+	mark := len(s.tris)
+	front := ground(V(t.X, trackY), 0)
+	defer func() { s.scaleSince(mark, front, trainScale) }()
+	sc := func(x float64) float64 { return t.X - (t.X-x)*trainScale }
 	body := func(x0, x1 float64, rings []ring, c color.RGBA) {
 		o := ground(V(0, trackY), 0)
 		for i := range rings {
@@ -95,7 +108,7 @@ func (g *Game) renderTrain(s *Scene, t *Train) {
 	// locomotive: red, with a yellow stripe, a sloped nose and a cab
 	x1 := t.X
 	x0 := x1 - locoLen
-	if g.cam.inView(ground(V(x1-locoLen/2, trackY), 25), 60) {
+	if g.cam.inView(ground(V(sc(x1-locoLen/2), trackY), 25*trainScale), 60*trainScale) {
 		red := rgba(206, 52, 44, 255)
 		body(x0, x1-16, []ring{{0, 0, 13, 10, 2}, {0, 0, 13, 34, 3}, {4, -2, 11, 40, 4}}, red)
 		body(x1-16, x1, []ring{{0, -2, 13, 10, 2}, {0, -9, 12, 30, 3}}, red) // nose
@@ -115,7 +128,7 @@ func (g *Game) renderTrain(s *Scene, t *Train) {
 	for i := 0; i < trainCars; i++ {
 		c1 := x0 - carGap - float64(i)*(carLen+carGap)
 		c0 := c1 - carLen
-		if !g.cam.inView(ground(V(c1-carLen/2, trackY), 22), 50) {
+		if !g.cam.inView(ground(V(sc(c1-carLen/2), trackY), 22*trainScale), 50*trainScale) {
 			continue
 		}
 		col := colors[i%len(colors)]
