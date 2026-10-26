@@ -1,0 +1,199 @@
+package main
+
+import (
+	"image/color"
+	"math"
+)
+
+// Smooth, rounded shapes for the characters: ellipsoids, capsules and
+// rounded-corner lofts. They use per-vertex normals for smooth shading and
+// fewer segments far from the camera.
+
+// lod is 2 up close, 1 at middle distance and 0 far away.
+func (s *Scene) lod(c Vec3) int {
+	switch d := c.Sub(s.eye).Len(); {
+	case d < 320:
+		return 2
+	case d < 900:
+		return 1
+	}
+	return 0
+}
+
+// smoothTri adds a back-face-culled, smooth-shaded triangle, fixing its
+// winding so it faces along its normals.
+func (s *Scene) smoothTri(p [3]Vec3, n [3]Vec3, col color.RGBA) {
+	face := p[1].Sub(p[0]).Cross(p[2].Sub(p[0]))
+	if face.Len() < 1e-9 {
+		return // degenerate (at a pole)
+	}
+	if face.Dot(n[0].Add(n[1]).Add(n[2])) < 0 {
+		p[1], p[2] = p[2], p[1]
+		n[1], n[2] = n[2], n[1]
+	}
+	s.addTriV(p, [3]color.RGBA{col, col, col}, n, true)
+}
+
+// grid joins rows of points (each row a closed loop of the same length)
+// into a smooth surface.
+func (s *Scene) grid(pts, nrm [][]Vec3, col color.RGBA) {
+	for r := 0; r+1 < len(pts); r++ {
+		a, b := pts[r], pts[r+1]
+		na, nb := nrm[r], nrm[r+1]
+		m := len(a)
+		for i := 0; i < m; i++ {
+			j := (i + 1) % m
+			s.smoothTri([3]Vec3{a[i], b[i], b[j]}, [3]Vec3{na[i], nb[i], nb[j]}, col)
+			s.smoothTri([3]Vec3{a[i], b[j], a[j]}, [3]Vec3{na[i], nb[j], na[j]}, col)
+		}
+	}
+}
+
+// frame3 builds an orthonormal frame from a forward axis and an up hint.
+func frame3(fwd, upHint Vec3) (f, u, r Vec3) {
+	f = fwd.Norm()
+	u = upHint.Sub(f.Scale(upHint.Dot(f)))
+	if u.Len() < 1e-6 {
+		u = Vec3{0, 1, 0}
+		if math.Abs(f.Y) > 0.9 {
+			u = Vec3{1, 0, 0}
+		}
+		u = u.Sub(f.Scale(u.Dot(f)))
+	}
+	u = u.Norm()
+	r = f.Cross(u).Norm()
+	return
+}
+
+// addEllipsoid adds an ellipsoid with radii rf along fwd, ru along up and
+// rs to the side.
+func (s *Scene) addEllipsoid(c, fwd, up Vec3, rf, ru, rs float64, col color.RGBA) {
+	f, u, r := frame3(fwd, up)
+	seg, rings := [3]int{6, 10, 14}[s.lod(c)], [3]int{4, 6, 9}[s.lod(c)]
+	pts := make([][]Vec3, 0, rings+1)
+	nrm := make([][]Vec3, 0, rings+1)
+	for k := 0; k <= rings; k++ {
+		phi := -math.Pi/2 + math.Pi*float64(k)/float64(rings)
+		cp, sp := math.Cos(phi), math.Sin(phi)
+		row, nrow := make([]Vec3, seg), make([]Vec3, seg)
+		for i := 0; i < seg; i++ {
+			th := 2 * math.Pi * float64(i) / float64(seg)
+			ct, st := math.Cos(th), math.Sin(th)
+			row[i] = c.Add(f.Scale(rf * cp * ct)).Add(r.Scale(rs * cp * st)).Add(u.Scale(ru * sp))
+			nrow[i] = f.Scale(cp * ct / rf).Add(r.Scale(cp * st / rs)).Add(u.Scale(sp / ru)).Norm()
+		}
+		pts, nrm = append(pts, row), append(nrm, nrow)
+	}
+	s.grid(pts, nrm, col)
+}
+
+// addSphere is a round ellipsoid.
+func (s *Scene) addSphere(c Vec3, r float64, col color.RGBA) {
+	s.addEllipsoid(c, Vec3{1, 0, 0}, Vec3{0, 1, 0}, r, r, r, col)
+}
+
+// addCapsule adds a rounded limb from a (radius ra) to b (radius rb).
+func (s *Scene) addCapsule(a, b Vec3, ra, rb float64, col color.RGBA) {
+	d := b.Sub(a)
+	L := d.Len()
+	if L < 1e-6 {
+		s.addSphere(a, math.Max(ra, rb), col)
+		return
+	}
+	ax, u, r := frame3(d, Vec3{0, 1, 0})
+	q := s.lod(a.Add(d.Scale(0.5)))
+	seg, capN := [3]int{5, 7, 10}[q], [3]int{1, 2, 3}[q]
+	type ringPt struct{ t, rad, ca, sa float64 } // position, radius, normal (radial, axial)
+	var rings []ringPt
+	for k := 0; k <= capN; k++ { // cap at a, from its tip to the equator
+		al := -math.Pi/2 + math.Pi/2*float64(k)/float64(capN)
+		rings = append(rings, ringPt{math.Sin(al) * ra, math.Cos(al) * ra, math.Cos(al), math.Sin(al)})
+	}
+	for k := 0; k <= capN; k++ { // cap at b, from the equator to its tip
+		al := math.Pi / 2 * float64(k) / float64(capN)
+		rings = append(rings, ringPt{L + math.Sin(al)*rb, math.Cos(al) * rb, math.Cos(al), math.Sin(al)})
+	}
+	pts := make([][]Vec3, len(rings))
+	nrm := make([][]Vec3, len(rings))
+	for k, rp := range rings {
+		pts[k], nrm[k] = make([]Vec3, seg), make([]Vec3, seg)
+		for i := 0; i < seg; i++ {
+			th := 2 * math.Pi * float64(i) / float64(seg)
+			radial := u.Scale(math.Cos(th)).Add(r.Scale(math.Sin(th)))
+			pts[k][i] = a.Add(ax.Scale(rp.t)).Add(radial.Scale(rp.rad))
+			nrm[k][i] = radial.Scale(rp.ca).Add(ax.Scale(rp.sa)).Norm()
+		}
+	}
+	s.grid(pts, nrm, col)
+}
+
+// addRoundPrism lofts rings like addPrism, but each ring is a rectangle with
+// properly rounded corners (radius ch), smooth-shaded. capBottom/capTop
+// close the ends.
+func (s *Scene) addRoundPrism(origin Vec3, yaw float64, rings []ring, col color.RGBA, capBottom, capTop bool) {
+	if len(rings) == 0 {
+		return
+	}
+	per := [3]int{1, 2, 3}[s.lod(origin)] // points per corner arc, beyond its start
+	ringPts := func(rg ring) ([]Vec3, []Vec3) {
+		ch := math.Min(rg.ch, math.Min(rg.hw, (rg.front-rg.back)/2)*0.98)
+		corners := [4][3]float64{ // centre x, centre z, start angle
+			{rg.front - ch, rg.hw - ch, 0},
+			{rg.back + ch, rg.hw - ch, math.Pi / 2},
+			{rg.back + ch, -rg.hw + ch, math.Pi},
+			{rg.front - ch, -rg.hw + ch, 3 * math.Pi / 2},
+		}
+		var p, n []Vec3
+		for _, cn := range corners {
+			for k := 0; k <= per; k++ {
+				a := cn[2] + math.Pi/2*float64(k)/float64(per)
+				dx, dz := math.Cos(a), math.Sin(a)
+				p = append(p, origin.Add(rotY(Vec3{cn[0] + dx*ch, rg.y, cn[1] + dz*ch}, yaw)))
+				n = append(n, rotY(Vec3{dx, 0, dz}, yaw))
+			}
+		}
+		return p, n
+	}
+	pts := make([][]Vec3, len(rings))
+	nrm := make([][]Vec3, len(rings))
+	for i, rg := range rings {
+		pts[i], nrm[i] = ringPts(rg)
+	}
+	// tilt the normals with the taper between rings
+	for i := range rings {
+		lo, hi := i-1, i+1
+		if lo < 0 {
+			lo = 0
+		}
+		if hi >= len(rings) {
+			hi = len(rings) - 1
+		}
+		dy := rings[hi].y - rings[lo].y
+		if dy == 0 {
+			continue
+		}
+		for j := range nrm[i] {
+			out := pts[lo][j].Sub(pts[hi][j]) // horizontal shrink as we rise
+			out.Y = 0
+			nrm[i][j] = nrm[i][j].Add(Vec3{0, out.Dot(nrm[i][j]) / dy, 0}).Norm()
+		}
+	}
+	s.grid(pts, nrm, col)
+	cap := func(row []Vec3, up float64) {
+		var c Vec3
+		for _, p := range row {
+			c = c.Add(p)
+		}
+		c = c.Scale(1 / float64(len(row)))
+		nn := Vec3{0, up, 0}
+		for j := range row {
+			s.smoothTri([3]Vec3{c, row[j], row[(j+1)%len(row)]}, [3]Vec3{nn, nn, nn}, col)
+		}
+	}
+	if capBottom {
+		cap(pts[0], -1)
+	}
+	if capTop {
+		cap(pts[len(pts)-1], 1)
+	}
+}
