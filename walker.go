@@ -125,7 +125,7 @@ func (k *Walker) Render(g *Game, s *Scene) {
 	}
 	s.addRoundPrism(o, k.Yaw, torso, vest, true, true)
 	s.addCapsule(at(0, 0, 13.2), at(0, 0, 14.6), 1.05, 0.95, skin) // neck
-	s.addEllipsoid(at(0, 0, 13.45), fw, up, 1.35, 0.4, 1.5, shirt)  // collar
+	s.addEllipsoid(at(0, 0, 13.45), fw, up, 1.35, 0.4, 1.5, shirt) // collar
 	s.detail(func() {
 		// V-neck: the shirt showing between the vest's front panels
 		s.addFaceOutward([]Vec3{at(1.62, -0.85, 13.2), at(1.62, 0.85, 13.2), at(1.96, 0, 11.9)}, at(0, 0, 10.5), shirt)
