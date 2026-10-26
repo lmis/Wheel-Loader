@@ -478,6 +478,33 @@ func (s *Scene) addWheel(center Vec3, radius, width, yaw, spin float64, tire, ri
 	}
 }
 
+// addRoundWheel adds a plain round wheel: a tread band and two flat faces,
+// turning about axle, with a hub disc on each face.
+func (s *Scene) addRoundWheel(center, fwd, axle Vec3, radius, width float64, sides int, col, hub color.RGBA) {
+	fwd, axle = fwd.Norm(), axle.Norm()
+	up := axle.Cross(fwd).Norm()
+	half := axle.Scale(width / 2)
+	radial := func(i int) Vec3 {
+		a := 2 * math.Pi * float64(i) / float64(sides)
+		return up.Scale(math.Sin(a)).Add(fwd.Scale(math.Cos(a)))
+	}
+	cols := [3]color.RGBA{col, col, col}
+	for i := 0; i < sides; i++ {
+		d0, d1 := radial(i), radial(i+1)
+		o0, o1 := center.Add(half).Add(d0.Scale(radius)), center.Add(half).Add(d1.Scale(radius))
+		i0, i1 := center.Sub(half).Add(d0.Scale(radius)), center.Sub(half).Add(d1.Scale(radius))
+		s.addTriV([3]Vec3{i0, o0, o1}, cols, [3]Vec3{d0, d0, d1}, false)
+		s.addTriV([3]Vec3{i0, o1, i1}, cols, [3]Vec3{d0, d1, d1}, false)
+		for _, side := range []float64{1, -1} {
+			c := center.Add(half.Scale(side))
+			r0, r1 := c.Add(d0.Scale(radius)), c.Add(d1.Scale(radius))
+			h0, h1 := c.Add(d0.Scale(radius*0.45)), c.Add(d1.Scale(radius*0.45))
+			s.addFaceOutward([]Vec3{h0, r0, r1, h1}, center, col)
+			s.addFaceOutward([]Vec3{c, h0, h1}, center, hub)
+		}
+	}
+}
+
 func (s *Scene) addBillboard(center Vec3, size float64, col color.RGBA) {
 	s.bills = append(s.bills, billboard{center, size, col})
 }

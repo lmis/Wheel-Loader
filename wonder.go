@@ -83,8 +83,14 @@ func (g *Game) renderTrain(s *Scene, t *Train) {
 		}
 		s.addPrism(o, 0, rings, c)
 	}
+	east, across := Vec3{1, 0, 0}, Vec3{0, 0, 1}
 	bogie := func(x float64) {
-		s.addBox(ground(V(x, trackY), 6), 9, 3.5, 9, 0, colTire)
+		s.addBox(ground(V(x, trackY), 7), 9, 2.5, 7, 0, colTire)
+		for _, dx := range []float64{-5, 5} {
+			for _, z := range []float64{-8.5, 8.5} {
+				s.addRoundWheel(ground(V(x+dx, trackY+z), 4.5), east, across, 4.2, 1.6, 14, colSteel, colDark)
+			}
+		}
 	}
 	// locomotive: red, with a yellow stripe, a sloped nose and a cab
 	x1 := t.X
@@ -316,7 +322,7 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		boot    = rgba(196, 26, 30, 255)
 		glowRed = rgba(255, 70, 56, 255)
 		hair    = rgba(112, 66, 34, 255)
-		helmet  = rgba(244, 244, 240, 255)
+		helmet  = rgba(34, 36, 44, 255)
 		lens    = rgba(40, 140, 255, 255)
 	)
 	// legs push out to the sides in turn, skates gliding along
@@ -332,7 +338,8 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		s.addBox(foot.Add(up.Scale(1.4)), 3.4, 1.6, 1.5, k.Yaw, boot)
 		s.glowing(func() {
 			for w := -1.5; w <= 1.51; w += 1 {
-				s.addBox(foot.Add(fw.Scale(w*2)).Add(up.Scale(-0.9)), 0.8, 0.8, 0.6, k.Yaw, glowRed)
+				c := foot.Add(fw.Scale(w * 1.7)).Add(up.Scale(-1.15))
+				s.addRoundWheel(c, fw, lat, 0.85, 0.7, 14, glowRed, rgba(255, 150, 120, 255))
 			}
 		})
 		gp := k.Pos.Add(r.Scale(side * (2.5 + push)))
@@ -349,7 +356,7 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		limb(sh, hand, 1.1, 1.1, shirt)
 		s.addOBB2(hand, fw, up, 1, 1, 1, skin)
 	}
-	// head, blue glasses, long hair streaming behind, white helmet
+	// head, blue glasses, long hair streaming behind, dark helmet
 	s.addBox(at(0, 0, 26), 1, 1, 1, k.Yaw, skin)
 	head := at(0.4, 0, 29)
 	s.addOBB2(head, fw, tilt, 2.6, 2.8, 2.4, skin)
@@ -367,10 +374,12 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		strand = next
 	}
 	s.addOBB2(head.Add(fw.Scale(-0.6)).Add(tilt.Scale(-1.6)), fw, tilt, 2.1, 1.8, 2.6, hair) // hair round the sides
-	s.addOBB2(head.Add(tilt.Scale(2.4)), fw, tilt, 3.2, 0.7, 3, helmet)                      // shell over the brow
-	s.addCone(head.Add(tilt.Scale(3)), 3.1, 1.4, 2.4, 12, helmet)
+	// a rounded shell: a short rim over the brow, then the dome
+	s.addCone(head.Add(tilt.Scale(1.9)), 3.4, 3.3, 1.1, 18, helmet)
+	s.addCone(head.Add(tilt.Scale(3)), 3.3, 2.6, 1.3, 18, helmet)
+	s.addCone(head.Add(tilt.Scale(4.3)), 2.6, 1.1, 1.2, 18, helmet)
 	s.detail(func() {
-		s.addOBB2(head.Add(tilt.Scale(5.35)), fw, tilt, 2.2, 0.15, 0.5, glowRed) // stripe to match the skates
+		s.addOBB2(head.Add(tilt.Scale(4.9)), fw, tilt, 2.2, 0.15, 0.5, glowRed) // stripe to match the skates
 	})
 }
 

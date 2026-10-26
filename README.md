@@ -92,7 +92,7 @@ Things happen around the site just to look at:
 - **A red helicopter** flies low over the middle of the site now and then,
   rotors spinning, its shadow sweeping across the ground.
 - **A rollerblader** laps the roads at speed, right down the road between
-  the two kids: white helmet, long brown hair streaming behind, blue
+  the two kids: dark helmet, long brown hair streaming behind, blue
   glasses, and red rollerblades whose wheels glow and leave a red trail. He
   swerves round anything in his way.
 
