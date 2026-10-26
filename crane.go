@@ -119,21 +119,27 @@ func (c *TowerCrane) ExitPoint(side float64) Vec {
 
 func (c *TowerCrane) Update(dt float64, w *World) {
 	// heavy slewing inertia: it takes a moment to get going and to stop
-	maxV, slewAcc, damp := 0.32, 0.35, 0.35
-	if c.Easy {
-		maxV, slewAcc, damp = 0.5, 1.4, 2.5
+	maxV, slewAcc, damp, trolleyV, hoistV := 0.32, 0.35, 0.35, 100.0, 80.0
+	if c.Easy { // a toy: quick, snappy and with a hook that hardly swings
+		maxV, slewAcc, damp, trolleyV, hoistV = 1.1, 5, 2.5, 260, 240
 	}
 	c.slewV = approach(c.slewV, c.slewCmd*maxV, slewAcc*dt)
 	c.Slew += c.slewV * dt
-	c.Trolley = clamp(c.Trolley+c.trolleyCmd*100*dt, 70, craneJibLen-14)
-	c.HookLen = clamp(c.HookLen-c.hoistCmd*80*dt, 12, craneJibY-12)
+	c.Trolley = clamp(c.Trolley+c.trolleyCmd*trolleyV*dt, 70, craneJibLen-14)
+	c.HookLen = clamp(c.HookLen-c.hoistCmd*hoistV*dt, 12, craneJibY-12)
 
 	// the hook swings like a pendulum hanging under the trolley
 	L := math.Max(c.HookLen, 20)
 	tp := c.trolleyPos()
-	acc := tp.Sub(c.hook).Scale(craneGravity / L).Sub(c.hookV.Scale(damp))
-	c.hookV = c.hookV.Add(acc.Scale(dt))
-	c.hook = c.hook.Add(c.hookV.Scale(dt))
+	if c.Easy {
+		// a toy hook: it follows the trolley closely, with only a little lag
+		c.hook = c.hook.Add(tp.Sub(c.hook).Scale(1 - math.Pow(0.0005, dt)))
+		c.hookV = Vec{}
+	} else {
+		acc := tp.Sub(c.hook).Scale(craneGravity / L).Sub(c.hookV.Scale(damp))
+		c.hookV = c.hookV.Add(acc.Scale(dt))
+		c.hook = c.hook.Add(c.hookV.Scale(dt))
+	}
 
 	// keep the hook (and anything on it) above whatever is underneath
 	bottom := c.HookY()

@@ -276,6 +276,35 @@ func (w *World) addModel(name string, at Vec, angle, modelYaw, scale float64, so
 
 // CollideCircle tests a circle against solid props and the moving obstacles
 // (except those owned by self). Returns whether it hit and a push-out normal.
+// Blocked reports whether a circle at c overlaps anything solid, ignoring
+// the given owners.
+func (w *World) Blocked(c Vec, r float64, ignore ...any) bool {
+	for i := range w.Props {
+		p := &w.Props[i]
+		if !p.Solid {
+			continue
+		}
+		d := c.Sub(p.Rect.Center).Rot(-p.Rect.Angle)
+		dx := math.Max(0, math.Abs(d.X)-p.Rect.W/2)
+		dy := math.Max(0, math.Abs(d.Y)-p.Rect.H/2)
+		if math.Hypot(dx, dy) < r {
+			return true
+		}
+	}
+next:
+	for _, o := range w.obstacles {
+		for _, ig := range ignore {
+			if o.owner == ig {
+				continue next
+			}
+		}
+		if c.Sub(o.c).Len() < r+o.r {
+			return true
+		}
+	}
+	return false
+}
+
 func (w *World) CollideCircle(c Vec, r float64, self any) (bool, Vec) {
 	check := func(rc Rect, pad float64) (bool, Vec) {
 		// transform circle into rect local space

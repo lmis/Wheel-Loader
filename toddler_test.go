@@ -137,13 +137,15 @@ func TestToddlerCraneLiftsOntoTruck(t *testing.T) {
 				box = o
 			}
 		}
-		run(g, 60) // the hook goes up to travel height
 		aimHook(c, box.Pos)
 		p.td.pressed = true
-		run(g, 60*5)
-		if c.held != box {
-			t.Fatalf("player %d: the button should hook the crate (hook y %.0f)", p.ID, c.HookY())
+		for i := 0; i < 60*5 && (c.held == nil || p.td.mode == tdLower || c.HookY() < 100); i++ {
+			run(g, 1)
 		}
+		if c.held == nil {
+			t.Fatalf("player %d: the button should hook a load (hook y %.0f)", p.ID, c.HookY())
+		}
+		box = c.held
 		if box.Y < 60 {
 			t.Fatalf("player %d: crate should go up, y %.0f", p.ID, box.Y)
 		}
@@ -312,7 +314,102 @@ func TestSkaterStopsOnTheSiteAndGoesOn(t *testing.T) {
 		t.Fatalf("he should stop off the road, on the site (x %.0f)", k.Pos.X)
 	}
 	run(g, 60*5)
-	if k.waitT > 0 || k.speed < 100 {
+	if k.waitT > 0 || k.speed < 50 {
 		t.Fatalf("he should skate on again (speed %.0f)", k.speed)
+	}
+}
+
+func TestDrivingForwardSteersRoundThings(t *testing.T) {
+	g := NewGame()
+	p := g.players[1]
+	l := p.Driving.(*Loader)
+	// a parked pickup right in the way
+	var car *Car
+	for _, v := range g.vehicles {
+		if c, ok := v.(*Car); ok {
+			car = c
+			break
+		}
+	}
+	l.Joint, l.Heading = V(1700, 1600), math.Pi/2
+	car.Pos, car.Angle = V(1700, 1760), 0
+	start := l.Joint
+	bumped := false
+	for i := 0; i < 60*5; i++ {
+		p.ctl = Controls{Throttle: 1}
+		run(g, 1)
+		bumped = bumped || l.Jolt() > 40
+	}
+	if bumped {
+		t.Fatal("the loader drove into the pickup")
+	}
+	if l.Joint.Sub(start).Len() < 300 {
+		t.Fatalf("the loader should get round and carry on, went %.0f", l.Joint.Sub(start).Len())
+	}
+}
+
+func TestExcavatorDigsWithOneButton(t *testing.T) {
+	g := NewGame()
+	p := g.players[0]
+	e := p.td.own[3].(*Excavator)
+	tr := p.td.own[1].(*Truck)
+	g.put(p, e)
+	p.td.phase = exIdle
+	// park it facing the sand heap with the truck beside it
+	e.Pos, e.Heading, e.Slew = V(1450, 900), math.Pi/2, 0
+	tr.Pos, tr.Angle = V(1600, 900), math.Pi/2
+	ground := totalMaterial(g.world)
+	p.td.pressed = true
+	got := 0.0
+	for i := 0; i < 60*25 && !(p.td.phase == exIdle && i > 60); i++ {
+		run(g, 1)
+		got = math.Max(got, e.Load)
+	}
+	if got < 30 {
+		t.Fatalf("the excavator should fill its bucket, got %.1f", got)
+	}
+	if p.td.phase != exIdle || e.Load > 2 {
+		t.Fatalf("it should tip it out and come back to rest (phase %d, load %.1f)", p.td.phase, e.Load)
+	}
+	if tr.Total() < 20 {
+		t.Fatalf("with the truck in reach the load should go in it, truck has %.1f (ground %.0f→%.0f)", tr.Total(), ground, totalMaterial(g.world))
+	}
+}
+
+func TestCraneHomesInAndPicksUpByItself(t *testing.T) {
+	g := NewGame()
+	for _, p := range g.players {
+		c := p.td.own[2].(*TowerCrane)
+		tr := p.td.own[1].(*Truck)
+		g.put(p, c)
+		p.td.mode = tdCarry
+		var box *Cargo
+		for _, o := range g.world.Cargo {
+			if o.Kind == cargoCrate && o.Pos.Sub(c.Base).Len() < craneJibLen {
+				box = o
+			}
+		}
+		// swing roughly toward the crate (about 40 units off) and let go
+		near := box.Pos.Add(V(-30, 25)).Sub(c.Base)
+		c.Slew, c.slewV, c.Trolley = near.Angle(), 0, near.Len()
+		c.hook, c.hookV = c.trolleyPos(), Vec{}
+		for i := 0; i < 60*5 && c.held != box; i++ {
+			p.ctl = Controls{}
+			run(g, 1)
+		}
+		if c.held != box {
+			t.Fatalf("player %d: the hook should home in on the crate and pick it up", p.ID)
+		}
+		// now swing near the truck: it puts the crate on it
+		bed := tr.bedRect().Center.Add(V(-50, 40)).Sub(c.Base)
+		c.Slew, c.slewV, c.Trolley = bed.Angle(), 0, bed.Len()
+		for i := 0; i < 60*6 && c.held != nil; i++ {
+			p.ctl = Controls{}
+			run(g, 1)
+		}
+		run(g, 60)
+		if c.held != nil || box.truck != tr {
+			t.Fatalf("player %d: near its truck the crane should set the crate on it (held %v)", p.ID, c.held != nil)
+		}
 	}
 }

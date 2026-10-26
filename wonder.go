@@ -243,7 +243,7 @@ type Skater struct {
 var skateLoop = []Vec{V(1600, 300), V(1600, 2100), V(300, 2100), V(300, 300)}
 
 const (
-	skaterSpeed = 280.0
+	skaterSpeed = 80.0   // slow enough for the kids to watch, and to chase
 	skaterStop  = 1350.0 // where he stops on each lap: on the middle road, past the kids
 	skaterWait  = 3.6    // seconds he stands and looks around
 	skaterOff   = 82.0   // how far off the road centre he stands (onto the site)
@@ -298,14 +298,14 @@ func (k *Skater) Update(dt float64, w *World) {
 		k.look = approach(k.look, 0, 2*dt)
 		want := skaterSpeed
 		if dist < 450 {
-			want = math.Min(want, math.Sqrt(2*240*dist)) // braking to a stop
+			want = math.Min(want, math.Sqrt(2*60*dist)) // gliding to a stop
 		}
 		if want > k.speed {
-			k.speed = approach(k.speed, want, 140*dt)
+			k.speed = approach(k.speed, want, 60*dt)
 		} else {
-			k.speed = approach(k.speed, want, 400*dt)
+			k.speed = approach(k.speed, want, 120*dt)
 		}
-		if dist < 0.5 && k.speed < 25 {
+		if dist < 0.5 && k.speed < 12 {
 			k.s, k.speed, k.waitT, k.lookT = k.stopS, 0, skaterWait, 0
 		}
 	}

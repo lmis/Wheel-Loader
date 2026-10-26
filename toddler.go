@@ -24,9 +24,9 @@ import (
 type toddlerKeys struct {
 	fwd, back, left, right, button []Key
 	view                           []Key    // cab view / chase camera
-	pick                           [3][]Key // loader, truck, crane
+	pick                           [4][]Key // loader, truck, crane, excavator
 	label                          string
-	pickLabels                     [3]string
+	pickLabels                     [4]string
 }
 
 var (
@@ -35,17 +35,17 @@ var (
 		left: []Key{rl.KeyA}, right: []Key{rl.KeyD},
 		button: []Key{rl.KeySpace, rl.KeyLeftShift},
 		view:   []Key{rl.KeyV},
-		pick:   [3][]Key{{rl.KeyOne}, {rl.KeyTwo}, {rl.KeyThree}},
-		label:  "W A S D  +  Space    V: view", pickLabels: [3]string{"1", "2", "3"},
+		pick:   [4][]Key{{rl.KeyOne}, {rl.KeyTwo}, {rl.KeyThree}, {rl.KeyFour}},
+		label:  "W A S D  +  Space    V: view", pickLabels: [4]string{"1", "2", "3", "4"},
 	}
 	toddlerP2 = toddlerKeys{
 		fwd: []Key{rl.KeyUp, rl.KeyK}, back: []Key{rl.KeyDown, rl.KeyJ},
 		left: []Key{rl.KeyLeft, rl.KeyH}, right: []Key{rl.KeyRight, rl.KeyL},
 		button: []Key{rl.KeyEnter, rl.KeyRightShift},
 		view:   []Key{rl.KeyM, rl.KeyKp0},
-		pick: [3][]Key{{rl.KeyEight, rl.KeyKp1}, {rl.KeyNine, rl.KeyKp2},
-			{rl.KeyZero, rl.KeyKp3}},
-		label: "Arrows  +  Enter    M: view", pickLabels: [3]string{"8", "9", "0"},
+		pick: [4][]Key{{rl.KeyEight, rl.KeyKp1}, {rl.KeyNine, rl.KeyKp2},
+			{rl.KeyZero, rl.KeyKp3}, {rl.KeyMinus, rl.KeyKp4}},
+		label: "Arrows  +  Enter    M: view", pickLabels: [4]string{"8", "9", "0", "-"},
 	}
 )
 
@@ -68,7 +68,7 @@ const (
 // toddlerState is each player's toddler-mode bookkeeping.
 type toddlerState struct {
 	keys      *toddlerKeys
-	own       [3]Vehicle // loader, truck, crane
+	own       [4]Vehicle // loader, truck, crane, excavator
 	goTo      Vehicle    // machine the kid is walking over to
 	walkT     float64
 	side      float64 // which way the kid walks around obstacles (±1)
@@ -78,6 +78,11 @@ type toddlerState struct {
 	pressed   bool    // pressed since the assistant last looked
 	dumpTruck *Truck  // truck under the bucket when the dump started
 	modeT     float64 // time in the current mode
+	phase     int     // excavator: step of the dig cycle
+	avoidT    float64 // driving: keep steering round an obstacle for this long
+	cool      float64 // crane: time before the hook homes in again
+	avoidSide float64 // which way (+1 right, -1 left)
+	phaseT    float64 // time in that step
 	awayT     float64 // loader: time the bucket has been out of the heap
 	hookLen   float64 // crane rope length last step, to see the hook land
 }
@@ -93,14 +98,16 @@ func (g *Game) setupLanes() {
 		truck       *Truck
 		truckAt     Vec
 		crane       *TowerCrane
+		exc         *Excavator
+		excAt       Vec
 		keys        *toddlerKeys
 		pileMat     int
 		heading     float64
 		truckFacing float64
 	}
 	lanes := []lane{
-		{g.loader, V(1490, 1300), V(1450, 1040), w.Trucks[0], V(1300, 1120), g.crane2, &toddlerP1, MatSand, -math.Pi / 2, -math.Pi / 2},
-		{l2, V(1710, 1300), V(1750, 1040), w.Trucks[1], V(1895, 1110), g.crane, &toddlerP2, MatDirt, -math.Pi / 2, -math.Pi / 2},
+		{g.loader, V(1490, 1300), V(1450, 1040), w.Trucks[0], V(1300, 1120), g.crane2, g.excs[0], V(1390, 880), &toddlerP1, MatSand, -math.Pi / 2, -math.Pi / 2},
+		{l2, V(1710, 1300), V(1750, 1040), w.Trucks[1], V(1895, 1110), g.crane, g.excs[1], V(1810, 880), &toddlerP2, MatDirt, -math.Pi / 2, -math.Pi / 2},
 	}
 	for i, ln := range lanes {
 		p := g.players[i]
@@ -119,7 +126,10 @@ func (g *Game) setupLanes() {
 		// a big heap right in front of each player
 		w.Grid.AddPile(ln.pile.X, ln.pile.Y, 90, 75, ln.pileMat)
 		w.Grid.AddPile(ln.pile.X+30, ln.pile.Y-40, 60, 55, ln.pileMat)
-		p.td = &toddlerState{keys: ln.keys, own: [3]Vehicle{l, ln.truck, ln.crane}}
+		e := ln.exc
+		e.Pos, e.Heading, e.Slew, e.Speed, e.Load = ln.excAt, math.Pi/2, 0, 0, 0
+		e.Boom, e.Stick, e.Bucket = excCarry[0], excCarry[1], excCarry[2]
+		p.td = &toddlerState{keys: ln.keys, own: [4]Vehicle{l, ln.truck, ln.crane, e}}
 	}
 	for _, t := range w.Trucks {
 		t.Capacity = toddlerTruckSize
@@ -210,6 +220,7 @@ func (g *Game) toddlerTravel(p *Player, dt float64) {
 		if g.driverOf(v) == nil {
 			g.enter(p, v)
 			td.mode, td.modeT, td.dumpTruck, td.hookLen = tdCarry, 0, nil, 0
+			td.phase, td.phaseT = exIdle, 0
 			if _, ok := v.(*Loader); ok {
 				td.mode = tdDig
 			}
@@ -266,6 +277,9 @@ func (g *Game) toddlerStep(dt float64) {
 			continue
 		}
 		g.toddlerTravel(p, dt)
+		if td.goTo == nil {
+			g.toddlerAvoid(p, dt)
+		}
 	}
 }
 
@@ -284,6 +298,8 @@ func (g *Game) toddlerAssist(p *Player, dt float64) {
 		g.toddlerDumpTruck(p, v)
 	case *TowerCrane:
 		g.toddlerHook(p, v, dt)
+	case *Excavator:
+		g.toddlerDigger(p, v, dt)
 	}
 	td.pressed = false
 }
@@ -372,23 +388,51 @@ func (g *Game) toddlerDumpTruck(p *Player, t *Truck) {
 	}
 }
 
-// toddlerHook keeps the crane hook at a safe travel height. The button
-// lowers it until it lands, then hooks on whatever is below or lets go of
-// the load, and the hook goes back up.
+// toddlerHook makes the crane a toy. The hook travels at a safe height;
+// swing it near a load and it homes in, drops, hooks on and lifts. Carrying a
+// load, swing it near your truck and it homes in over the bed and sets the
+// load down. The button lowers the hook (to pick up or put down) anywhere.
 func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 	td := p.td
 	w := g.world
+	td.cool -= dt
+	// what the hook is drawn to: the nearest free load, or the truck bed
+	var target *Vec
+	reach := 85.0
+	if c.held == nil {
+		best := reach
+		for _, o := range w.Cargo {
+			if o.held || o.truck != nil || o.Pos.Sub(c.Base).Len() > craneJibLen-10 {
+				continue
+			}
+			if d := o.Pos.Sub(c.hook).Len(); d < best {
+				best, target = d, &o.Pos
+			}
+		}
+	} else if t, ok := td.own[1].(*Truck); ok {
+		if bed := t.bedRect().Center; bed.Sub(c.hook).Len() < reach+20 {
+			target = &bed
+		}
+	}
+	if td.cool > 0 {
+		target = nil // just let go: no grabbing it straight back
+	}
 	switch td.mode {
 	case tdLower:
 		c.hoistCmd = -1
+		c.slewCmd, c.trolleyCmd = 0, 0
 		// the hook has landed once it stops paying out rope
-		landed := td.modeT > 0.2 && c.HookLen-td.hookLen < 80*dt*0.3
-		if landed || td.modeT > 6 {
+		landed := td.modeT > 0.15 && c.HookLen-td.hookLen < 240*dt*0.3
+		if landed || td.modeT > 4 {
 			if h := c.held; h != nil {
 				h.held, h.vy = false, 0
 				c.held = nil
+				td.cool = 1.5
 			} else {
 				c.attach(w)
+				if c.held == nil {
+					td.cool = 1 // missed: don't keep trying the same spot
+				}
 			}
 			td.mode, td.modeT = tdCarry, 0
 		}
@@ -397,13 +441,201 @@ func (g *Game) toddlerHook(p *Player, c *TowerCrane, dt float64) {
 		if c.held != nil {
 			want += c.held.H
 		}
-		c.hoistCmd = clamp((want-c.HookY())/30, -1, 1)
-		if td.pressed && td.modeT > 0.3 {
+		c.hoistCmd = clamp((want-c.HookY())/20, -1, 1)
+		if target != nil {
+			// home in: swing and run the trolley to put the hook right over it
+			d := target.Sub(c.Base)
+			ds := angleDiff(d.Angle(), c.Slew)
+			dt2 := d.Len() - c.Trolley
+			if p.ctl.Steer == 0 {
+				c.slewCmd = clamp(ds*3-c.slewV*0.6, -1, 1)
+			}
+			if p.ctl.Throttle == 0 {
+				c.trolleyCmd = clamp(dt2/25, -1, 1)
+			}
+			if c.hook.Sub(*target).Len() < 9 && math.Abs(c.slewV) < 0.15 && td.modeT > 0.2 {
+				td.mode, td.modeT = tdLower, 0
+			}
+		}
+		if td.pressed && td.modeT > 0.2 {
 			td.mode, td.modeT = tdLower, 0
 		}
 	}
 	c.grabCmd = 0
 	td.hookLen = c.HookLen
+}
+
+// ---- the excavator ----
+
+// excCarry is the excavator's resting pose: boom up, stick in, bucket curled.
+var excCarry = [3]float64{0.62, 0.55, 0.65}
+
+// Excavator assistant phases (td.phase), one dig-and-dump cycle per press.
+const (
+	exIdle  = iota
+	exReach // swing to the front, boom down, stick out, bucket open, until the teeth bite
+	exDig   // curl the bucket and pull the stick in through the material
+	exLift  // boom up with the load
+	exSwing // swing to the kid's truck (or out to the side)
+	exDump  // open the bucket
+	exBack  // back to the resting pose, facing forward
+)
+
+// toddlerDigger works the excavator: the direction keys drive the tracks,
+// and the button runs a whole dig: reach in front, fill the bucket, lift,
+// swing to the truck if it is in reach (or to the side), tip it out and
+// swing back.
+func (g *Game) toddlerDigger(p *Player, e *Excavator, dt float64) {
+	td := p.td
+	if p.ctl.Throttle == 0 && p.ctl.Steer == 0 {
+		e.brake = true
+	}
+	pose := func(boom, stick, bucket float64) {
+		e.boomCmd = clamp((boom-e.Boom)*5, -1, 1)
+		e.stickCmd = clamp((stick-e.Stick)*5, -1, 1)
+		e.bucketCmd = clamp((bucket-e.Bucket)*5, -1, 1)
+	}
+	slewTo := func(a float64) bool {
+		d := angleDiff(a, e.Slew)
+		e.slewCmd = clamp(d*2.2-e.slewV*0.8, -1, 1)
+		return math.Abs(d) < 0.06 && math.Abs(e.slewV) < 0.12
+	}
+	td.phaseT += dt
+	next := func(ph int) { td.phase, td.phaseT = ph, 0 }
+	tip, tipY := e.Tip()
+	surface := 0.0
+	if cx, cy, ok := g.world.Grid.cellAt(tip.X, tip.Y); ok {
+		surface = pileHeight(g.world.Grid.at(cx, cy).Amount)
+	}
+	switch td.phase {
+	case exIdle:
+		pose(excCarry[0], excCarry[1], excCarry[2])
+		slewTo(0)
+		if td.pressed {
+			next(exReach)
+		}
+	case exReach:
+		slewTo(0)
+		e.boomCmd, e.stickCmd = -1, -0.6
+		e.bucketCmd = clamp((0.25-e.Bucket)*5, -1, 1)
+		if tipY < surface+5 || e.Boom <= 0.01 || td.phaseT > 3 {
+			next(exDig)
+		}
+	case exDig:
+		e.boomCmd, e.stickCmd, e.bucketCmd = 0.1, 1, 1
+		if e.Load >= excCapacity*0.95 || e.Bucket >= 0.99 || td.phaseT > 2.5 {
+			next(exLift)
+		}
+	case exLift:
+		pose(0.85, 0.45, 1)
+		if e.Boom > 0.8 {
+			next(exSwing)
+		}
+	case exSwing:
+		pose(0.85, 0.45, 1)
+		target := math.Pi / 2 // out to the right, onto the ground
+		if t, ok := td.own[1].(*Truck); ok {
+			if d := t.bedRect().Center.Sub(e.Pos); d.Len() < 200 {
+				target = angleDiff(d.Angle(), e.Heading)
+			}
+		}
+		if slewTo(target) || td.phaseT > 5 {
+			next(exDump)
+		}
+	case exDump:
+		e.slewCmd = clamp(-e.slewV*2, -1, 1)
+		// reach out over the truck, or just open the bucket
+		if t, ok := td.own[1].(*Truck); ok {
+			if d := t.bedRect().Center.Sub(e.Pos).Len(); d < 200 {
+				e.stickCmd = clamp((tip.Sub(e.Pos).Len()-d)/40, -1, 1)
+			}
+		}
+		e.boomCmd = clamp((0.85-e.Boom)*5, -1, 1)
+		e.bucketCmd = -1
+		if (e.Load < 1 && e.Bucket < 0.05) || td.phaseT > 3.5 {
+			next(exBack)
+		}
+	case exBack:
+		pose(excCarry[0], excCarry[1], excCarry[2])
+		if slewTo(0) || td.phaseT > 5 {
+			next(exIdle)
+		}
+	}
+}
+
+// ---- driving forward steers round things ----
+
+// toddlerAvoid nudges the steering of a kid driving forward so the machine
+// goes round whatever is ahead instead of bumping into it: it looks ahead
+// along the way it is going, picks the nearer open side, and keeps turning
+// that way (slowing down) until the way is clear. A loader carrying a load
+// may drive right up to its own truck.
+func (g *Game) toddlerAvoid(p *Player, dt float64) {
+	td := p.td
+	td.avoidT -= dt
+	if p.ctl.Throttle <= 0 {
+		td.avoidT = 0
+		return
+	}
+	var pos Vec
+	var head, r float64
+	ignore := []any{p.Driving}
+	switch v := p.Driving.(type) {
+	case *Loader:
+		pos, head, r = v.FrontAxle(), v.FrontHeading()+v.Artic*0.5, 44 // wide: the rear swings out on a bend
+		if td.mode == tdCarry || td.mode == tdDump {
+			ignore = append(ignore, td.own[1])
+		}
+	case *Truck:
+		pos, head, r = v.Pos.Add(dir(v.Angle).Scale(40)), v.Angle+v.Steer*0.5, 34
+	case *Excavator:
+		pos, head, r = v.Pos.Add(dir(v.Heading).Scale(38)), v.Heading, 46
+	default:
+		return
+	}
+	w := g.world
+	free := func(a float64) int { // how far ahead along a is clear (0..4)
+		n := 0
+		for _, d := range []float64{40, 80, 125, 175} {
+			if w.Blocked(pos.Add(dir(a).Scale(d)), r, ignore...) {
+				break
+			}
+			n++
+		}
+		return n
+	}
+	ahead := free(head)
+	if ahead == 4 && td.avoidT <= 0 {
+		return
+	}
+	if td.avoidT <= 0 {
+		// pick the nearest open way, left or right (right is +angle)
+		best, side := ahead, 1.0
+		for _, off := range []float64{0.35, 0.7, 1.05, 1.4, 1.8} {
+			l, rr := free(head-off), free(head+off)
+			if rr > best || l > best {
+				if rr >= l {
+					best, side = rr, 1
+				} else {
+					best, side = l, -1
+				}
+			}
+			if best == 4 {
+				break
+			}
+		}
+		td.avoidSide = side
+	}
+	if ahead < 4 {
+		td.avoidT = 0.5 // keep turning a little past the obstacle
+	}
+	p.ctl.Steer = clamp(p.ctl.Steer+td.avoidSide*1.5, -1, 1)
+	switch {
+	case ahead <= 1:
+		p.ctl.Throttle *= 0.25 // close: creep round
+	case ahead <= 2:
+		p.ctl.Throttle *= 0.5
+	}
 }
 
 // ---- toddler HUD ----
@@ -417,7 +649,7 @@ func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 	// machine picker: three tiles with the key and a little picture, the
 	// current machine lit up
 	for i, m := range td.own {
-		x, y := vw-3*62+float64(i)*62-12, 20.0
+		x, y := vw-4*62+float64(i)*62-12, 20.0
 		bg := hudPanel
 		if p.Driving == m || td.goTo == m {
 			bg = rgba(p.marker.R, p.marker.G, p.marker.B, 200)
@@ -430,7 +662,8 @@ func (g *Game) drawToddlerHUD(dst canvas, p *Player, vw, vh float64) {
 	g.drawText(dst, td.keys.label, g.art.Small, 16, vh-24, rgba(200, 204, 210, 160))
 }
 
-// drawMachineIcon draws a tiny loader (0), dump truck (1) or crane (2).
+// drawMachineIcon draws a tiny loader (0), dump truck (1), crane (2) or
+// excavator (3).
 func drawMachineIcon(dst canvas, kind int, cx, cy float64) {
 	dark := rgba(40, 40, 44, 255)
 	rect := func(x, y, w, h float64, c color.RGBA) {
@@ -459,5 +692,12 @@ func drawMachineIcon(dst canvas, kind int, cx, cy float64) {
 		rect(11, -19, 1, 12, dark)
 		rect(9, -8, 5, 3, rgba(230, 60, 40, 255))
 		rect(-14, 6, 12, 3, dark)
+	case 3: // excavator: tracks, house, boom and stick down to a bucket
+		rect(-16, 2, 22, 6, dark)
+		rect(-14, -8, 16, 9, colExc)
+		rect(-12, -14, 7, 6, colExc)
+		rect(1, -16, 12, 3, colExc)
+		rect(11, -16, 3, 14, colExc)
+		rect(9, -4, 7, 4, dark)
 	}
 }

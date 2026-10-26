@@ -41,7 +41,7 @@ func (e *Excavator) Facing() float64       { return e.Heading + e.Slew }
 func (e *Excavator) SpeedVal() float64     { return e.Speed }
 func (e *Excavator) SetOccupied(b bool)    { e.Occupied = b }
 func (e *Excavator) Jolt() float64         { return e.jolt }
-func (e *Excavator) CamDist() float64      { return 600 }
+func (e *Excavator) CamDist() float64      { return 400 }
 func (e *Excavator) Colliders() []obstacle { return e.collidersAt(e.Pos, e.Heading) }
 
 func (e *Excavator) collidersAt(p Vec, h float64) []obstacle {
@@ -94,6 +94,31 @@ func (e *Excavator) Tip() (Vec, float64) {
 	_, _, _, p3 := e.armPoints(e.Boom, e.Stick, e.Bucket)
 	h := e.houseYaw()
 	return e.Pos.Add(dir(h).Scale(p3[0])).Add(dir(h + math.Pi/2).Scale(excArmZ)), p3[1]
+}
+
+// Seat is the operator's eye in the cab, beside the boom, looking along the
+// house and down at the bucket.
+func (e *Excavator) Seat() (Vec3, float64) { return e.houseAt(14, -18, excHouseY+42), e.houseYaw() }
+func (e *Excavator) SeatPitch() float64    { return -0.32 }
+
+// RenderCockpit adds the joystick consoles either side of the seat and a
+// small screen.
+func (e *Excavator) RenderCockpit(s *Scene) {
+	h := e.houseYaw()
+	fw := rotY(Vec3{1, 0, 0}, h)
+	up := Vec3{0, 1, 0}
+	for _, z := range []float64{-23.5, -12.5} {
+		s.addRoundPrism(e.houseAt(0, z, 0), h, []ring{{15, 21, 1.2, excHouseY + 31, 0.6}, {15, 21, 1.2, excHouseY + 33.5, 0.6}}, colDark, false, true)
+		base := e.houseAt(19.5, z, excHouseY+33.5)
+		s.addCapsule(base, base.Add(Vec3{0, 1.6, 0}), 0.22, 0.2, colDark)
+		s.addSphere(base.Add(Vec3{0, 1.85, 0}), 0.45, rgba(220, 40, 36, 255))
+	}
+	s.addOBB2(e.houseAt(24.5, -22, excHouseY+38), fw.Add(up.Scale(0.5)), up, 0.15, 1.1, 1.6, colDark)
+	s.detail(func() {
+		s.glowing(func() {
+			s.addOBB2(e.houseAt(24.4, -22, excHouseY+38.05), fw.Add(up.Scale(0.5)), up, 0.05, 0.9, 1.4, rgba(120, 200, 255, 255))
+		})
+	})
 }
 
 func (e *Excavator) ExitPoint(side float64) Vec {
@@ -206,7 +231,7 @@ func (e *Excavator) Render(g *Game, s *Scene) {
 	if !g.cam.inView(ground(e.Pos, 50), 200) {
 		return
 	}
-	c := rgba(245, 190, 40, 255)
+	c := colExc
 	side := dir(e.Heading + math.Pi/2)
 	// crawler tracks with moving cleats
 	for _, sgn := range []float64{-1, 1} {

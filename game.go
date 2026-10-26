@@ -24,9 +24,10 @@ type Game struct {
 	world    *World
 	loader   *Loader // player 1's loader
 	vehicles []Vehicle
-	crane    *TowerCrane // player 2's crane, by the cargo yard
-	crane2   *TowerCrane // player 1's crane, its mirror image
-	wonder   *wonders    // train, helicopter, rollerblader (wonder.go)
+	crane    *TowerCrane   // player 2's crane, by the cargo yard
+	crane2   *TowerCrane   // player 1's crane, its mirror image
+	excs     [2]*Excavator // each kid's excavator
+	wonder   *wonders      // train, helicopter, rollerblader (wonder.go)
 	animals  []*Animal
 	players  []*Player
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
@@ -96,7 +97,7 @@ func NewGame() *Game {
 		g.vehicles = append(g.vehicles, t)
 	}
 	g.vehicles = append(g.vehicles,
-		&Excavator{Pos: V(2500, 1820), Heading: 2.4, Slew: 0.35, Boom: 0.55, Stick: 0.45, Bucket: 0.5},
+
 		&Car{Pos: V(2440, 410), Angle: 0.15, Model: "racing/vehicle-truck-yellow"},
 		&Car{Pos: V(830, 690), Angle: -0.4, Model: "racing/vehicle-truck-red"},
 		&Car{Pos: V(2820, 470), Angle: 1.7, Model: "racing/vehicle-truck-green"},
@@ -116,6 +117,10 @@ func NewGame() *Game {
 	// player 1's crane mirrors the site crane across the road, with its own
 	// loads
 	const mid = 1600.0
+	for i := range g.excs {
+		g.excs[i] = &Excavator{Pos: V(1390+420*float64(i), 880), Heading: math.Pi / 2}
+		g.vehicles = append(g.vehicles, g.excs[i])
+	}
 	g.crane2 = NewTowerCrane(V(2*mid-g.crane.Base.X, g.crane.Base.Y), math.Pi-g.crane.Slew)
 	g.vehicles = append(g.vehicles, g.crane2)
 	for _, c := range w.Cargo[:len(w.Cargo)] {

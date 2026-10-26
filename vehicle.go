@@ -151,6 +151,7 @@ var (
 	colLoader = rgba(240, 186, 24, 255)
 	colTruck  = rgba(206, 46, 38, 255)
 	colCrane  = rgba(48, 158, 74, 255)
+	colExc    = rgba(236, 120, 28, 255) // excavators: orange
 )
 
 // bodyColor returns the loader's colour, defaulting to loader yellow.

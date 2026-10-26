@@ -84,9 +84,16 @@ machines do the fiddly parts themselves:
   to the truck and it tips in. The button dumps the bucket anywhere.
 - **Dump truck:** the button tips the body all the way, the load pours out,
   and the body comes back down.
-- **Crane:** left/right swings the jib, up/down runs the trolley out and in.
-  The hook stays at a safe height and its shadow shows where it is. The
-  button lowers it to hook onto a load, or to put the load down.
+- **Crane:** a snappy toy. Left/right swings the jib, up/down runs the
+  trolley out and in. Swing near a load and the hook homes in, drops, hooks
+  on and lifts; carry it near your truck and it homes in over the bed and
+  sets it down. The button lowers the hook by hand anywhere.
+- **Excavator:** the direction keys drive the tracks; one press of the
+  button digs: reach out in front, fill the bucket, lift, swing to your
+  truck if it is in reach (or out to the side), tip it in and swing back.
+- **Driving forward steers round things:** loaders, trucks and excavators
+  turn round whatever is ahead and slow down to squeeze past; a loader
+  with a full bucket may still drive right up to its own truck.
 
 Each truck takes about five bucket loads before it is full; it stays full
 until its kid drives it somewhere and tips it out (and the new heap can be

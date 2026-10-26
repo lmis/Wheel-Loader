@@ -86,6 +86,9 @@ func (a *Animal) rideSpot(v Vehicle) (Vec, float64, float64) {
 		return on(m.Joint, rh, -52, 0, 45) // engine hood
 	case *Truck:
 		return on(m.Pos, m.Angle, 39, []float64{-12, 12}[a.slot], 55) // cab roof
+	case *Excavator:
+		// on the house roof, behind the cab
+		return on(m.Pos, m.houseYaw(), []float64{-20, -40}[a.slot], -6, 48)
 	case *TowerCrane:
 		// on the concrete footing, either side of the mast
 		return on(m.Base, math.Pi/2, 22, []float64{-22, 22}[a.slot], 8)
