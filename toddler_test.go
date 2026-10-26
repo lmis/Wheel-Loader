@@ -244,7 +244,7 @@ func TestViewKeySwitchesToTheCab(t *testing.T) {
 
 func TestSkaterStopsOnTheSiteAndGoesOn(t *testing.T) {
 	g := NewGame()
-	k := &g.wonder.skater
+	k := &g.wonder.skaters[0]
 	stopped := false
 	for i := 0; i < 60*20 && !stopped; i++ {
 		run(g, 1)

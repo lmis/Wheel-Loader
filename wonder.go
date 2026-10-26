@@ -251,7 +251,35 @@ type Skater struct {
 	waitT float64 // time left standing still
 	lookT float64 // clock for looking around while stopped
 	look  float64 // head turn (radians, left positive)
+
+	style *skaterStyle // nil: the first skater's look
 }
+
+// skaterStyle is how a skater looks: shirt, hair, glasses and the colour of
+// the lights on the skates.
+type skaterStyle struct {
+	shirt, hair, boot, lens color.RGBA
+	glow, glowRim           color.RGBA // the lit wheels and helmet stripe
+	spark                   [3]uint8   // the light trail off the wheels
+	litLens, beard          bool
+}
+
+var (
+	// the first skater: teal shirt, red lights, blue glasses, brown hair and a beard
+	skaterTeal = skaterStyle{
+		shirt: rgba(28, 168, 172, 255), hair: rgba(112, 66, 34, 255),
+		boot: rgba(196, 26, 30, 255), lens: rgba(40, 140, 255, 255),
+		glow: rgba(255, 70, 56, 255), glowRim: rgba(255, 150, 120, 255),
+		spark: [3]uint8{255, 50, 40}, litLens: true, beard: true,
+	}
+	// the second skater: red shirt, pink lights, black glasses, blonde hair
+	skaterPink = skaterStyle{
+		shirt: rgba(212, 34, 40, 255), hair: rgba(236, 200, 112, 255),
+		boot: rgba(232, 72, 168, 255), lens: rgba(16, 16, 20, 255),
+		glow: rgba(255, 96, 200, 255), glowRim: rgba(255, 180, 230, 255),
+		spark: [3]uint8{255, 80, 190},
+	}
+)
 
 var skateLoop = []Vec{V(1600, 300), V(1600, 2100), V(300, 2100), V(300, 300)}
 
@@ -355,14 +383,21 @@ func (k *Skater) Update(dt float64, w *World) {
 		// coming to a stand with his feet together
 		k.phase = approach(k.phase, math.Round(k.phase/math.Pi)*math.Pi, 3*dt)
 	}
-	// red sparks of light trail off the wheels
+	// sparks of light trail off the wheels
 	if k.speed > 40 && w.rng.Float64() < 0.5 {
 		foot := k.Pos.Add(dir(k.Yaw + math.Pi/2).Scale(math.Sin(k.phase) * 4))
 		w.addParticle(Particle{
 			Pos: foot, Vel: dir(k.Yaw).Scale(-30), Z: 1, VZ: 4,
-			Life: 0.35, Size: 2.2, Kind: pfxSpark, Color: [3]uint8{255, 50, 40},
+			Life: 0.35, Size: 2.2, Kind: pfxSpark, Color: k.styled().spark,
 		})
 	}
+}
+
+func (k *Skater) styled() *skaterStyle {
+	if k.style == nil {
+		return &skaterTeal
+	}
+	return k.style
 }
 
 func (g *Game) renderSkater(s *Scene, k *Skater) {
@@ -385,15 +420,16 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 	at := func(x, z, y float64) Vec3 {
 		return base.Add(bf.Scale(x)).Add(bl.Scale(z)).Add(tilt.Scale(y))
 	}
+	st := k.styled()
 	var (
 		skin    = rgba(236, 190, 156, 255)
-		shirt   = rgba(28, 168, 172, 255)
+		shirt   = st.shirt
 		tights  = rgba(36, 36, 44, 255)
-		boot    = rgba(196, 26, 30, 255)
-		glowRed = rgba(255, 70, 56, 255)
-		hair    = rgba(112, 66, 34, 255)
+		boot    = st.boot
+		glowRed = st.glow
+		hair    = st.hair
 		helmet  = rgba(34, 36, 44, 255)
-		lens    = rgba(40, 140, 255, 255)
+		lens    = st.lens
 	)
 	// legs push out to the sides in turn, skates gliding along
 	stride := math.Sin(k.phase)
@@ -404,18 +440,18 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		knee := hip.Add(foot.Sub(hip).Scale(0.5)).Add(fw.Scale(2.4))
 		s.addCapsule(hip, knee, 1.75, 1.45, tights)
 		s.addCapsule(knee, foot.Add(up.Scale(2.2)), 1.45, 1.2, tights)
-		// glowing red rollerblades: a rounded boot and a row of lit wheels
+		// glowing rollerblades: a rounded boot and a row of lit wheels
 		s.addEllipsoid(foot.Add(up.Scale(1.3)).Add(fw.Scale(0.4)), fw, up, 3.3, 1.5, 1.5, boot)
 		s.addCapsule(foot.Add(up.Scale(1.8)), foot.Add(up.Scale(3.4)), 1.45, 1.4, boot) // cuff
 		s.addOBB2(foot.Add(up.Scale(-0.4)), fw, up, 3.3, 0.3, 0.5, colDark)             // frame
 		s.glowing(func() {
 			for w := -1.5; w <= 1.51; w += 1 {
 				c := foot.Add(fw.Scale(w * 1.7)).Add(up.Scale(-1.15))
-				s.addRoundWheel(c, fw, lat, 0.85, 0.7, 14, glowRed, rgba(255, 150, 120, 255))
+				s.addRoundWheel(c, fw, lat, 0.85, 0.7, 14, glowRed, st.glowRim)
 			}
 		})
 		gp := k.Pos.Add(r.Scale(side * (2.5 + push)))
-		s.addBlob(ground(gp, 0.6), 8, 4.5, k.Yaw, rgba(255, 40, 30, 120)) // red glow on the road
+		s.addBlob(ground(gp, 0.6), 8, 4.5, k.Yaw, rgba(glowRed.R, glowRed.G*2/3, glowRed.B*2/3, 120)) // glow on the road
 	}
 	// body: hips, chest and shoulders, rounded
 	s.addEllipsoid(at(0, 0, 15.5), bf, tilt, 2.4, 1.8, 3.0, tights)
@@ -435,7 +471,7 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 	}
 	headMark := len(s.tris)
 	neck := at(0, 0, 25)
-	// head with a full beard, blue glasses, long hair and a dark helmet
+	// head with glasses, long hair, a dark helmet and maybe a full beard
 	s.addCapsule(at(0, 0, 25), at(0.2, 0, 27), 1.2, 1.15, skin)
 	head := at(0.4, 0, 29)
 	const hx, hy, hz = 2.5, 2.8, 2.4
@@ -444,18 +480,27 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		return head.Add(bf.Scale(x + out)).Add(bl.Scale(dz)).Add(tilt.Scale(dy))
 	}
 	s.addEllipsoid(head, bf, tilt, hx, hy, hz, skin)
-	// the beard: round the jaw and chin, and a moustache
-	s.addEllipsoid(head.Add(bf.Scale(1.2)).Add(tilt.Scale(-1.7)), bf, tilt, 1.6, 1.5, 2.35, hair)
-	s.addEllipsoid(head.Add(bf.Scale(2.0)).Add(tilt.Scale(-2.7)), bf.Add(tilt.Scale(-0.4)), tilt, 1.1, 1.2, 1.5, hair)
+	if st.beard {
+		// the beard: round the jaw and chin, and a moustache
+		s.addEllipsoid(head.Add(bf.Scale(1.2)).Add(tilt.Scale(-1.7)), bf, tilt, 1.6, 1.5, 2.35, hair)
+		s.addEllipsoid(head.Add(bf.Scale(2.0)).Add(tilt.Scale(-2.7)), bf.Add(tilt.Scale(-0.4)), tilt, 1.1, 1.2, 1.5, hair)
+	}
 	s.detail(func() {
-		s.addEllipsoid(onFace(0, -0.95, 0.05), bf, tilt, 0.4, 0.38, 1.25, hair)                                           // moustache
+		if st.beard {
+			s.addEllipsoid(onFace(0, -0.95, 0.05), bf, tilt, 0.4, 0.38, 1.25, hair) // moustache
+		}
 		s.addEllipsoid(head.Add(bf.Scale(2.82)).Add(tilt.Scale(-1.75)), bf, tilt, 0.15, 0.2, 0.7, rgba(150, 60, 56, 255)) // smile
 		s.addEllipsoid(onFace(0, -0.3, 0.05), bf, tilt, 0.4, 0.45, 0.38, shadeC(skin, 0.95))                              // nose
-		// round blue glasses on a dark frame
+		// round glasses on a dark frame
 		for _, z := range []float64{-1, 1} {
 			e := onFace(z, 0.45, 0.05)
 			s.addEllipsoid(e, bf, tilt, 0.18, 0.72, 0.82, colDark)
-			s.glowing(func() { s.addEllipsoid(e.Add(bf.Scale(0.08)), bf, tilt, 0.14, 0.6, 0.7, lens) })
+			glass := func() { s.addEllipsoid(e.Add(bf.Scale(0.08)), bf, tilt, 0.14, 0.6, 0.7, lens) }
+			if st.litLens {
+				s.glowing(glass)
+			} else {
+				glass()
+			}
 			s.addCapsule(e.Add(bl.Scale(z*0.8)), head.Add(bl.Scale(z*2.35)).Add(tilt.Scale(0.5)), 0.12, 0.12, colDark)
 		}
 		s.addCapsule(onFace(-0.2, 0.5, 0.1), onFace(0.2, 0.5, 0.1), 0.12, 0.12, colDark) // bridge
@@ -473,7 +518,7 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 		}
 	}
 	s.addEllipsoid(head.Add(bf.Scale(-0.7)).Add(tilt.Scale(-0.6)), bf, tilt, 2.2, 2.2, 2.6, hair)
-	// the helmet: a smooth dark dome, with a red stripe to match the skates
+	// the helmet: a smooth dark dome, with a stripe to match the skates
 	s.addEllipsoid(head.Add(tilt.Scale(1.9)), bf, tilt, 2.95, 2.3, 2.8, helmet)
 	s.detail(func() {
 		s.addEllipsoid(head.Add(tilt.Scale(4.15)), bf, tilt, 2.2, 0.2, 0.45, glowRed)
@@ -485,16 +530,22 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 
 // wonders holds the things to look at.
 type wonders struct {
-	train  Train
-	heli   Helicopter
-	skater Skater
+	train   Train
+	heli    Helicopter
+	skaters [2]Skater
 }
 
 func newWonders() *wonders {
 	wd := &wonders{train: Train{X: 1100, speed: trainSpeed}, heli: Helicopter{t: heliPeriod - 6}}
-	wd.skater.s, wd.skater.stopS = 300, skaterStop
-	wd.skater.Pos, wd.skater.Yaw = loopAt(wd.skater.s)
-	wd.skater.speed = skaterSpeed
+	// the second skater starts half a lap behind, in red with pink lights,
+	// and stops on the west road instead
+	half := loopLen() / 2
+	for i, st := range []*skaterStyle{&skaterTeal, &skaterPink} {
+		k := &wd.skaters[i]
+		k.s, k.stopS = 300+float64(i)*half, skaterStop+float64(i)*half
+		k.Pos, k.Yaw = loopAt(k.s)
+		k.speed, k.style = skaterSpeed, st
+	}
 	return wd
 }
 
@@ -502,7 +553,9 @@ func (g *Game) updateWonders(dt float64) {
 	wd := g.wonder
 	wd.train.Update(dt, g.world)
 	wd.heli.Update(dt)
-	wd.skater.Update(dt, g.world)
+	for i := range wd.skaters {
+		wd.skaters[i].Update(dt, g.world)
+	}
 }
 
 func (g *Game) renderWonders(s *Scene) {
@@ -510,5 +563,7 @@ func (g *Game) renderWonders(s *Scene) {
 	g.renderTrack(s)
 	g.renderTrain(s, &wd.train)
 	g.renderHelicopter(s, &wd.heli)
-	g.renderSkater(s, &wd.skater)
+	for i := range wd.skaters {
+		g.renderSkater(s, &wd.skaters[i])
+	}
 }

@@ -68,9 +68,9 @@ func (g *Game) studioSheets() []studioSheet {
 			{"happy hop", 46, 18, animal(kind, func(a *Animal) { a.bounce, a.t = 9, 0.6 })},
 		}
 	}
-	skater := func(phase, lean float64) func(g *Game, s *Scene) {
+	skater := func(phase, lean float64, st *skaterStyle) func(g *Game, s *Scene) {
 		return func(g *Game, s *Scene) {
-			k := &Skater{Pos: studioSpot, Yaw: yaw, phase: phase, lean: lean, speed: skaterSpeed}
+			k := &Skater{Pos: studioSpot, Yaw: yaw, phase: phase, lean: lean, speed: skaterSpeed, style: st}
 			g.renderSkater(s, k)
 		}
 	}
@@ -96,10 +96,16 @@ func (g *Game) studioSheets() []studioSheet {
 			{"flying", 78, 34, animal(animalOwl, func(a *Animal) { a.flying, a.Y, a.t = true, 20, 0.17 })},
 		}},
 		{"rollerblader", yaw, []studioPose{
-			{"gliding", 50, 18, skater(0, 0)},
-			{"left push", 50, 18, skater(math.Pi/2, 0)},
-			{"right push", 50, 18, skater(3*math.Pi/2, 0)},
-			{"leaning into a turn", 50, 18, skater(0.6, 0.4)},
+			{"gliding", 50, 18, skater(0, 0, &skaterTeal)},
+			{"left push", 50, 18, skater(math.Pi/2, 0, &skaterTeal)},
+			{"right push", 50, 18, skater(3*math.Pi/2, 0, &skaterTeal)},
+			{"leaning into a turn", 50, 18, skater(0.6, 0.4, &skaterTeal)},
+		}},
+		{"rollerblader_pink", yaw, []studioPose{
+			{"gliding", 50, 18, skater(0, 0, &skaterPink)},
+			{"left push", 50, 18, skater(math.Pi/2, 0, &skaterPink)},
+			{"right push", 50, 18, skater(3*math.Pi/2, 0, &skaterPink)},
+			{"leaning into a turn", 50, 18, skater(0.6, 0.4, &skaterPink)},
 		}},
 	}
 }

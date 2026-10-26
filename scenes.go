@@ -117,12 +117,12 @@ func (g *Game) stageScenes(outDir, only string) {
 				p.scriptCtl = nil
 				driveCam(p, p.Driving.CamDist(), []float64{0.5, -0.5}[i], 0.5)
 			}
-			sk := &g.wonder.skater
+			sk := &g.wonder.skaters[0]
 			sk.s, sk.off = 760, 22
 			sk.Pos, sk.Yaw = loopAt(sk.s)
 		}},
 		{name: "07ab_skater_stops_to_look", frames: 80, setup: func(g *Game) {
-			sk := &g.wonder.skater
+			sk := &g.wonder.skaters[0]
 			sk.s, sk.stopS, sk.speed, sk.waitT, sk.off = skaterStop-300, skaterStop, skaterSpeed, 0, 22
 			sk.Pos, sk.Yaw = loopAt(sk.s)
 			at, _ := loopAt(skaterStop)
@@ -140,7 +140,7 @@ func (g *Game) stageScenes(outDir, only string) {
 			g.tour = []tourStop{{frame: g.frame, pos: V(1450, 330), zoom: 520, yaw: math.Pi/2 + 0.35, pitch: 0.3, look: 25, shot: filepath.Join(outDir, "07c_train_in_the_distance.png")}}
 		}},
 		{name: "07d_rollerblader_closeup", frames: 2, setup: func(g *Game) {
-			sk := &g.wonder.skater
+			sk := &g.wonder.skaters[0]
 			sk.s = 1500
 			at, _ := loopAt(sk.s + 22)
 			g.tour = []tourStop{{frame: g.frame, pos: at.Add(V(22, 0)), zoom: 48, yaw: 0.7, pitch: 0.15, look: 22, shot: filepath.Join(outDir, "07d_rollerblader_closeup.png")}}
