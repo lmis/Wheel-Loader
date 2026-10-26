@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math"
 	"math/rand"
 )
@@ -32,6 +33,7 @@ const (
 	propParkedLoader
 	propTank
 	propSign
+	propModel // an imported Kenney model (Model/Scale/ModelYaw)
 )
 
 type Prop struct {
@@ -40,6 +42,10 @@ type Prop struct {
 	Solid bool
 	Color [3]uint8
 	Tag   string
+
+	Model    string  // propModel: embedded model name, e.g. "city/building-garage"
+	Scale    float64 // propModel: model units -> world units
+	ModelYaw float64 // propModel: extra yaw so the model faces along Rect.Angle
 }
 
 // SurfacePatch is a painted ground region.
@@ -180,6 +186,37 @@ func (w *World) build() {
 	// A warning sign.
 	w.Props = append(w.Props, Prop{Kind: propSign, Rect: Rect{V(430, 1000), 40, 40, 0}, Solid: false, Color: [3]uint8{250, 210, 40}})
 
+	// Kenney CC0 models: a workshop, parked pickups, a row of houses beyond
+	// the north road, tree verges along the site edges and woodland outside.
+	w.addModel("city/building-garage", V(2380, 600), 0, 0, 150, true, "Workshop")
+	w.addModel("racing/vehicle-truck-yellow", V(2440, 410), 0.15, -math.Pi/2, 30, true, "")
+	w.addModel("racing/vehicle-truck-red", V(830, 690), -0.4, -math.Pi/2, 30, true, "")
+	w.addModel("racing/vehicle-truck-green", V(2820, 470), 1.7, -math.Pi/2, 30, true, "")
+	decor := rand.New(rand.NewSource(5))
+	houses := []string{"city/building-small-a", "city/building-small-b", "city/building-small-c", "city/building-small-d"}
+	for i, x := 0, 230.0; x < 3050; i, x = i+1, x+270 {
+		w.addModel(houses[i%len(houses)], V(x, 105), math.Pi/2, 0, 135, true, "")
+	}
+	trees := []string{"city/grass-trees", "city/grass-trees-tall"}
+	tree := func(x, y float64) {
+		w.addModel(trees[decor.Intn(2)], V(x, y), float64(decor.Intn(4))*math.Pi/2, 0, 112, true, "tree")
+	}
+	onRoad := func(y float64) bool { return math.Abs(y-300) < 140 || math.Abs(y-2100) < 140 }
+	for y := 450.0; y < 2000; y += 112 {
+		if !onRoad(y) {
+			tree(56, y)
+		}
+	}
+	for y := 60.0; y < 2350; y += 112 {
+		tree(3144, y)
+	}
+	for x := 170.0; x < 3090; x += 112 {
+		tree(x, 2290)
+	}
+	for _, p := range []Vec{{-260, 700}, {-260, 1500}, {-300, 2300}, {3460, 400}, {3460, 1300}, {3460, 2200}, {900, 2660}, {2100, 2680}, {3300, 2700}, {-200, -250}, {3400, -250}} {
+		w.addModel("racing/decoration-forest", p, decor.Float64()*math.Pi*2, 0, 17, false, "tree")
+	}
+
 	// Dump trucks parked at bays.
 	w.Trucks = append(w.Trucks,
 		&Truck{Pos: V(1600, 560), Angle: 0, Capacity: 900, Name: "Truck A"},
@@ -207,6 +244,25 @@ func (w *World) build() {
 		y := 1000 + w.rng.Float64()*900
 		w.Grid.AddPile(x, y, 26+w.rng.Float64()*18, 14+w.rng.Float64()*12, MatGravel)
 	}
+}
+
+// addModel places an embedded model as a prop, sizing its collision footprint
+// from the model's bounds. modelYaw turns the model so it faces Rect.Angle.
+func (w *World) addModel(name string, at Vec, angle, modelYaw, scale float64, solid bool, tag string) {
+	m, err := loadModel(name)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	sx := (m.Max.X - m.Min.X) * scale
+	sz := (m.Max.Z - m.Min.Z) * scale
+	if math.Abs(math.Abs(modelYaw)-math.Pi/2) < 0.1 {
+		sx, sz = sz, sx // model's long axis is Z
+	}
+	w.Props = append(w.Props, Prop{
+		Kind: propModel, Rect: Rect{at, sx, sz, angle}, Solid: solid, Tag: tag,
+		Model: name, Scale: scale, ModelYaw: modelYaw,
+	})
 }
 
 // CollideCircle tests a circle against solid rectangular props and trucks.

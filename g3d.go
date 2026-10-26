@@ -1,9 +1,10 @@
 package main
 
 import (
+	"cmp"
 	"image/color"
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -11,12 +12,10 @@ import (
 // ---- 3D vector math ----
 //
 // The simulation lives on the ground plane in (X, Y) world coordinates. For
-// rendering we lift that into 3D with Y as the up axis, mapping a ground
-// point (x, y) with height h to the 3D point (x, h, y).
+// rendering we lift that into a right-handed 3D space with Y up, mapping a
+// ground point (x, y) at height h to (x, h, y).
 
 type Vec3 struct{ X, Y, Z float64 }
-
-func V3(x, y, z float64) Vec3 { return Vec3{x, y, z} }
 
 // ground maps a 2D sim point at height h to a 3D world point.
 func ground(p Vec, h float64) Vec3 { return Vec3{p.X, h, p.Y} }
@@ -39,24 +38,77 @@ func (a Vec3) Norm() Vec3 {
 	return Vec3{a.X / l, a.Y / l, a.Z / l}
 }
 
-// lightDir is the directional "sun" used for flat shading (points toward the
-// surface from the light).
-var lightDir = Vec3{-0.45, 1.0, -0.35}.Norm()
+// rotY rotates v about the vertical axis by yaw, using the same convention as
+// the 2D sim (yaw 0 faces +X, increasing yaw turns toward +Z).
+func rotY(v Vec3, yaw float64) Vec3 {
+	si, co := math.Sincos(yaw)
+	return Vec3{v.X*co - v.Z*si, v.Y, v.X*si + v.Z*co}
+}
 
-const ambient = 0.52
+// ---- lighting & atmosphere ----
+
+var (
+	lightDir = Vec3{-0.45, 1.0, -0.35}.Norm() // direction toward the sun
+	skyAmb   = [3]float64{0.50, 0.56, 0.66}   // light from above (bluish)
+	gndAmb   = [3]float64{0.40, 0.35, 0.30}   // bounce from the ground (warm)
+	sunCol   = [3]float64{0.72, 0.65, 0.54}
+	fogCol   = [3]float64{172, 190, 206}
+	skyTop   = [3]float64{92, 132, 184}
+)
+
+const (
+	fogStart = 1000.0
+	fogEnd   = 3600.0
+	fogMax   = 0.9
+)
+
+// lit applies hemispheric ambient + sun diffuse to a base color for a surface
+// with unit normal n. Returns straight (non-premultiplied) RGBA in 0..1.
+func lit(c color.RGBA, n Vec3) [4]float64 {
+	d := math.Max(0, n.Dot(lightDir))
+	h := n.Y*0.5 + 0.5
+	var out [4]float64
+	base := [3]float64{float64(c.R), float64(c.G), float64(c.B)}
+	for i := 0; i < 3; i++ {
+		k := lerp(gndAmb[i], skyAmb[i], h) + sunCol[i]*d
+		out[i] = math.Min(1, base[i]/255*k)
+	}
+	out[3] = float64(c.A) / 255
+	return out
+}
+
+func unlit(c color.RGBA) [4]float64 {
+	return [4]float64{float64(c.R) / 255, float64(c.G) / 255, float64(c.B) / 255, float64(c.A) / 255}
+}
+
+func fogAmount(z float64) float64 {
+	t := clamp((z-fogStart)/(fogEnd-fogStart), 0, 1)
+	return t * t * (3 - 2*t) * fogMax
+}
+
+func applyFog(c [4]float64, z float64) [4]float64 {
+	f := fogAmount(z)
+	for i := 0; i < 3; i++ {
+		c[i] = lerp(c[i], fogCol[i]/255, f)
+	}
+	return c
+}
 
 // ---- scene primitives ----
 
 type tri struct {
-	a, b, c Vec3
-	col     color.RGBA
-	shade   bool // apply directional lighting
-	cull    bool // back-face cull (closed solids only)
+	p     [3]Vec3
+	c     [3]color.RGBA
+	n     [3]Vec3 // per-vertex normals; zero means use the face normal
+	shade bool    // apply lighting
+	cull  bool    // back-face cull (closed solids only)
+	bias  float64 // sort bias toward the camera (surface-mounted details)
+	tex   bool    // sample the atlas at uv (heaps); otherwise flat colour
+	uv    [3][2]float32
 }
 
 type gquad struct {
-	p    [4]Vec3 // world positions (on ground plane)
-	tint float64 // brightness multiplier
+	p [4]Vec3 // world positions on the ground plane
 }
 
 type billboard struct {
@@ -65,22 +117,96 @@ type billboard struct {
 	col    color.RGBA
 }
 
-// Scene accumulates geometry for one frame, then flushes it with depth
-// sorting in two passes: textured ground, then shaded/translucent objects.
+// Scene accumulates geometry for one frame, then flushes it: sky, textured
+// ground with fog, then all objects depth-sorted back to front.
 type Scene struct {
 	tris   []tri
 	ground []gquad
+	skirt  []gquad // ground beyond the site, drawn with a repeating texture
+	decals []tri   // flat ground decals (shadows), drawn before objects
 	bills  []billboard
+
+	eye  Vec3    // camera position this frame (for level of detail)
+	bias float64 // sort bias applied to geometry added while it is set
+
+	// reusable buffers
+	keys  []sortKey
+	sts   []screenTri
+	verts []ebiten.Vertex
+	idx   []uint32
 }
 
 func (s *Scene) reset() {
 	s.tris = s.tris[:0]
 	s.ground = s.ground[:0]
+	s.skirt = s.skirt[:0]
+	s.decals = s.decals[:0]
 	s.bills = s.bills[:0]
 }
 
+// addTri adds a flat-colored triangle.
 func (s *Scene) addTri(a, b, c Vec3, col color.RGBA, shade, cull bool) {
-	s.tris = append(s.tris, tri{a, b, c, col, shade, cull})
+	s.push(tri{p: [3]Vec3{a, b, c}, c: [3]color.RGBA{col, col, col}, shade: shade, cull: cull})
+}
+
+// addTriV adds a triangle with per-vertex colors and normals (smooth shading).
+func (s *Scene) addTriV(p [3]Vec3, c [3]color.RGBA, n [3]Vec3, cull bool) {
+	s.push(tri{p: p, c: c, n: n, shade: true, cull: cull})
+}
+
+// addTriUV adds a smooth-shaded triangle textured from the object atlas.
+func (s *Scene) addTriUV(p [3]Vec3, c [3]color.RGBA, n [3]Vec3, uv [3][2]float32, cull bool) {
+	s.push(tri{p: p, c: c, n: n, shade: true, cull: cull, tex: true, uv: uv})
+}
+
+// maxTriEdge bounds triangle size. Objects are depth-sorted per triangle
+// (painter's algorithm), so a wall made of two huge triangles can sort in
+// front of a door or window sitting on it. Splitting big triangles keeps the
+// sort local and fixes those overlaps.
+const maxTriEdge = 22.0
+
+// push appends t, bisecting its longest edge until every edge is short.
+// Bisection keeps the winding and interpolates colors and normals.
+func (s *Scene) push(t tri) {
+	l0 := t.p[0].Sub(t.p[1]).Len() // edge 0-1
+	l1 := t.p[1].Sub(t.p[2]).Len() // edge 1-2
+	l2 := t.p[2].Sub(t.p[0]).Len() // edge 2-0
+	// far away, triangles are small on screen and sort errors are invisible,
+	// so the size limit grows with distance from the camera
+	limit := maxTriEdge * math.Max(1, t.p[0].Sub(s.eye).Len()/450)
+	if l0 <= limit && l1 <= limit && l2 <= limit {
+		if t.bias == 0 {
+			t.bias = s.bias
+		}
+		s.tris = append(s.tris, t)
+		return
+	}
+	// rotate so the longest edge is 0-1, then split it at m
+	r := 0
+	if l1 >= l0 && l1 >= l2 {
+		r = 1
+	} else if l2 >= l0 && l2 >= l1 {
+		r = 2
+	}
+	a, b, c := r, (r+1)%3, (r+2)%3
+	mp := t.p[a].Add(t.p[b]).Scale(0.5)
+	var mc color.RGBA
+	mc.R = uint8((int(t.c[a].R) + int(t.c[b].R)) / 2)
+	mc.G = uint8((int(t.c[a].G) + int(t.c[b].G)) / 2)
+	mc.B = uint8((int(t.c[a].B) + int(t.c[b].B)) / 2)
+	mc.A = uint8((int(t.c[a].A) + int(t.c[b].A)) / 2)
+	var mn Vec3
+	if t.n[a] != (Vec3{}) {
+		mn = t.n[a].Add(t.n[b]).Norm()
+	}
+	muv := [2]float32{(t.uv[a][0] + t.uv[b][0]) / 2, (t.uv[a][1] + t.uv[b][1]) / 2}
+	t1, t2 := t, t
+	t1.p, t1.c, t1.n = [3]Vec3{t.p[a], mp, t.p[c]}, [3]color.RGBA{t.c[a], mc, t.c[c]}, [3]Vec3{t.n[a], mn, t.n[c]}
+	t2.p, t2.c, t2.n = [3]Vec3{mp, t.p[b], t.p[c]}, [3]color.RGBA{mc, t.c[b], t.c[c]}, [3]Vec3{mn, t.n[b], t.n[c]}
+	t1.uv = [3][2]float32{t.uv[a], muv, t.uv[c]}
+	t2.uv = [3][2]float32{muv, t.uv[b], t.uv[c]}
+	s.push(t1)
+	s.push(t2)
 }
 
 // addQuad adds a flat quad (two triangles) with a shared color.
@@ -89,118 +215,218 @@ func (s *Scene) addQuad(a, b, c, d Vec3, col color.RGBA, shade, cull bool) {
 	s.addTri(a, c, d, col, shade, cull)
 }
 
-// addBox adds an axis-aligned-in-local box centred at c, with half-extents
-// (hx,hy,hz), rotated by yaw about the vertical axis. Outward winding so
-// back-face culling and lighting work.
-func (s *Scene) addBox(c Vec3, hx, hy, hz, yaw float64, col color.RGBA) {
-	si, co := math.Sincos(yaw)
-	// local -> world for the horizontal axes
-	rx := func(x, z float64) (float64, float64) { return x*co - z*si, x*si + z*co }
-	corner := func(sx, sy, sz float64) Vec3 {
-		lx, lz := rx(sx*hx, sz*hz)
-		return Vec3{c.X + lx, c.Y + sy*hy, c.Z + lz}
+// newell returns the (unnormalized) Newell normal of a polygon; robust to
+// repeated vertices.
+func newell(pts []Vec3) Vec3 {
+	var n Vec3
+	for i := range pts {
+		a, b := pts[i], pts[(i+1)%len(pts)]
+		n.X += (a.Y - b.Y) * (a.Z + b.Z)
+		n.Y += (a.Z - b.Z) * (a.X + b.X)
+		n.Z += (a.X - b.X) * (a.Y + b.Y)
 	}
-	// 8 corners
-	ppp := corner(1, 1, 1)
-	ppn := corner(1, 1, -1)
-	pnp := corner(1, -1, 1)
-	pnn := corner(1, -1, -1)
-	npp := corner(-1, 1, 1)
-	npn := corner(-1, 1, -1)
-	nnp := corner(-1, -1, 1)
-	nnn := corner(-1, -1, -1)
-	top := shade(col, 1.0)
-	side := shade(col, 0.82)
-	s.addQuad(npp, ppp, ppn, npn, top, true, true)             // +Y top
-	s.addQuad(nnn, pnn, pnp, nnp, shade(col, 0.5), true, true) // -Y bottom
-	s.addQuad(pnp, ppp, npp, nnp, side, true, true)            // +Z
-	s.addQuad(nnn, npn, ppn, pnn, side, true, true)            // -Z
-	s.addQuad(pnn, ppn, ppp, pnp, side, true, true)            // +X
-	s.addQuad(nnp, npp, npn, nnn, side, true, true)            // -X
+	return n
 }
 
-// addOBB adds an oriented box whose local forward axis is `fwd` (any 3D
-// direction, so it can pitch). hl/hh/hw are half length/height/width.
-func (s *Scene) addOBB(center, fwd Vec3, hl, hh, hw float64, col color.RGBA) {
+// addFaceOutward adds a convex planar polygon as a triangle fan, flipping
+// its winding if needed so its normal points away from `inside`.
+func (s *Scene) addFaceOutward(pts []Vec3, inside Vec3, col color.RGBA) {
+	n := newell(pts)
+	var fc Vec3
+	for _, p := range pts {
+		fc = fc.Add(p)
+	}
+	fc = fc.Scale(1 / float64(len(pts)))
+	if n.Dot(fc.Sub(inside)) < 0 {
+		for i, j := 0, len(pts)-1; i < j; i, j = i+1, j-1 {
+			pts[i], pts[j] = pts[j], pts[i]
+		}
+	}
+	for i := 2; i < len(pts); i++ {
+		s.addTri(pts[0], pts[i-1], pts[i], col, true, true)
+	}
+}
+
+// addOBB2 adds an oriented box with local forward axis fwd and an "up" hint;
+// hl/hh/hw are half length (along fwd), height (along up) and width.
+func (s *Scene) addOBB2(center, fwd, upHint Vec3, hl, hh, hw float64, col color.RGBA) {
 	f := fwd.Norm()
-	up := Vec3{0, 1, 0}
-	if math.Abs(f.Dot(up)) > 0.95 {
-		up = Vec3{1, 0, 0}
+	up := upHint.Sub(f.Scale(upHint.Dot(f))).Norm()
+	if up.Len() < 0.5 {
+		up = Vec3{0, 1, 0}
+		if math.Abs(f.Dot(up)) > 0.95 {
+			up = Vec3{1, 0, 0}
+		}
+		up = up.Sub(f.Scale(up.Dot(f))).Norm()
 	}
 	right := f.Cross(up).Norm()
-	up = right.Cross(f).Norm()
 	c := func(sl, sh, sw float64) Vec3 {
 		return center.Add(f.Scale(sl * hl)).Add(up.Scale(sh * hh)).Add(right.Scale(sw * hw))
 	}
-	ppp := c(1, 1, 1)
-	ppn := c(1, 1, -1)
-	pnp := c(1, -1, 1)
-	pnn := c(1, -1, -1)
-	npp := c(-1, 1, 1)
-	npn := c(-1, 1, -1)
-	nnp := c(-1, -1, 1)
-	nnn := c(-1, -1, -1)
-	top := shade(col, 1.0)
-	sd := shade(col, 0.82)
-	dk := shade(col, 0.58)
-	s.addQuad(npp, ppp, ppn, npn, top, true, true)
-	s.addQuad(nnn, pnn, pnp, nnp, dk, true, true)
-	s.addQuad(pnp, ppp, npp, nnp, sd, true, true)
-	s.addQuad(nnn, npn, ppn, pnn, sd, true, true)
-	s.addQuad(pnn, ppn, ppp, pnp, sd, true, true)
-	s.addQuad(nnp, npp, npn, nnn, sd, true, true)
+	faces := [6][4]Vec3{
+		{c(-1, 1, -1), c(1, 1, -1), c(1, 1, 1), c(-1, 1, 1)},     // +up
+		{c(-1, -1, -1), c(-1, -1, 1), c(1, -1, 1), c(1, -1, -1)}, // -up
+		{c(1, -1, -1), c(1, -1, 1), c(1, 1, 1), c(1, 1, -1)},     // +fwd
+		{c(-1, -1, -1), c(-1, 1, -1), c(-1, 1, 1), c(-1, -1, 1)}, // -fwd
+		{c(-1, -1, 1), c(-1, 1, 1), c(1, 1, 1), c(1, -1, 1)},     // +right
+		{c(-1, -1, -1), c(1, -1, -1), c(1, 1, -1), c(-1, 1, -1)}, // -right
+	}
+	for _, fc := range faces {
+		pts := []Vec3{fc[0], fc[1], fc[2], fc[3]}
+		s.addFaceOutward(pts, center, col)
+	}
 }
 
-// addCylinder adds a vertical low-poly cylinder (sides + caps).
+// addOBB is addOBB2 with world-up as the up hint.
+func (s *Scene) addOBB(center, fwd Vec3, hl, hh, hw float64, col color.RGBA) {
+	s.addOBB2(center, fwd, Vec3{0, 1, 0}, hl, hh, hw, col)
+}
+
+// addBox adds an upright box centred at c with half-extents (hx,hy,hz),
+// rotated by yaw about the vertical axis (hx runs along the yaw direction).
+func (s *Scene) addBox(c Vec3, hx, hy, hz, yaw float64, col color.RGBA) {
+	s.addOBB2(c, rotY(Vec3{1, 0, 0}, yaw), Vec3{0, 1, 0}, hx, hy, hz, col)
+}
+
+// ring is one horizontal cross-section of a prism: a rectangle spanning
+// [back, front] along the local forward axis and ±hw laterally, with its
+// four vertical edges chamfered by ch, at height y.
+type ring struct {
+	back, front, hw, y, ch float64
+}
+
+func (r ring) points() [8][2]float64 {
+	ch := math.Min(r.ch, math.Min(r.hw, (r.front-r.back)/2)*0.95)
+	return [8][2]float64{
+		{r.front, -r.hw + ch}, {r.front, r.hw - ch},
+		{r.front - ch, r.hw}, {r.back + ch, r.hw},
+		{r.back, r.hw - ch}, {r.back, -r.hw + ch},
+		{r.back + ch, -r.hw}, {r.front - ch, -r.hw},
+	}
+}
+
+// addPrism lofts a solid through a stack of rings (bottom to top). origin is
+// the ground-level local origin, yaw the heading. Stacking rings of different
+// sizes gives tapered hoods, chamfered roofs and bevelled edges.
+func (s *Scene) addPrism(origin Vec3, yaw float64, rings []ring, col color.RGBA) {
+	s.addPrismCaps(origin, yaw, rings, col, true, true)
+}
+
+// addPrismCaps is addPrism with control over the end caps. When solids are
+// stacked (a glass band on a cab body, a roof on the glass), the hidden caps
+// between them would be nearly coplanar and fight in the depth sort, so they
+// are left off.
+func (s *Scene) addPrismCaps(origin Vec3, yaw float64, rings []ring, col color.RGBA, capBottom, capTop bool) {
+	world := make([][8]Vec3, len(rings))
+	var centroid Vec3
+	n := 0
+	for i, r := range rings {
+		for k, p := range r.points() {
+			w := origin.Add(rotY(Vec3{p[0], r.y, p[1]}, yaw))
+			world[i][k] = w
+			centroid = centroid.Add(w)
+			n++
+		}
+	}
+	centroid = centroid.Scale(1 / float64(n))
+	for i := 0; i+1 < len(world); i++ {
+		a, b := world[i], world[i+1]
+		for k := 0; k < 8; k++ {
+			k2 := (k + 1) % 8
+			s.addFaceOutward([]Vec3{a[k], a[k2], b[k2], b[k]}, centroid, col)
+		}
+	}
+	if capBottom {
+		bot := world[0]
+		s.addFaceOutward(bot[:], centroid, col)
+	}
+	if capTop {
+		top := world[len(world)-1]
+		s.addFaceOutward(top[:], centroid, col)
+	}
+}
+
+// addCylinder adds an upright low-poly cylinder with smooth sides.
 func (s *Scene) addCylinder(c Vec3, radius, h float64, sides int, col color.RGBA) {
+	s.addCone(c, radius, radius, h, sides, col)
+}
+
+// addCone adds an upright truncated cone (r0 at the bottom, r1 at the top)
+// with smooth side normals and flat caps.
+func (s *Scene) addCone(c Vec3, r0, r1, h float64, sides int, col color.RGBA) {
 	if sides < 5 {
 		sides = 8
 	}
 	top := c.Y + h/2
 	bot := c.Y - h/2
-	prev := 0.0
-	for i := 1; i <= sides; i++ {
-		a0 := prev
-		a1 := 2 * math.Pi * float64(i) / float64(sides)
-		prev = a1
-		x0, z0 := math.Cos(a0)*radius, math.Sin(a0)*radius
-		x1, z1 := math.Cos(a1)*radius, math.Sin(a1)*radius
-		p0t := Vec3{c.X + x0, top, c.Z + z0}
-		p1t := Vec3{c.X + x1, top, c.Z + z1}
-		p0b := Vec3{c.X + x0, bot, c.Z + z0}
-		p1b := Vec3{c.X + x1, bot, c.Z + z1}
-		s.addQuad(p0b, p1b, p1t, p0t, shade(col, 0.8), true, true) // side
-		s.addTri(Vec3{c.X, top, c.Z}, p0t, p1t, shade(col, 1.0), true, true)
+	slope := (r0 - r1) / h
+	cols := [3]color.RGBA{col, col, col}
+	for i := 0; i < sides; i++ {
+		a0 := 2 * math.Pi * float64(i) / float64(sides)
+		a1 := 2 * math.Pi * float64(i+1) / float64(sides)
+		d0 := Vec3{math.Cos(a0), 0, math.Sin(a0)}
+		d1 := Vec3{math.Cos(a1), 0, math.Sin(a1)}
+		n0 := Vec3{d0.X, slope, d0.Z}.Norm()
+		n1 := Vec3{d1.X, slope, d1.Z}.Norm()
+		b0 := Vec3{c.X + d0.X*r0, bot, c.Z + d0.Z*r0}
+		b1 := Vec3{c.X + d1.X*r0, bot, c.Z + d1.Z*r0}
+		t0 := Vec3{c.X + d0.X*r1, top, c.Z + d0.Z*r1}
+		t1 := Vec3{c.X + d1.X*r1, top, c.Z + d1.Z*r1}
+		// outward winding for a right-handed space seen from outside
+		s.addTriV([3]Vec3{b0, t0, t1}, cols, [3]Vec3{n0, n0, n1}, true)
+		s.addTriV([3]Vec3{b0, t1, b1}, cols, [3]Vec3{n0, n1, n1}, true)
+		if r1 > 0.01 {
+			s.addTri(Vec3{c.X, top, c.Z}, t1, t0, col, true, true)
+		}
 	}
 }
 
-// addWheel adds a wheel as a cylinder lying on its side (axle along `axis`).
-func (s *Scene) addWheel(center Vec3, radius, width, yaw float64, col color.RGBA) {
-	// axle is horizontal, perpendicular to facing. Build a short cylinder
-	// around the axle by sampling a disc in the vertical plane.
-	sides := 10
-	si, co := math.Sincos(yaw)
-	axle := Vec3{-si, 0, co} // perpendicular to facing (yaw)
-	// disc basis: up and forward(=facing)
-	fwd := Vec3{co, 0, si}
+// addWheel adds a tyre lying on its side: smooth tread, rim, hub and tread
+// lugs. yaw is the rolling direction; spin rotates the lugs with travel.
+func (s *Scene) addWheel(center Vec3, radius, width, yaw, spin float64, tire, rim color.RGBA) {
+	const sides = 18
+	fwd := rotY(Vec3{1, 0, 0}, yaw)
+	axle := rotY(Vec3{0, 0, 1}, yaw)
 	up := Vec3{0, 1, 0}
-	off := axle.Scale(width / 2)
-	cin := center.Sub(off)
-	cout := center.Add(off)
-	prev := 0.0
-	for i := 1; i <= sides; i++ {
-		a0, a1 := prev, 2*math.Pi*float64(i)/float64(sides)
-		prev = a1
-		d0 := up.Scale(math.Sin(a0) * radius).Add(fwd.Scale(math.Cos(a0) * radius))
-		d1 := up.Scale(math.Sin(a1) * radius).Add(fwd.Scale(math.Cos(a1) * radius))
-		o0 := cout.Add(d0)
-		o1 := cout.Add(d1)
-		i0 := cin.Add(d0)
-		i1 := cin.Add(d1)
-		tread := shade(col, 0.7+0.25*math.Abs(math.Cos(a0)))
-		s.addQuad(i0, o0, o1, i1, tread, true, true) // tread
-		s.addTri(cout, o0, o1, shade(col, 0.9), true, true)
-		s.addTri(cin, i1, i0, shade(col, 0.55), true, true)
+	half := axle.Scale(width / 2)
+	cin := center.Sub(half)
+	cout := center.Add(half)
+	radial := func(a float64) Vec3 { return up.Scale(math.Sin(a)).Add(fwd.Scale(math.Cos(a))) }
+	tc := [3]color.RGBA{tire, tire, tire}
+	for i := 0; i < sides; i++ {
+		a0 := 2 * math.Pi * float64(i) / sides
+		a1 := 2 * math.Pi * float64(i+1) / sides
+		d0, d1 := radial(a0), radial(a1)
+		o0, o1 := cout.Add(d0.Scale(radius)), cout.Add(d1.Scale(radius))
+		i0, i1 := cin.Add(d0.Scale(radius)), cin.Add(d1.Scale(radius))
+		s.addTriV([3]Vec3{i0, o0, o1}, tc, [3]Vec3{d0, d0, d1}, false)
+		s.addTriV([3]Vec3{i0, o1, i1}, tc, [3]Vec3{d0, d1, d1}, false)
+		// sidewalls: tyre annulus + rim disc on both faces
+		for _, face := range []struct {
+			c   Vec3
+			out Vec3
+		}{{cout, axle}, {cin, axle.Scale(-1)}} {
+			r0 := face.c.Add(d0.Scale(radius * 0.97))
+			r1 := face.c.Add(d1.Scale(radius * 0.97))
+			m0 := face.c.Add(d0.Scale(radius * 0.6))
+			m1 := face.c.Add(d1.Scale(radius * 0.6))
+			inner := face.c.Sub(face.out.Scale(width * 0.12))
+			s.addFaceOutward([]Vec3{m0, r0, r1, m1}, face.c.Sub(face.out), shadeC(tire, 0.9))
+			s.addFaceOutward([]Vec3{inner, m0, m1}, face.c.Sub(face.out.Scale(2)), rim)
+		}
+	}
+	// hub cap
+	s.addOBB2(cout.Add(axle.Scale(0.5)), axle, up, 1.5, radius*0.22, radius*0.22, shadeC(rim, 0.7))
+	// tread lugs (only up close; they are invisible at a distance)
+	const lugs = 9
+	if center.Sub(s.eye).Len() > 800 {
+		return
+	}
+	for i := 0; i < lugs; i++ {
+		a := 2*math.Pi*float64(i)/lugs - spin
+		d := radial(a)
+		lc := center.Add(d.Scale(radius + 1.2))
+		s.addOBB2(lc, axle, d, width*0.42, 1.4, 2.6, shadeC(tire, 1.15))
 	}
 }
 
@@ -209,187 +435,311 @@ func (s *Scene) addBillboard(center Vec3, size float64, col color.RGBA) {
 }
 
 // addGroundQuad queues a textured ground tile.
-func (s *Scene) addGroundQuad(p0, p1, p2, p3 Vec3, tint float64) {
-	s.ground = append(s.ground, gquad{[4]Vec3{p0, p1, p2, p3}, tint})
+func (s *Scene) addGroundQuad(p0, p1, p2, p3 Vec3) {
+	s.ground = append(s.ground, gquad{[4]Vec3{p0, p1, p2, p3}})
 }
 
-func shade(c color.RGBA, m float64) color.RGBA {
+// addSkirtQuad queues a ground tile outside the site (repeating texture).
+func (s *Scene) addSkirtQuad(p0, p1, p2, p3 Vec3) {
+	s.skirt = append(s.skirt, gquad{[4]Vec3{p0, p1, p2, p3}})
+}
+
+// addDecalQuad queues a flat translucent quad lying on the ground. Decals are
+// drawn right after the ground so depth sorting can never put them on top of
+// the objects standing on them.
+func (s *Scene) addDecalQuad(a, b, c, d Vec3, col color.RGBA) {
+	cols := [3]color.RGBA{col, col, col}
+	s.decals = append(s.decals, tri{p: [3]Vec3{a, b, c}, c: cols}, tri{p: [3]Vec3{a, c, d}, c: cols})
+}
+
+// detail adds geometry built by fn with a sort bias, for parts mounted on a
+// larger surface (doors, windows, ribs, grilles) so they draw on top of it.
+func (s *Scene) detail(fn func()) {
+	prev := s.bias
+	s.bias = 4
+	fn()
+	s.bias = prev
+}
+
+// Mostly-horizontal, upward-facing triangles (floors, tile plates, roofs,
+// heaps) sort by their farthest vertex instead of their centroid. Floors then
+// key on the edge where a wall stands on them, so the wall wins, while a roof
+// still sorts ahead of anything taller standing behind it.
+const flatNormalY = 0.7
+
+// shadeC scales a color's RGB, keeping alpha.
+func shadeC(c color.RGBA, m float64) color.RGBA {
 	return color.RGBA{clampByte(float64(c.R) * m), clampByte(float64(c.G) * m), clampByte(float64(c.B) * m), c.A}
 }
 
 // ---- flush: project, clip, sort, draw ----
 
-type screenTri struct {
-	x     [3]float64
-	y     [3]float64
-	depth float64
-	col   color.RGBA
-	uv    bool       // textured ground
-	u     [3]float64 // ground UV (pixels)
-	v     [3]float64
+// viewV is a vertex in view space carrying its world position (for ground
+// UVs) and straight RGBA color through near-plane clipping.
+type viewV struct {
+	v  Vec3
+	w  Vec3
+	c  [4]float64
+	uv [2]float32
 }
 
-func (s *Scene) Flush(dst *ebiten.Image, cam *Camera, groundImg, white *ebiten.Image) {
+type sortKey struct {
+	d float64
+	i int32
+}
+
+type screenTri struct {
+	x, y  [3]float32
+	u, v  [3]float32 // atlas texel coordinates
+	c     [3][4]float64
+	depth float64
+}
+
+func (s *Scene) Flush(dst *ebiten.Image, cam *Camera, groundImg, skirtImg, atlas, white *ebiten.Image) {
 	cam.setup()
+	s.drawSky(dst, cam, white)
 
-	// --- ground pass (textured) ---
-	var gverts []ebiten.Vertex
-	var gidx []uint16
-	emitGround := func(a, b, c Vec3, tint float64) {
-		// view-space + near clip
-		va, vb, vc := cam.view(a), cam.view(b), cam.view(c)
-		poly := clipNear([]viewV{{va, a}, {vb, b}, {vc, c}})
-		for i := 2; i < len(poly); i++ {
-			tri3 := [3]viewV{poly[0], poly[i-1], poly[i]}
-			base := uint16(len(gverts))
-			for _, vv := range tri3 {
-				sx, sy := cam.project(vv.v)
-				t := float32(tint)
-				gverts = append(gverts, ebiten.Vertex{
-					DstX: float32(sx), DstY: float32(sy),
-					SrcX: float32(vv.w.X), SrcY: float32(vv.w.Z),
-					ColorR: t, ColorG: t, ColorB: t, ColorA: 1,
-				})
+	// --- ground passes (textured), then one fog overlay over all of it ---
+	var fverts []ebiten.Vertex
+	var fidx []uint32
+	drawGround := func(quads []gquad, img *ebiten.Image, uv func(Vec3) (float32, float32), addr ebiten.Address) {
+		var gverts []ebiten.Vertex
+		var gidx []uint32
+		emit := func(a, b, c Vec3) {
+			poly := clipNear(viewV{v: cam.view(a), w: a}, viewV{v: cam.view(b), w: b}, viewV{v: cam.view(c), w: c})
+			for i := 2; i < poly.n; i++ {
+				base := uint32(len(gverts))
+				fbase := uint32(len(fverts))
+				for _, vv := range [3]viewV{poly.v[0], poly.v[i-1], poly.v[i]} {
+					sx, sy := cam.project(vv.v)
+					u, v := uv(vv.w)
+					gverts = append(gverts, ebiten.Vertex{
+						DstX: float32(sx), DstY: float32(sy), SrcX: u, SrcY: v,
+						ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1,
+					})
+					f := float32(fogAmount(vv.v.Z))
+					fverts = append(fverts, ebiten.Vertex{
+						DstX: float32(sx), DstY: float32(sy), SrcX: 0.5, SrcY: 0.5,
+						ColorR: float32(fogCol[0]/255) * f, ColorG: float32(fogCol[1]/255) * f,
+						ColorB: float32(fogCol[2]/255) * f, ColorA: f,
+					})
+				}
+				gidx = append(gidx, base, base+1, base+2)
+				fidx = append(fidx, fbase, fbase+1, fbase+2)
 			}
-			gidx = append(gidx, base, base+1, base+2)
+		}
+		for i := range quads {
+			q := &quads[i]
+			emit(q.p[0], q.p[1], q.p[2])
+			emit(q.p[0], q.p[2], q.p[3])
+		}
+		if len(gidx) > 0 {
+			dst.DrawTriangles32(gverts, gidx, img, &ebiten.DrawTrianglesOptions{Filter: ebiten.FilterLinear, Address: addr})
 		}
 	}
-	for i := range s.ground {
-		q := &s.ground[i]
-		emitGround(q.p[0], q.p[1], q.p[2], q.tint)
-		emitGround(q.p[0], q.p[2], q.p[3], q.tint)
+	gw := float64(groundImg.Bounds().Dx())
+	gh := float64(groundImg.Bounds().Dy())
+	drawGround(s.ground, groundImg, func(w Vec3) (float32, float32) {
+		return float32(clamp(w.X, 0.5, gw-0.5)), float32(clamp(w.Z, 0.5, gh-0.5))
+	}, ebiten.AddressUnsafe)
+	drawGround(s.skirt, skirtImg, func(w Vec3) (float32, float32) {
+		return float32(w.X), float32(w.Z)
+	}, ebiten.AddressRepeat)
+
+	// --- ground decals (shadows), faded out with the fog ---
+	if len(s.decals) > 0 {
+		var dverts []ebiten.Vertex
+		var didx []uint32
+		for i := range s.decals {
+			t := &s.decals[i]
+			c := unlit(t.c[0])
+			poly := clipNear(viewV{v: cam.view(t.p[0]), w: t.p[0], c: c}, viewV{v: cam.view(t.p[1]), w: t.p[1], c: c}, viewV{v: cam.view(t.p[2]), w: t.p[2], c: c})
+			for j := 2; j < poly.n; j++ {
+				base := uint32(len(dverts))
+				for _, vv := range [3]viewV{poly.v[0], poly.v[j-1], poly.v[j]} {
+					sx, sy := cam.project(vv.v)
+					a := float32(vv.c[3] * (1 - fogAmount(vv.v.Z)))
+					dverts = append(dverts, ebiten.Vertex{
+						DstX: float32(sx), DstY: float32(sy), SrcX: 0.5, SrcY: 0.5,
+						ColorR: float32(vv.c[0]) * a, ColorG: float32(vv.c[1]) * a, ColorB: float32(vv.c[2]) * a, ColorA: a,
+					})
+				}
+				didx = append(didx, base, base+1, base+2)
+			}
+		}
+		// fog first so shadows sit on the hazed ground, not under the haze
+		if len(fidx) > 0 {
+			dst.DrawTriangles32(fverts, fidx, white, &ebiten.DrawTrianglesOptions{})
+			fidx = nil
+		}
+		dst.DrawTriangles32(dverts, didx, white, &ebiten.DrawTrianglesOptions{AntiAlias: true})
 	}
-	if len(gidx) > 0 {
-		op := &ebiten.DrawTrianglesOptions{Filter: ebiten.FilterLinear, AntiAlias: false}
-		dst.DrawTriangles(gverts, gidx, groundImg, op)
+	if len(fidx) > 0 {
+		dst.DrawTriangles32(fverts, fidx, white, &ebiten.DrawTrianglesOptions{})
 	}
 
-	// --- object pass (shaded solids + billboards), depth sorted ---
-	var sts []screenTri
-	addShaded := func(t tri) {
-		va, vb, vc := cam.view(t.a), cam.view(t.b), cam.view(t.c)
-		// back-face cull in view space (normal facing away from camera/origin)
-		if t.cull {
-			n := vb.Sub(va).Cross(vc.Sub(va))
-			// view space: camera at origin looking +Z; visible if normal.z<0
-			if n.Z >= 0 {
-				return
-			}
-		}
-		col := t.col
-		if t.shade {
-			n := t.b.Sub(t.a).Cross(t.c.Sub(t.a)).Norm()
-			d := n.Dot(lightDir)
-			if d < 0 {
-				d = -d * 0.3 // weak back-light instead of black
-			}
-			m := ambient + (1-ambient)*d
-			col = shade(t.col, m)
-			col.A = t.col.A
-		}
-		poly := clipNear([]viewV{{va, t.a}, {vb, t.b}, {vc, t.c}})
-		for i := 2; i < len(poly); i++ {
+	// --- object pass, depth sorted ---
+	sts := s.sts[:0]
+	emit := func(poly clipPoly, bias float64, flat bool) {
+		for i := 2; i < poly.n; i++ {
 			var st screenTri
-			st.col = col
-			var dsum float64
-			for k, vv := range [3]viewV{poly[0], poly[i-1], poly[i]} {
+			var dsum, dmax float64
+			for k, vv := range [3]viewV{poly.v[0], poly.v[i-1], poly.v[i]} {
 				sx, sy := cam.project(vv.v)
-				st.x[k], st.y[k] = sx, sy
+				st.x[k], st.y[k] = float32(sx), float32(sy)
+				st.u[k], st.v[k] = vv.uv[0], vv.uv[1]
+				st.c[k] = applyFog(vv.c, vv.v.Z)
 				dsum += vv.v.Z
+				dmax = math.Max(dmax, vv.v.Z)
 			}
-			st.depth = dsum / 3
+			st.depth = dsum/3 - bias
+			if flat {
+				st.depth = dmax - bias
+			}
 			sts = append(sts, st)
 		}
 	}
-	for _, t := range s.tris {
-		addShaded(t)
+	for i := range s.tris {
+		t := &s.tris[i]
+		va, vb, vc := cam.view(t.p[0]), cam.view(t.p[1]), cam.view(t.p[2])
+		if va.Z < 1 && vb.Z < 1 && vc.Z < 1 {
+			continue
+		}
+		if t.cull {
+			// The view basis is left-handed (Z into the screen), which flips
+			// cross products: front faces come out with a positive Z here.
+			if vb.Sub(va).Cross(vc.Sub(va)).Z <= 0 {
+				continue
+			}
+		}
+		var cols [3][4]float64
+		fn := t.p[1].Sub(t.p[0]).Cross(t.p[2].Sub(t.p[0])).Norm()
+		flat := fn.Y > flatNormalY
+		if t.shade {
+			for k := 0; k < 3; k++ {
+				n := t.n[k]
+				if n == (Vec3{}) {
+					n = fn
+				}
+				cols[k] = lit(t.c[k], n)
+			}
+		} else {
+			for k := 0; k < 3; k++ {
+				cols[k] = unlit(t.c[k])
+			}
+		}
+		uv := [3][2]float32{{atlasWhiteUV, atlasWhiteUV}, {atlasWhiteUV, atlasWhiteUV}, {atlasWhiteUV, atlasWhiteUV}}
+		if t.tex {
+			uv = t.uv
+		}
+		emit(clipNear(viewV{va, t.p[0], cols[0], uv[0]}, viewV{vb, t.p[1], cols[1], uv[1]}, viewV{vc, t.p[2], cols[2], uv[2]}), t.bias, flat)
 	}
-	// billboards -> camera-facing quads
 	for _, b := range s.bills {
 		r := cam.right.Scale(b.size)
 		u := cam.up.Scale(b.size)
-		p0 := b.center.Sub(r).Sub(u)
-		p1 := b.center.Add(r).Sub(u)
-		p2 := b.center.Add(r).Add(u)
-		p3 := b.center.Sub(r).Add(u)
-		for _, triPts := range [2][3]Vec3{{p0, p1, p2}, {p0, p2, p3}} {
-			va, vb, vc := cam.view(triPts[0]), cam.view(triPts[1]), cam.view(triPts[2])
-			poly := clipNear([]viewV{{va, triPts[0]}, {vb, triPts[1]}, {vc, triPts[2]}})
-			for i := 2; i < len(poly); i++ {
-				var st screenTri
-				st.col = b.col
-				var dsum float64
-				for k, vv := range [3]viewV{poly[0], poly[i-1], poly[i]} {
-					sx, sy := cam.project(vv.v)
-					st.x[k], st.y[k] = sx, sy
-					dsum += vv.v.Z
-				}
-				st.depth = dsum / 3
-				sts = append(sts, st)
-			}
+		p := [4]Vec3{b.center.Sub(r).Sub(u), b.center.Add(r).Sub(u), b.center.Add(r).Add(u), b.center.Sub(r).Add(u)}
+		c := unlit(b.col)
+		wuv := [2]float32{atlasWhiteUV, atlasWhiteUV}
+		for _, tp := range [2][3]int{{0, 1, 2}, {0, 2, 3}} {
+			emit(clipNear(
+				viewV{cam.view(p[tp[0]]), p[tp[0]], c, wuv},
+				viewV{cam.view(p[tp[1]]), p[tp[1]], c, wuv},
+				viewV{cam.view(p[tp[2]]), p[tp[2]], c, wuv},
+			), 0, false)
 		}
 	}
+	s.sts = sts
 
-	sort.Slice(sts, func(i, j int) bool { return sts[i].depth > sts[j].depth })
+	// sort compact (depth, index) keys rather than the fat triangles
+	keys := s.keys[:0]
+	for i := range sts {
+		keys = append(keys, sortKey{sts[i].depth, int32(i)})
+	}
+	slices.SortFunc(keys, func(a, b sortKey) int { return cmp.Compare(b.d, a.d) })
+	s.keys = keys
 
-	verts := make([]ebiten.Vertex, 0, len(sts)*3)
-	idx := make([]uint16, 0, len(sts)*3)
-	for _, st := range sts {
-		base := uint16(len(verts))
-		cr := float32(st.col.R) / 255
-		cg := float32(st.col.G) / 255
-		cb := float32(st.col.B) / 255
-		ca := float32(st.col.A) / 255
+	verts := s.verts[:0]
+	idx := s.idx[:0]
+	for _, k := range keys {
+		st := &sts[k.i]
+		base := uint32(len(verts))
 		for k := 0; k < 3; k++ {
+			c := st.c[k]
+			a := float32(c[3])
 			verts = append(verts, ebiten.Vertex{
-				DstX: float32(st.x[k]), DstY: float32(st.y[k]),
-				SrcX: 0.5, SrcY: 0.5,
-				ColorR: cr * ca, ColorG: cg * ca, ColorB: cb * ca, ColorA: ca,
+				DstX: st.x[k], DstY: st.y[k], SrcX: st.u[k], SrcY: st.v[k],
+				ColorR: float32(c[0]) * a, ColorG: float32(c[1]) * a, ColorB: float32(c[2]) * a, ColorA: a,
 			})
 		}
 		idx = append(idx, base, base+1, base+2)
 	}
+	s.verts, s.idx = verts, idx
 	if len(idx) > 0 {
-		op := &ebiten.DrawTrianglesOptions{AntiAlias: true}
-		dst.DrawTriangles(verts, idx, white, op)
+		dst.DrawTriangles32(verts, idx, atlas, &ebiten.DrawTrianglesOptions{AntiAlias: true, Filter: ebiten.FilterLinear})
 	}
 }
 
-// viewV pairs a view-space position with its original world position (for
-// texture UVs that must survive near-plane clipping).
-type viewV struct {
-	v viewPos
-	w Vec3
+// drawSky paints a vertical gradient that meets the fog color at the horizon,
+// and fills below the horizon with fog so the world's edge dissolves.
+func (s *Scene) drawSky(dst *ebiten.Image, cam *Camera, white *ebiten.Image) {
+	w := float32(cam.ScreenW)
+	h := float32(cam.ScreenH)
+	horizon := float32(0)
+	hf := Vec3{cam.fwd.X, 0, cam.fwd.Z}.Norm()
+	if v := cam.view(cam.eye.Add(hf.Scale(1e6))); v.Z > 0 {
+		_, sy := cam.project(v)
+		horizon = float32(clamp(sy, 0, cam.ScreenH))
+	}
+	top := [3]float32{float32(skyTop[0] / 255), float32(skyTop[1] / 255), float32(skyTop[2] / 255)}
+	fog := [3]float32{float32(fogCol[0] / 255), float32(fogCol[1] / 255), float32(fogCol[2] / 255)}
+	vert := func(x, y float32, c [3]float32) ebiten.Vertex {
+		return ebiten.Vertex{DstX: x, DstY: y, SrcX: 0.5, SrcY: 0.5, ColorR: c[0], ColorG: c[1], ColorB: c[2], ColorA: 1}
+	}
+	vs := []ebiten.Vertex{
+		vert(0, 0, top), vert(w, 0, top), vert(w, horizon, fog), vert(0, horizon, fog),
+		vert(0, horizon, fog), vert(w, horizon, fog), vert(w, h, fog), vert(0, h, fog),
+	}
+	is := []uint32{0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7}
+	dst.DrawTriangles32(vs, is, white, &ebiten.DrawTrianglesOptions{})
 }
-type viewPos = Vec3
 
-// clipNear clips a convex polygon against the near plane z >= nearZ in view
-// space, interpolating world positions too.
-func clipNear(poly []viewV) []viewV {
+// clipPoly is the result of clipping a triangle against the near plane:
+// a convex polygon of up to 4 vertices, kept on the stack.
+type clipPoly struct {
+	v [4]viewV
+	n int
+}
+
+// clipNear clips triangle (a,b,c) against the near plane z >= 1 in view
+// space, interpolating world position and color.
+func clipNear(a, b, c viewV) clipPoly {
 	const nearZ = 1.0
-	out := poly[:0:0]
-	n := len(poly)
-	for i := 0; i < n; i++ {
-		cur := poly[i]
-		nxt := poly[(i+1)%n]
-		curIn := cur.v.Z >= nearZ
-		nxtIn := nxt.v.Z >= nearZ
+	var out clipPoly
+	if a.v.Z >= nearZ && b.v.Z >= nearZ && c.v.Z >= nearZ {
+		out.v[0], out.v[1], out.v[2], out.n = a, b, c, 3
+		return out
+	}
+	in := [3]viewV{a, b, c}
+	for i := 0; i < 3; i++ {
+		cur, nxt := in[i], in[(i+1)%3]
+		curIn, nxtIn := cur.v.Z >= nearZ, nxt.v.Z >= nearZ
 		if curIn {
-			out = append(out, cur)
+			out.v[out.n] = cur
+			out.n++
 		}
 		if curIn != nxtIn {
 			t := (nearZ - cur.v.Z) / (nxt.v.Z - cur.v.Z)
-			iv := Vec3{
-				cur.v.X + (nxt.v.X-cur.v.X)*t,
-				cur.v.Y + (nxt.v.Y-cur.v.Y)*t,
-				nearZ,
+			var iv viewV
+			iv.v = cur.v.Add(nxt.v.Sub(cur.v).Scale(t))
+			iv.v.Z = nearZ
+			iv.w = cur.w.Add(nxt.w.Sub(cur.w).Scale(t))
+			for k := 0; k < 4; k++ {
+				iv.c[k] = lerp(cur.c[k], nxt.c[k], t)
 			}
-			iw := Vec3{
-				cur.w.X + (nxt.w.X-cur.w.X)*t,
-				cur.w.Y + (nxt.w.Y-cur.w.Y)*t,
-				cur.w.Z + (nxt.w.Z-cur.w.Z)*t,
-			}
-			out = append(out, viewV{iv, iw})
+			iv.uv[0] = cur.uv[0] + (nxt.uv[0]-cur.uv[0])*float32(t)
+			iv.uv[1] = cur.uv[1] + (nxt.uv[1]-cur.uv[1])*float32(t)
+			out.v[out.n] = iv
+			out.n++
 		}
 	}
 	return out

@@ -105,6 +105,20 @@ func (c *Camera) project(v Vec3) (float64, float64) {
 	return sx, sy
 }
 
+// inView reports whether a bounding sphere may be visible: in front of the
+// camera, inside the view cone, and not completely lost in fog. setup must
+// have been called this frame.
+func (c *Camera) inView(center Vec3, r float64) bool {
+	v := c.view(center)
+	if v.Z+r < 1 || v.Z-r > fogEnd {
+		return false
+	}
+	z := math.Max(v.Z, 1)
+	halfW := z * c.aspect / c.f
+	halfH := z / c.f
+	return math.Abs(v.X)-r <= halfW*1.05 && math.Abs(v.Y)-r <= halfH*1.05
+}
+
 // VisibleBounds returns an approximate world rectangle in view, used for the
 // minimap and material culling. It is a generous box around the target.
 func (c *Camera) VisibleBounds() (min, max Vec) {

@@ -6,10 +6,25 @@ trucks for pay. Built in Go with [Ebitengine](https://ebitengine.org/).
 
 The world is rendered with a small **software 3D pipeline** written on top of
 Ebitengine's 2D triangle rasterizer (`g3d.go`): a perspective chase camera,
-real 3D box/cylinder geometry, flat directional-light shading, back-face
-culling, near-plane clipping, back-to-front sorting, and a textured ground
-plane. Everything — the loader, trucks, buildings, aggregate heaps — is actual
-3D geometry you orbit around.
+smooth (per-vertex) shading with sun + sky/ground ambient light, distance fog
+and a sky gradient, back-face culling, near-plane clipping, and depth-sorted
+drawing in a single batched call. Everything — the loader, trucks, buildings,
+aggregate heaps — is actual 3D geometry you orbit around.
+
+- **Aggregate heaps** are a continuous heightfield mesh built from the
+  material grid each frame, smoothed, shaded and textured with a seamless
+  procedural grain, so digging and dumping visibly reshape them.
+- **Machines** are lofted from chamfered cross-sections: tapered hood,
+  counterweight and grille, cab on the rear frame, lift arms with cylinders
+  and Z-bar linkage, a U-shaped toothed bucket, and lugged tyres that turn.
+- **Scenery** mixes procedural props with free **Kenney CC0 models** (houses,
+  a workshop garage, pickups, trees) loaded by a small built-in glTF/GLB
+  reader (`model.go`).
+
+Objects are sorted per triangle (painter's algorithm), since Ebitengine has no
+depth buffer. Large triangles are split, horizontal surfaces sort by their far
+edge, and surface-mounted details get a small bias, which removes nearly all
+overlap errors. A faint seam can still show at a few very close angles.
 
 The loader is the star: it has heavy-machine inertia, true articulated (frame)
 steering that bends at the center joint, and an independently controlled bucket
@@ -74,7 +89,8 @@ partially filled and loads carry their material type.
 | `camera.go` | Perspective chase/orbit camera |
 | `input.go` | Keyboard → loader + camera intents |
 | `render.go` | Builds the 3D scene (ground, loader, props, trucks, particles) |
-| `art.go` | Procedural ground texture + fonts + value noise |
+| `art.go` | Procedural ground/dirt textures, grain atlas, fonts, noise |
+| `model.go` | Minimal glTF/GLB loader for the embedded Kenney models |
 | `hud.go` | HUD, gauges, minimap |
 | `autopilot.go` | Hands-free AI that plays the full loop (also test instrumentation) |
 | `main.go` | Entry point, demo/screenshot modes |
@@ -89,7 +105,18 @@ go run . -demo              # hands-free autopilot plays the job loop
 go run . -shots ./shots     # headless: drive a full cycle, save screenshots
 go run . -dumpshot ./shots  # headless: render a loaded loader dumping into a truck
 go run . -tour ./shots      # headless: static views of site landmarks
+go run . -cpuprofile cpu.prof  # write a CPU profile (combine with any mode)
 ```
+
+Screenshot modes print the triangle count and smoothed CPU time per frame.
+
+## Assets and credits
+
+All graphics are procedural except the models in `assets/kenney/`, which are by
+[Kenney](https://kenney.nl) under **CC0 1.0** (public domain), taken from the
+[Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder)
+and [Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing)
+repositories. They are embedded into the binary. See `assets/kenney/LICENSE.txt`.
 
 ## Tests
 

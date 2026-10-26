@@ -1,0 +1,9 @@
+3D models and textures in this folder are by Kenney (www.kenney.nl) and are
+licensed CC0 1.0 Universal (public domain):
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Sources:
+  city/    https://github.com/KenneyNL/Starter-Kit-City-Builder  (models/)
+  racing/  https://github.com/KenneyNL/Starter-Kit-Racing        (models/)
+
+Attribution is not required, but credit is appreciated: thanks, Kenney.

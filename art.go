@@ -154,6 +154,114 @@ func buildGround(w *World) *ebiten.Image {
 	return ebiten.NewImageFromImage(img)
 }
 
+// Object-pass texture atlas layout. Flat-coloured geometry samples the white
+// block; loose-material heaps sample the periodic grain region.
+const (
+	atlasW, atlasH = 512, 256
+	atlasWhiteUV   = 4.0   // centre of the white block (0..8)
+	grainX0        = 256.0 // grain region origin in the atlas
+	grainPeriod    = 200.0 // the grain texture repeats every grainPeriod texels
+	grainSpan      = 40.0  // texels per heap cell (cell size 20 * 2 texels/unit)
+	grainMean      = 0.84  // average brightness of the grain, compensated in colour
+)
+
+// buildAtlas makes the object-pass texture: a white block plus a seamless,
+// neutral-grey granular texture (fine grit + scattered pebbles with lit tops
+// and dark rims). The grain is periodic with an extra grainSpan of wrapped
+// texels, so any heap cell maps onto it without seams.
+func buildAtlas() *ebiten.Image {
+	img := image.NewRGBA(image.Rect(0, 0, atlasW, atlasH))
+	for y := 0; y < 16; y++ {
+		for x := 0; x < 16; x++ {
+			i := (y*atlasW + x) * 4
+			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = 255, 255, 255, 255
+		}
+	}
+	const P = int(grainPeriod)
+	// periodic value noise: lattice coords wrap, cell size divides P
+	pnoise := func(x, y float64, cell, seed int) float64 {
+		n := P / cell
+		gx, gy := x/float64(cell), y/float64(cell)
+		x0, y0 := int(math.Floor(gx)), int(math.Floor(gy))
+		fx, fy := gx-float64(x0), gy-float64(y0)
+		h := func(i, j int) float64 { return hashNoise(((i%n)+n)%n, ((j%n)+n)%n, seed) }
+		sx, sy := fx*fx*(3-2*fx), fy*fy*(3-2*fy)
+		return lerp(lerp(h(x0, y0), h(x0+1, y0), sx), lerp(h(x0, y0+1), h(x0+1, y0+1), sx), sy)
+	}
+	// pebbles: one jittered point per 10px cell, toroidal distance
+	const pc = 10
+	pebble := func(x, y int) float64 {
+		best, shade := 1e9, 0.0
+		cx, cy := x/pc, y/pc
+		n := P / pc
+		for dj := -1; dj <= 1; dj++ {
+			for di := -1; di <= 1; di++ {
+				i, j := ((cx+di)%n+n)%n, ((cy+dj)%n+n)%n
+				if hashNoise(i, j, 77) < 0.35 {
+					continue // not every cell has a pebble
+				}
+				px := float64((cx+di)*pc) + hashNoise(i, j, 78)*pc
+				py := float64((cy+dj)*pc) + hashNoise(i, j, 79)*pc
+				r := 2.5 + hashNoise(i, j, 80)*3
+				dx, dy := float64(x)+0.5-px, float64(y)+0.5-py
+				d := math.Hypot(dx, dy) / r
+				if d < 1 && d < best {
+					best = d
+					lightDot := (-dx - dy) / (r * 1.4) // lit from the upper left
+					shade = 0.12*lightDot - 0.28*d*d*d*d + 0.05*(hashNoise(i, j, 81)-0.5)
+				}
+			}
+		}
+		return shade
+	}
+	for y := 0; y < P; y++ {
+		for x := 0; x < P; x++ {
+			fx, fy := float64(x), float64(y)
+			v := grainMean +
+				0.10*(pnoise(fx, fy, 2, 3)-0.5) +
+				0.08*(pnoise(fx, fy, 5, 4)-0.5) +
+				0.06*(pnoise(fx, fy, 20, 5)-0.5) +
+				pebble(x, y)
+			b := clampByte(v * 255)
+			// write the texel and its wrapped copies in the extension band
+			for _, q := range [][2]int{{x, y}, {x + P, y}, {x, y + P}, {x + P, y + P}} {
+				if q[0] >= P+int(grainSpan) || q[1] >= P+int(grainSpan) {
+					continue
+				}
+				i := (q[1]*atlasW + int(grainX0) + q[0]) * 4
+				img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = b, b, b, 255
+			}
+		}
+	}
+	return ebiten.NewImageFromImage(img)
+}
+
+// buildDirtTile makes a seamless repeating dirt texture for the land around
+// the site: a 256px patch in the same style as the baked ground, mirrored in
+// both axes so its edges always match when repeated.
+func buildDirtTile() *ebiten.Image {
+	const n = 256
+	img := image.NewRGBA(image.Rect(0, 0, 2*n, 2*n))
+	br, bg, bb, sp := surfaceBase(surfDirt)
+	for py := 0; py < n; py++ {
+		for px := 0; px < n; px++ {
+			fx, fy := float64(px), float64(py)
+			tone := (fbm(fx/90, fy/90, surfDirt*7) - 0.5) * 2
+			grain := (fbm(fx/6, fy/6, surfDirt*13) - 0.5) * 2
+			c := [3]uint8{
+				clampByte(br + tone*18 + grain*sp),
+				clampByte(bg + tone*16 + grain*sp),
+				clampByte(bb + tone*12 + grain*sp*0.8),
+			}
+			for _, q := range [4][2]int{{px, py}, {2*n - 1 - px, py}, {px, 2*n - 1 - py}, {2*n - 1 - px, 2*n - 1 - py}} {
+				i := (q[1]*2*n + q[0]) * 4
+				img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = c[0], c[1], c[2], 255
+			}
+		}
+	}
+	return ebiten.NewImageFromImage(img)
+}
+
 func clampByte(v float64) uint8 {
 	if v < 0 {
 		return 0

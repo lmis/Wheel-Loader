@@ -107,7 +107,7 @@ func (w *World) spawnExhaust(at Vec, rpm float64) {
 	w.addParticle(Particle{
 		Pos:   at.Add(V((w.rng.Float64()-0.5)*4, (w.rng.Float64()-0.5)*4)),
 		Vel:   V((w.rng.Float64()-0.5)*8, (w.rng.Float64()-0.5)*8),
-		Z:     30,
+		Z:     60,
 		VZ:    18 + w.rng.Float64()*12,
 		Life:  0.9 + w.rng.Float64()*0.8,
 		Size:  5 + w.rng.Float64()*4,
