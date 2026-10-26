@@ -161,4 +161,3 @@ func TestSingleScreenCraneSpacePicksUp(t *testing.T) {
 		t.Fatal("space again should put it down")
 	}
 }
-

@@ -84,7 +84,6 @@ type toddlerState struct {
 	armed     bool    // crane: space was pressed near a load; lower once over it
 	avoidSide float64 // which way (+1 right, -1 left)
 	phaseT    float64 // time in that step
-	awayT     float64 // loader: time the bucket has been out of the heap
 	hookLen   float64 // crane rope length last step, to see the hook land
 }
 
@@ -107,8 +106,8 @@ func (g *Game) setupLanes() {
 		truckFacing float64
 	}
 	lanes := []lane{
-		{g.loader, V(1490, 1300), V(1450, 1040), w.Trucks[0], V(1300, 1120), g.crane2, g.excs[0], V(1390, 880), &toddlerP1, MatSand, -math.Pi / 2, -math.Pi / 2},
-		{l2, V(1710, 1300), V(1750, 1040), w.Trucks[1], V(1895, 1110), g.crane, g.excs[1], V(1810, 880), &toddlerP2, MatDirt, -math.Pi / 2, -math.Pi / 2},
+		{g.loader, V(1490, 1300), V(1450, 1040), w.Trucks[0], V(1300, 1120), g.crane2, g.excs[0], V(1230, 930), &toddlerP1, MatSand, -math.Pi / 2, -math.Pi / 2},
+		{l2, V(1710, 1300), V(1750, 1040), w.Trucks[1], V(1895, 1110), g.crane, g.excs[1], V(1970, 930), &toddlerP2, MatDirt, -math.Pi / 2, -math.Pi / 2},
 	}
 	for i, ln := range lanes {
 		p := g.players[i]
@@ -128,7 +127,7 @@ func (g *Game) setupLanes() {
 		w.Grid.AddPile(ln.pile.X, ln.pile.Y, 90, 75, ln.pileMat)
 		w.Grid.AddPile(ln.pile.X+30, ln.pile.Y-40, 60, 55, ln.pileMat)
 		e := ln.exc
-		e.Pos, e.Heading, e.Slew, e.Speed, e.Load = ln.excAt, math.Pi/2, 0, 0, 0
+		e.Pos, e.Heading, e.Slew, e.Speed, e.Load = ln.excAt, ln.pile.Sub(ln.excAt).Angle(), 0, 0, 0 // beside the heap, facing it
 		e.Boom, e.Stick, e.Bucket = excCarry[0], excCarry[1], excCarry[2]
 		p.td = &toddlerState{keys: ln.keys, own: [4]Vehicle{l, ln.truck, ln.crane, e}}
 	}
@@ -328,25 +327,13 @@ func (g *Game) toddlerLoader(p *Player, l *Loader) {
 	switch td.mode {
 	case tdDig:
 		l.liftCmd, l.tiltCmd = toward(l.Lift, 0), toward(l.Tilt, 0.45)
-		if inHeap || l.Load < 1 {
-			td.awayT = 0
-		} else {
-			td.awayT += 1.0 / 60
-		}
-		switch {
-		// full, backing out, or turned away from the heap with something in
-		// the bucket: lift it
-		case l.Load > bucketCap*0.8, l.Load > 12 && l.Speed < -5, l.Load > 15 && td.awayT > 0.35:
-			td.mode = tdCarry
-		case td.pressed: // the button: lift the bucket with whatever is in it
+		if td.pressed { // only the button lifts the bucket
 			td.mode = tdCarry
 		}
 	case tdCarry:
 		l.liftCmd, l.tiltCmd = toward(l.Lift, 0.62), toward(l.Tilt, 1)
 		switch {
-		case l.Load < 2:
-			td.mode = tdDig
-		case over != nil && l.Lift > 0.45, td.pressed:
+		case over != nil && l.Lift > 0.45 && l.Load > 2, td.pressed:
 			td.mode, td.dumpTruck = tdDump, over
 		}
 	case tdDump:

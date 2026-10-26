@@ -97,10 +97,10 @@ hook. Picking a machine makes the kid stop, climb out, walk over
 (round anything in the way) and climb in; there is no other way out. The
 machines do the fiddly parts themselves:
 
-- **Loader:** drive (or turn) into the heap and the bucket fills, then
-  lifts, also when the kid turns away with a part-full bucket. Drive up
-  to the truck and it tips in. The button lifts the bucket, or tips it out
-  anywhere.
+- **Loader:** drive (or turn) into the heap and the bucket fills. The
+  button lifts it (nothing else does); drive up to the truck with it raised
+  and it tips in, or press the button again to tip it out anywhere, and it
+  lowers itself.
 - **Dump truck:** the button tips the body all the way, the load pours out,
   and the body comes back down.
 - **Crane:** a snappy toy. Left/right swings the jib, up/down runs the

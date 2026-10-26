@@ -28,34 +28,6 @@ func toddlerDrive(g *Game, p *Player, target Vec, back bool, maxSteps int, done 
 	return done()
 }
 
-func TestToddlerModeLoadsTruck(t *testing.T) {
-	g := NewGame()
-	if len(g.players) != 2 {
-		t.Fatal("the game should start with two players")
-	}
-	for _, p := range g.players {
-		if _, ok := p.Driving.(*Loader); !ok {
-			t.Fatalf("player %d is not in a loader", p.ID)
-		}
-	}
-	p := g.players[0]
-	l := p.Driving.(*Loader)
-	// drive into the sand pile: the bucket fills and lifts by itself
-	if !toddlerDrive(g, p, V(1450, 1040), false, 900, func() bool { return p.td.mode == tdCarry }) {
-		t.Fatalf("bucket never filled: load %.1f", l.Load)
-	}
-	run(g, 90)
-	if l.Lift < 0.45 {
-		t.Fatalf("bucket should lift for carrying, lift %.2f", l.Lift)
-	}
-	// back out, then drive to the truck: it tips in by itself
-	toddlerDrive(g, p, Vec{}, true, 70, func() bool { return false })
-	tr := g.world.Trucks[0]
-	if !toddlerDrive(g, p, tr.Pos, false, 1500, func() bool { return tr.Total() > 30 && l.Load < 2 }) {
-		t.Fatalf("no delivery: mode %d load %.1f truck %.1f", p.td.mode, l.Load, tr.Total())
-	}
-}
-
 func TestToddlerButtonDumps(t *testing.T) {
 	g := NewGame()
 	p := g.players[1]
@@ -267,28 +239,6 @@ func TestViewKeySwitchesToTheCab(t *testing.T) {
 	run(g, 2)
 	if p.cam.fp {
 		t.Fatal("on foot the chase camera follows the kid")
-	}
-}
-
-func TestTurningIntoHeapScoopsAndLifts(t *testing.T) {
-	g := NewGame()
-	p := g.players[0]
-	l := p.Driving.(*Loader)
-	// creep at the side of the sand heap while turning into it, then turn
-	// away: the bucket fills and lifts by itself
-	l.Joint, l.Heading = V(1360, 1110), -0.6
-	most := 0.0
-	for i := 0; i < 60*6 && p.td.mode != tdCarry; i++ {
-		p.ctl = Controls{Throttle: 0.35, Steer: -1}
-		run(g, 1)
-		most = math.Max(most, l.Load)
-	}
-	if p.td.mode != tdCarry {
-		t.Fatalf("bucket should lift after turning through the heap: load %.1f (most %.1f)", l.Load, most)
-	}
-	run(g, 60)
-	if l.Lift < 0.45 || l.Load < 15 {
-		t.Fatalf("bucket should be up and holding sand: lift %.2f load %.1f", l.Lift, l.Load)
 	}
 }
 
