@@ -4,6 +4,8 @@
 # It installs what is missing (the OpenGL/X11 headers raylib needs, and Go
 # itself if yours is too old), rebuilds the game when the code has changed,
 # and starts it. Any arguments are passed to the game, e.g. ./run.sh -studio shots
+# On NixOS it uses the project's Nix shell (shell.nix) and installs nothing;
+# inside nix-shell, nix develop or the FHS env (fhs.nix) it just builds.
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -28,7 +30,13 @@ need_libs() {
 	return 1
 }
 
-if need_libs; then
+if [ -n "${IN_NIX_SHELL:-}" ]; then
+	: # the Nix shell provides the libraries and Go
+elif need_libs && [ -e /etc/NIXOS ] && [ -z "${WHEEL_LOADER_FHS:-}" ]; then
+	# NixOS outside any shell: re-run inside the project's Nix shell
+	say "NixOS: entering the Nix shell (shell.nix)"
+	exec nix-shell --run "$(printf '%q ' ./run.sh "$@")"
+elif need_libs; then
 	say "Installing the OpenGL/X11 development libraries (may ask for your password)"
 	if command -v apt-get >/dev/null; then
 		sudo_ apt-get update -qq
