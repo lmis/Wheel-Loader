@@ -223,7 +223,7 @@ const animalScale = 2.0
 func (a *Animal) Render(g *Game, s *Scene) {
 	if a.ride == nil {
 		r := animalScale / (1 + a.Y/30) // smaller, softer shadow when up in the air
-		g.shadow(s, a.Pos, 18*r, 10*r, a.Yaw)
+		g.blobShadow(s, a.Pos, 9*r, 5.5*r, a.Yaw)
 	}
 	if !g.cam.inView(ground(a.Pos, a.Y+12), 36) {
 		return
@@ -261,24 +261,56 @@ func (a *Animal) renderDog(s *Scene, coat, light, accent color.RGBA, bernese boo
 	if bernese {
 		legCol, paw, chest, muzzle = accent, light, light, light
 	}
-	// legs with a trot cycle, and round paws
-	for i, p := range [][2]float64{{4.5, -1.8}, {4.5, 1.8}, {-4.5, -1.8}, {-4.5, 1.8}} {
+	// legs with a trot cycle (diagonal pairs together): front legs bend at
+	// the knee, back legs at the hock, and end in round paws
+	for i, p := range [][2]float64{{4.4, -1.9}, {4.4, 1.9}, {-4.3, -1.9}, {-4.3, 1.9}} {
+		front := i < 2
 		sw := math.Sin(a.phase*2+float64(i%2)*math.Pi+float64(i/2)*math.Pi) * 0.45 * moving
-		hip := at(p[0]*k, p[1]*k, 6.6*k)
-		foot := hip.Add(fw.Scale(math.Sin(sw) * 5.6 * k)).Add(up.Scale(-math.Cos(sw) * 5.6 * k))
-		s.addCapsule(hip, foot, 1.05*k, 0.8*k, legCol)
-		s.addEllipsoid(foot.Add(fw.Scale(0.5*k)).Add(up.Scale(-0.3*k)), fw, up, 1.15*k, 0.55*k, 0.9*k, paw)
+		top := at(p[0]*k, p[1]*k, 7.0*k)
+		lift := math.Max(0, -math.Sin(a.phase*2+float64(i%2)*math.Pi+float64(i/2)*math.Pi)) * moving // leg swinging forward
+		bend := 0.9 * k
+		if !front {
+			bend = -1.3 * k // the hock points backward
+		}
+		mid := top.Add(fw.Scale(math.Sin(sw)*3.0*k + bend*(0.4+lift*0.6))).Add(up.Scale(-3.0 * k))
+		foot := top.Add(fw.Scale(math.Sin(sw) * 5.2 * k)).Add(up.Scale(-6.0*k + lift*1.2*k))
+		thigh := 1.3 * k
+		if !front {
+			thigh = 1.55 * k
+		}
+		s.addCapsule(top, mid, thigh, 1.0*k, coat)
+		s.addCapsule(mid, foot, 0.95*k, 0.8*k, legCol)
+		s.addEllipsoid(foot.Add(fw.Scale(0.5*k)).Add(up.Scale(-0.2*k)), fw, up, 1.2*k, 0.6*k, 0.95*k, paw)
 	}
-	// body and chest
-	s.addEllipsoid(at(-0.2*k, 0, 7.4*k), fw, up, 6.6*k, 2.5*k, 2.75*k, coat)
-	s.addEllipsoid(at(4.9*k, 0, 7.4*k), fw, up, 2.0*k, 2.4*k, 2.2*k, chest)
-	// tail wags
-	wag := math.Sin(a.t*11) * 0.7
-	tb := at(-6*k, 0, 8.6*k)
-	td := fw.Scale(-math.Cos(wag) * 0.7).Add(lat.Scale(math.Sin(wag) * 0.7)).Add(up.Scale(0.55)).Norm()
-	s.addCapsule(tb, tb.Add(td.Scale(6.2*k)), 0.95*k, 0.55*k, coat)
+	// body: one smooth loft from the rump past rounded hips and a slight
+	// waist to a deep chest
+	body := []loftStation{
+		{-7.5, 8.6, 0.5, 0.5}, {-6.8, 8.4, 2.1, 2.1}, {-5.0, 8.1, 2.8, 2.6}, {-2.2, 7.9, 2.6, 2.5},
+		{1.2, 7.8, 2.9, 2.9}, {4.0, 7.5, 2.8, 3.1}, {5.9, 8.0, 2.2, 2.4}, {6.9, 8.5, 0.6, 0.7},
+	}
+	for i := range body {
+		body[i].x *= k
+		body[i].y *= k
+		body[i].hw *= k
+		body[i].hh *= k
+	}
+	s.addLoft(at(0, 0, 0), fw, up, body, coat)
 	if bernese {
-		s.addSphere(tb.Add(td.Scale(6.6*k)), 0.7*k, light)
+		s.addEllipsoid(at(4.9*k, 0, 7.3*k), fw, up, 1.9*k, 2.6*k, 2.2*k, chest) // white chest
+	}
+	// tail: thick at the base, curving up, wagging
+	wag := math.Sin(a.t*11) * 0.7
+	p := at(-6.2*k, 0, 9.0*k)
+	for i, r := range []float64{1.15, 0.95, 0.75, 0.55} {
+		lift := 0.25 + 0.3*float64(i)
+		d := fw.Scale(-math.Cos(wag) * 0.8).Add(lat.Scale(math.Sin(wag) * 0.8)).Add(up.Scale(lift)).Norm()
+		next := p.Add(d.Scale(1.25 * k))
+		col := coat
+		if bernese && i == 3 {
+			col = light // white tip
+		}
+		s.addCapsule(p, next, r*k, (r-0.18)*k, col)
+		p = next
 	}
 	// head on a neck, turning toward its kid
 	hy := a.Yaw + a.headYaw
@@ -286,7 +318,7 @@ func (a *Animal) renderDog(s *Scene, coat, light, accent color.RGBA, bernese boo
 	hl := rotY(Vec3{0, 0, 1}, hy)
 	neck := at(5.8*k, 0, 9.2*k)
 	hc := neck.Add(hf.Scale(2.2 * k)).Add(up.Scale(2.6 * k))
-	s.addCapsule(neck, hc, 1.6*k, 1.5*k, coat)
+	s.addCapsule(neck, hc, 2.0*k, 1.7*k, coat)
 	s.addEllipsoid(hc, hf, up, 2.3*k, 2.0*k, 2.05*k, coat)
 	s.addEllipsoid(hc.Add(hf.Scale(2.7*k)).Add(up.Scale(-0.7*k)), hf, up, 1.7*k, 1.05*k, 1.15*k, muzzle)
 	s.detail(func() {
@@ -298,9 +330,9 @@ func (a *Animal) renderDog(s *Scene, coat, light, accent color.RGBA, bernese boo
 				s.addEllipsoid(eye.Add(up.Scale(0.7*k)), hf, up, 0.3*k, 0.22*k, 0.42*k, accent) // rust brows
 				s.addEllipsoid(hc.Add(hf.Scale(2.0*k)).Add(hl.Scale(z*1.55*k)).Add(up.Scale(-0.9*k)), hf, up, 0.5*k, 0.55*k, 0.35*k, accent)
 			}
-			// floppy ears
-			ear := hc.Add(hl.Scale(z * 2.05 * k)).Add(up.Scale(-0.3 * k)).Add(hf.Scale(-0.3 * k))
-			s.addEllipsoid(ear, hf, up.Add(hl.Scale(z*0.25)), 0.95*k, 1.75*k, 0.4*k, shadeC(coat, 0.85))
+			// floppy ears hanging beside the head
+			ear := hc.Add(hl.Scale(z * 1.95 * k)).Add(up.Scale(-0.95 * k)).Add(hf.Scale(-0.5 * k))
+			s.addEllipsoid(ear, hf, up.Add(hl.Scale(z*0.3)), 1.0*k, 1.65*k, 0.42*k, shadeC(coat, 0.85))
 		}
 		if bernese {
 			s.addEllipsoid(hc.Add(hf.Scale(1.9*k)).Add(up.Scale(1.2*k)), hf, up, 0.35*k, 1.1*k, 0.4*k, light) // blaze
@@ -312,7 +344,7 @@ func (a *Animal) renderChimp(s *Scene) {
 	at, fw, _ := a.frame()
 	up := Vec3{0, 1, 0}
 	fur := rgba(46, 36, 30, 255)
-	face := rgba(196, 156, 124, 255)
+	face := rgba(214, 176, 140, 255)
 	moving := clamp(a.speed/20, 0, 1.5)
 	hop := 0.0
 	if a.speed < 5 && !a.hopping {
@@ -346,15 +378,38 @@ func (a *Animal) renderChimp(s *Scene) {
 	hy := a.Yaw + a.headYaw
 	hf := rotY(Vec3{1, 0, 0}, hy)
 	hl := rotY(Vec3{0, 0, 1}, hy)
-	hc := at2(2.4, 0, 11.6)
-	s.addEllipsoid(hc, hf, up, 2.0, 2.0, 2.05, fur)
+	hc := at2(2.4, 0, 11.7)
+	s.addEllipsoid(hc, hf, up, 2.1, 2.1, 2.15, fur)
+	light := rgba(232, 196, 160, 255) // a light, friendly face
 	s.detail(func() {
-		s.addEllipsoid(hc.Add(hf.Scale(1.3)).Add(up.Scale(-0.3)), hf, up, 0.9, 1.5, 1.55, face)
-		s.addEllipsoid(hc.Add(hf.Scale(2.1)).Add(up.Scale(-1.0)), hf, up, 0.75, 0.7, 1.05, shadeC(face, 0.92)) // muzzle
-		s.addEllipsoid(hc.Add(hf.Scale(1.8)).Add(up.Scale(0.75)), hf, up, 0.4, 0.3, 1.55, shadeC(fur, 1.2))    // brow ridge
+		// heart-shaped face: two rounds round the eyes and a big soft muzzle
 		for _, z := range []float64{-1, 1} {
-			s.addSphere(hc.Add(hf.Scale(2.15)).Add(hl.Scale(z*0.6)).Add(up.Scale(0.25)), 0.3, rgba(36, 22, 12, 255))
-			s.addEllipsoid(hc.Add(hl.Scale(z*2.1)).Add(up.Scale(0.2)), hf, up, 0.9, 1.0, 0.4, face) // big ears
+			s.addEllipsoid(hc.Add(hf.Scale(1.45)).Add(hl.Scale(z*0.62)).Add(up.Scale(0.3)), hf, up, 0.75, 0.95, 0.85, light)
+		}
+		s.addEllipsoid(hc.Add(hf.Scale(1.7)).Add(up.Scale(-0.85)), hf, up, 0.95, 1.0, 1.3, light)
+		// a wide, upturned smile across the muzzle, with rosy cheeks
+		var prev Vec3
+		for i := 0; i <= 6; i++ {
+			t := -1 + float64(i)/3
+			p := hc.Add(hf.Scale(2.62 - 0.18*t*t)).Add(hl.Scale(t * 0.72)).Add(up.Scale(-1.2 + 0.32*t*t))
+			if i > 0 {
+				s.addCapsule(prev, p, 0.09, 0.09, rgba(84, 46, 38, 255))
+			}
+			prev = p
+		}
+		for _, z := range []float64{-1, 1} {
+			s.addSpot(hc.Add(hf.Scale(2.1)).Add(hl.Scale(z*1.15)).Add(up.Scale(-0.55)), hf.Add(hl.Scale(z*0.5)), 0.4, 0.28, rgba(250, 150, 150, 255))
+			// big sparkly eyes under raised brows
+			e := hc.Add(hf.Scale(2.1)).Add(hl.Scale(z * 0.62)).Add(up.Scale(0.35))
+			s.addEllipsoid(e, hf, up, 0.24, 0.55, 0.47, rgba(252, 250, 246, 255))
+			s.addEllipsoid(e.Add(hf.Scale(0.12)), hf, up, 0.17, 0.42, 0.36, rgba(120, 72, 32, 255))
+			s.addSphere(e.Add(hf.Scale(0.22)), 0.21, rgba(16, 10, 8, 255))
+			s.glowing(func() {
+				s.addSphere(e.Add(hf.Scale(0.36)).Add(up.Scale(0.16)).Add(hl.Scale(0.1)), 0.1, rgba(255, 255, 255, 255))
+			})
+			s.addEllipsoid(e.Add(up.Scale(0.85)).Add(hf.Scale(-0.05)), hf, up.Add(hl.Scale(z*0.3)), 0.2, 0.14, 0.5, shadeC(fur, 1.3)) // brow
+			s.addEllipsoid(hc.Add(hl.Scale(z*2.15)).Add(up.Scale(0.25)), hf, up, 0.8, 0.9, 0.4, light)                                // ears
+			s.addEllipsoid(hc.Add(hl.Scale(z*2.3)).Add(up.Scale(0.25)), hf, up, 0.5, 0.6, 0.2, shadeC(light, 0.88))
 		}
 	})
 }
@@ -459,11 +514,6 @@ func (a *Animal) renderOwl(s *Scene) {
 			s.addSpot(e.Add(hf.Scale(0.1)).Add(up.Scale(-1.1)).Add(hl.Scale(z*0.55)), hf, 0.55, 0.32, rgba(255, 168, 176, 255))
 		}
 		s.addEllipsoid(disc.Add(hf.Scale(0.5)).Add(up.Scale(-0.6)), hf.Add(up.Scale(-0.6)), up, 0.45, 0.5, 0.28, rgba(46, 44, 42, 255)) // beak
-		// fine flecks on the crown
-		for i := 0; i < 4; i++ {
-			p, n := ellPoint(head, hf, up, hl, 2.9, 2.5, 3.1, math.Pi*0.8+float64(i)*0.3, 0.75)
-			s.addSpot(p, n, 0.35, 0.2, bar)
-		}
 	})
 }
 

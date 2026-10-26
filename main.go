@@ -18,6 +18,7 @@ func main() {
 	scenesDir := flag.String("scenes", "", "stage and capture a screenshot of every feature to this dir, then exit")
 	only := flag.String("only", "", "with -scenes: capture only scenes whose name contains this")
 	tourDir := flag.String("tour", "", "render static views of site landmarks to this dir, then exit")
+	studioDir := flag.String("studio", "", "render contact sheets of every character pose to this dir, then exit")
 	frames := flag.Int("frames", 0, "exit after this many frames (0 = run forever)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile to this file")
 	flag.Parse()
@@ -47,6 +48,12 @@ func main() {
 			log.Fatal(err)
 		}
 		g.stageScenes(*scenesDir, *only)
+	}
+	if *studioDir != "" {
+		if err := os.MkdirAll(*studioDir, 0o755); err != nil {
+			log.Fatal(err)
+		}
+		g.studio, g.scripted = *studioDir, true
 	}
 	if *tourDir != "" {
 		if err := os.MkdirAll(*tourDir, 0o755); err != nil {

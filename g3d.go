@@ -529,6 +529,27 @@ func (s *Scene) addDecalQuad(a, b, c, d Vec3, col color.RGBA) {
 
 // detail adds geometry built by fn with a sort bias, for parts mounted on a
 // larger surface (doors, windows, ribs, grilles) so they draw on top of it.
+// addBlob adds a soft oval ground decal centred at c (on the ground), dark
+// in the middle and fading to nothing at the rim: a contact shadow or a glow.
+func (s *Scene) addBlob(c Vec3, rx, rz, yaw float64, col color.RGBA) {
+	const k = 16
+	mid := col
+	mid.A = uint8(float64(col.A) * 0.7)
+	rim := col
+	rim.A = 0
+	f, r := rotY(Vec3{1, 0, 0}, yaw), rotY(Vec3{0, 0, 1}, yaw)
+	pt := func(i int, sc float64) Vec3 {
+		a := 2 * math.Pi * float64(i) / k
+		return c.Add(f.Scale(math.Cos(a) * rx * sc)).Add(r.Scale(math.Sin(a) * rz * sc))
+	}
+	for i := 0; i < k; i++ {
+		s.decals = append(s.decals,
+			tri{p: [3]Vec3{c, pt(i, 0.55), pt(i+1, 0.55)}, c: [3]color.RGBA{col, mid, mid}},
+			tri{p: [3]Vec3{pt(i, 0.55), pt(i, 1), pt(i+1, 1)}, c: [3]color.RGBA{mid, rim, rim}},
+			tri{p: [3]Vec3{pt(i, 0.55), pt(i+1, 1), pt(i+1, 0.55)}, c: [3]color.RGBA{mid, rim, mid}})
+	}
+}
+
 // scaleSince scales the triangles added since mark (a len(s.tris) taken
 // earlier) about a point. Uniform scaling keeps normals and culling valid.
 func (s *Scene) scaleSince(mark int, about Vec3, k float64) {
@@ -646,8 +667,7 @@ func (s *Scene) Flush(dst *ebiten.Image, cam *Camera, groundImg, skirtImg, atlas
 		var didx []uint32
 		for i := range s.decals {
 			t := &s.decals[i]
-			c := unlit(t.c[0])
-			poly := clipNear(viewV{v: cam.view(t.p[0]), w: t.p[0], c: c}, viewV{v: cam.view(t.p[1]), w: t.p[1], c: c}, viewV{v: cam.view(t.p[2]), w: t.p[2], c: c})
+			poly := clipNear(viewV{v: cam.view(t.p[0]), w: t.p[0], c: unlit(t.c[0])}, viewV{v: cam.view(t.p[1]), w: t.p[1], c: unlit(t.c[1])}, viewV{v: cam.view(t.p[2]), w: t.p[2], c: unlit(t.c[2])})
 			for j := 2; j < poly.n; j++ {
 				base := uint32(len(dverts))
 				for _, vv := range [3]viewV{poly.v[0], poly.v[j-1], poly.v[j]} {

@@ -282,6 +282,16 @@ func (g *Game) shadow(s *Scene, center Vec, w, h, ang float64) {
 	s.addDecalQuad(a, b, d, e, rgba(18, 22, 20, 80))
 }
 
+// blobShadow is a soft round contact shadow for characters, nudged a little
+// away from the sun.
+func (g *Game) blobShadow(s *Scene, center Vec, rx, rz, ang float64) {
+	c := center.Add(V(1.5, 2))
+	if !g.cam.inView(ground(c, 0), math.Max(rx, rz)) {
+		return
+	}
+	s.addBlob(ground(c, 0.45), rx, rz, ang, rgba(18, 22, 20, 110))
+}
+
 // buildShadows adds shadows for static props; moving things add their own.
 func (g *Game) buildShadows(s *Scene) {
 	for i := range g.world.Props {

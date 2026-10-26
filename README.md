@@ -117,6 +117,8 @@ partially filled and loads carry their material type.
 | `vehicle.go` | `Vehicle` interface, controls, the loader as a vehicle |
 | `truck.go`, `excavator.go`, `crane.go`, `car.go` | The other machines |
 | `cargo.go` | Crane loads: falling, stacking, riding on trucks |
+| `shapes.go` | Smooth shapes: ellipsoids, capsules, rounded lofts, spots |
+| `studio.go` | Character studio: contact sheets of every pose from four angles |
 | `wonder.go` | The train, the helicopter and the rollerblader |
 | `toddler.go` | Toddler mode: tiny controls, machine assistants, walking over |
 | `walker.go` | The kid on foot |
@@ -140,6 +142,7 @@ Simulation, input and rendering are kept separate. The update step is a fixed
 go run . -scenes ./shots    # headless: stage and capture every feature
 go run . -scenes ./shots -only crane  # just the scenes whose name matches
 go run . -tour ./shots      # headless: static views of site landmarks
+go run . -studio ./shots    # headless: contact sheets of every character in every pose
 go run . -cpuprofile cpu.prof  # write a CPU profile (combine with any mode)
 ```
 

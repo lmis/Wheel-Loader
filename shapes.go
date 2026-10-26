@@ -243,3 +243,37 @@ func (s *Scene) rotateSince(mark int, about, axis Vec3, ang float64) {
 		}
 	}
 }
+
+// loftStation is one elliptical cross-section of a loft: at x along the
+// loft's forward axis, centred y above its origin, with half width hw and
+// half height hh.
+type loftStation struct{ x, y, hw, hh float64 }
+
+// addLoft adds one smooth closed body through elliptical cross-sections, so
+// a body built of several bulges has no seams where separate shapes would
+// cut into each other. The first and last stations should be small to close
+// the ends.
+func (s *Scene) addLoft(origin, fwd, up Vec3, st []loftStation, col color.RGBA) {
+	f, u, r := frame3(fwd, up)
+	seg := [3]int{8, 12, 16}[s.lod(origin)]
+	pts := make([][]Vec3, len(st))
+	nrm := make([][]Vec3, len(st))
+	for k, c := range st {
+		// how fast the section grows along the axis tilts the normals
+		lo, hi := st[max(k-1, 0)], st[min(k+1, len(st)-1)]
+		dw, dh, dy := 0.0, 0.0, 0.0
+		if dx := hi.x - lo.x; dx != 0 {
+			dw, dh, dy = (hi.hw-lo.hw)/dx, (hi.hh-lo.hh)/dx, (hi.y-lo.y)/dx
+		}
+		pts[k], nrm[k] = make([]Vec3, seg), make([]Vec3, seg)
+		for i := 0; i < seg; i++ {
+			th := 2 * math.Pi * float64(i) / float64(seg)
+			ct, st := math.Cos(th), math.Sin(th)
+			pts[k][i] = origin.Add(f.Scale(c.x)).Add(u.Scale(c.y + c.hh*st)).Add(r.Scale(c.hw * ct))
+			radial := r.Scale(ct / c.hw).Add(u.Scale(st / c.hh)).Norm()
+			slope := -(dw*ct*ct + dh*st*st + dy*st)
+			nrm[k][i] = radial.Add(f.Scale(slope)).Norm()
+		}
+	}
+	s.grid(pts, nrm, col)
+}

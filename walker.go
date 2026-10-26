@@ -79,14 +79,18 @@ func (k *Walker) Update(dt float64, w *World) {
 // Render builds the kid from smooth, rounded parts: big head, small body,
 // swinging arms and legs.
 func (k *Walker) Render(g *Game, s *Scene) {
-	g.shadow(s, k.Pos, 12, 10, k.Yaw)
+	g.blobShadow(s, k.Pos, 6, 5, k.Yaw)
 	if !g.cam.inView(ground(k.Pos, 10), 16) {
 		return
 	}
 	f := dir(k.Yaw)
 	r := dir(k.Yaw + math.Pi/2)
 	bob := math.Abs(math.Sin(k.phase)) * 0.6 * math.Min(k.moving, 1)
-	at := func(x, z, y float64) Vec3 { return ground(k.Pos.Add(f.Scale(x)).Add(r.Scale(z)), y+bob) }
+	run := clamp((k.moving-1)/0.6, 0, 1) // 0 walking .. 1 running
+	lean := 0.22 * run                   // running leans forward from the hips
+	at := func(x, z, y float64) Vec3 {
+		return ground(k.Pos.Add(f.Scale(x+math.Max(0, y-7.6)*lean)).Add(r.Scale(z)), y+bob)
+	}
 	fw := rotY(Vec3{1, 0, 0}, k.Yaw)
 	up := Vec3{0, 1, 0}
 	var (
@@ -108,8 +112,10 @@ func (k *Walker) Render(g *Game, s *Scene) {
 			a = -swing
 		}
 		hip := at(0, z, 7.6)
-		knee := hip.Add(fw.Scale(math.Sin(a)*3.6 + 0.3)).Add(up.Scale(-math.Cos(a) * 3.6))
-		foot := knee.Add(fw.Scale(math.Sin(a*0.6) * 3.4)).Add(up.Scale(-math.Cos(a*0.6) * 3.4))
+		// the leg swinging forward lifts its knee, more so when running
+		knee := hip.Add(fw.Scale(math.Sin(a)*3.6 + 0.3 + math.Max(0, a)*run*1.6)).Add(up.Scale(-math.Cos(a) * 3.6))
+		shin := a*0.6 - math.Max(0, -a)*run*0.9 // the back foot kicks up behind
+		foot := knee.Add(fw.Scale(math.Sin(shin) * 3.4)).Add(up.Scale(-math.Cos(shin) * 3.4))
 		s.addCapsule(hip, knee, 1.45, 1.3, jeans)
 		s.addCapsule(knee, foot, 1.3, 1.15, jeans)
 		s.addEllipsoid(foot.Add(fw.Scale(0.8)).Add(up.Scale(-0.2)), fw, up, 2.1, 0.9, 1.35, shoe)
@@ -153,8 +159,10 @@ func (k *Walker) Render(g *Game, s *Scene) {
 			a = swing * 0.8
 		}
 		sh := at(0, z, 12.7)
+		a *= 1 + run*0.6
 		elbow := sh.Add(fw.Scale(math.Sin(a) * 2.8)).Add(up.Scale(-math.Cos(a) * 2.8))
-		hand := elbow.Add(fw.Scale(math.Sin(a+0.35) * 2.6)).Add(up.Scale(-math.Cos(a+0.35) * 2.6))
+		fore := a + 0.35 + run*1.1 // elbows bend to a right angle when running
+		hand := elbow.Add(fw.Scale(math.Sin(fore) * 2.6)).Add(up.Scale(-math.Cos(fore) * 2.6))
 		s.addSphere(sh, 1.15, vest) // shoulder of the vest
 		s.addCapsule(sh, elbow, 0.95, 0.85, shirt)
 		s.addCapsule(elbow, hand, 0.85, 0.8, shirt)

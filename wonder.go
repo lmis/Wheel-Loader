@@ -296,7 +296,7 @@ func (k *Skater) Update(dt float64, w *World) {
 }
 
 func (g *Game) renderSkater(s *Scene, k *Skater) {
-	g.shadow(s, k.Pos, 16, 10, k.Yaw)
+	g.blobShadow(s, k.Pos, 8, 6, k.Yaw)
 	if !g.cam.inView(ground(k.Pos, 18), 30) {
 		return
 	}
@@ -307,9 +307,13 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 	up := Vec3{0, 1, 0}
 	// lean forward like a speed skater, and into the turns
 	tilt := up.Add(fw.Scale(0.35)).Add(lat.Scale(k.lean)).Norm()
+	// the body's own frame leans with him, so shoulders, head and glasses
+	// tilt into the turn
+	bf := fw.Sub(tilt.Scale(fw.Dot(tilt))).Norm()
+	bl := bf.Cross(tilt).Norm()
 	base := ground(k.Pos, 0)
 	at := func(x, z, y float64) Vec3 {
-		return base.Add(fw.Scale(x)).Add(lat.Scale(z)).Add(tilt.Scale(y))
+		return base.Add(bf.Scale(x)).Add(bl.Scale(z)).Add(tilt.Scale(y))
 	}
 	var (
 		skin    = rgba(236, 190, 156, 255)
@@ -341,18 +345,19 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 			}
 		})
 		gp := k.Pos.Add(r.Scale(side * (2.5 + push)))
-		s.addDecalQuad(ground(gp.Add(f.Scale(-8)).Add(r.Scale(-5)), 0.6), ground(gp.Add(f.Scale(8)).Add(r.Scale(-5)), 0.6),
-			ground(gp.Add(f.Scale(8)).Add(r.Scale(5)), 0.6), ground(gp.Add(f.Scale(-8)).Add(r.Scale(5)), 0.6), rgba(255, 40, 30, 70))
+		s.addBlob(ground(gp, 0.6), 8, 4.5, k.Yaw, rgba(255, 40, 30, 120)) // red glow on the road
 	}
 	// body: hips, chest and shoulders, rounded
-	s.addEllipsoid(at(0, 0, 15.5), fw, tilt, 2.4, 1.8, 3.0, tights)
-	s.addRoundPrism(at(0, 0, 0), k.Yaw, []ring{{-2.3, 2.3, 3, 15.5, 1.8}, {-2.6, 2.6, 3.6, 21, 2.2}, {-2.2, 2.2, 3.4, 25, 2}}, shirt, false, true)
+	s.addEllipsoid(at(0, 0, 15.5), bf, tilt, 2.4, 1.8, 3.0, tights)
+	s.addEllipsoid(at(0, 0, 18), bf, tilt, 2.2, 2.8, 2.9, shirt)   // belly
+	s.addEllipsoid(at(0, 0, 21.8), bf, tilt, 2.5, 2.9, 3.5, shirt) // chest
+	s.addEllipsoid(at(0, 0, 24.3), bf, tilt, 2.0, 1.2, 3.6, shirt) // shoulders
 	// arms swing wide, against the legs
 	for _, side := range []float64{-1, 1} {
 		sw := -stride * side
 		sh := at(0, side*3.9, 24)
-		hand := sh.Add(lat.Scale(side * (3 + math.Max(0, sw)*3))).Add(fw.Scale(sw * 6)).Add(tilt.Scale(-8))
-		elbow := sh.Add(hand.Sub(sh).Scale(0.5)).Add(fw.Scale(-1.2))
+		hand := sh.Add(bl.Scale(side * (3 + math.Max(0, sw)*3))).Add(bf.Scale(sw * 6)).Add(tilt.Scale(-8))
+		elbow := sh.Add(hand.Sub(sh).Scale(0.5)).Add(bf.Scale(-1.2))
 		s.addSphere(sh, 1.4, shirt)
 		s.addCapsule(sh, elbow, 1.25, 1.1, shirt)
 		s.addCapsule(elbow, hand, 1.1, 0.95, skin)
@@ -364,38 +369,42 @@ func (g *Game) renderSkater(s *Scene, k *Skater) {
 	const hx, hy, hz = 2.5, 2.8, 2.4
 	onFace := func(dz, dy, out float64) Vec3 {
 		x := hx * math.Sqrt(math.Max(0, 1-(dz/hz)*(dz/hz)-(dy/hy)*(dy/hy)))
-		return head.Add(fw.Scale(x + out)).Add(lat.Scale(dz)).Add(tilt.Scale(dy))
+		return head.Add(bf.Scale(x + out)).Add(bl.Scale(dz)).Add(tilt.Scale(dy))
 	}
-	s.addEllipsoid(head, fw, tilt, hx, hy, hz, skin)
+	s.addEllipsoid(head, bf, tilt, hx, hy, hz, skin)
 	// the beard: round the jaw and chin, and a moustache
-	s.addEllipsoid(head.Add(fw.Scale(1.2)).Add(tilt.Scale(-1.7)), fw, tilt, 1.6, 1.5, 2.35, hair)
-	s.addEllipsoid(head.Add(fw.Scale(2.0)).Add(tilt.Scale(-2.7)), fw.Add(tilt.Scale(-0.4)), tilt, 1.1, 1.2, 1.5, hair)
+	s.addEllipsoid(head.Add(bf.Scale(1.2)).Add(tilt.Scale(-1.7)), bf, tilt, 1.6, 1.5, 2.35, hair)
+	s.addEllipsoid(head.Add(bf.Scale(2.0)).Add(tilt.Scale(-2.7)), bf.Add(tilt.Scale(-0.4)), tilt, 1.1, 1.2, 1.5, hair)
 	s.detail(func() {
-		s.addEllipsoid(onFace(0, -0.95, 0.05), fw, tilt, 0.4, 0.38, 1.25, hair)                                           // moustache
-		s.addEllipsoid(head.Add(fw.Scale(2.82)).Add(tilt.Scale(-1.75)), fw, tilt, 0.15, 0.2, 0.7, rgba(150, 60, 56, 255)) // smile
-		s.addEllipsoid(onFace(0, -0.3, 0.05), fw, tilt, 0.4, 0.45, 0.38, shadeC(skin, 0.95))                              // nose
+		s.addEllipsoid(onFace(0, -0.95, 0.05), bf, tilt, 0.4, 0.38, 1.25, hair)                                           // moustache
+		s.addEllipsoid(head.Add(bf.Scale(2.82)).Add(tilt.Scale(-1.75)), bf, tilt, 0.15, 0.2, 0.7, rgba(150, 60, 56, 255)) // smile
+		s.addEllipsoid(onFace(0, -0.3, 0.05), bf, tilt, 0.4, 0.45, 0.38, shadeC(skin, 0.95))                              // nose
 		// round blue glasses on a dark frame
 		for _, z := range []float64{-1, 1} {
 			e := onFace(z, 0.45, 0.05)
-			s.addEllipsoid(e, fw, tilt, 0.18, 0.72, 0.82, colDark)
-			s.glowing(func() { s.addEllipsoid(e.Add(fw.Scale(0.08)), fw, tilt, 0.14, 0.6, 0.7, lens) })
-			s.addCapsule(e.Add(lat.Scale(z*0.8)), head.Add(lat.Scale(z*2.35)).Add(tilt.Scale(0.5)), 0.12, 0.12, colDark)
+			s.addEllipsoid(e, bf, tilt, 0.18, 0.72, 0.82, colDark)
+			s.glowing(func() { s.addEllipsoid(e.Add(bf.Scale(0.08)), bf, tilt, 0.14, 0.6, 0.7, lens) })
+			s.addCapsule(e.Add(bl.Scale(z*0.8)), head.Add(bl.Scale(z*2.35)).Add(tilt.Scale(0.5)), 0.12, 0.12, colDark)
 		}
 		s.addCapsule(onFace(-0.2, 0.5, 0.1), onFace(0.2, 0.5, 0.1), 0.12, 0.12, colDark) // bridge
 	})
 	// long hair streaming out behind, and round the sides under the helmet
-	strand := head.Add(fw.Scale(-2)).Add(tilt.Scale(0.4))
-	for i := 0; i < 5; i++ {
-		wave := math.Sin(g.frameTime()*14 - float64(i)*0.9)
-		next := strand.Add(fw.Scale(-3.4)).Add(tilt.Scale(-0.6 - 0.25*float64(i))).Add(lat.Scale(wave * 0.8))
-		s.addCapsule(strand, next, 1.9-0.22*float64(i), 1.7-0.22*float64(i), hair)
-		strand = next
+	// three locks, streaming back in the wind and drooping toward the ends
+	for j, z := range []float64{-1.2, 0, 1.2} {
+		p := head.Add(bf.Scale(-1.9)).Add(bl.Scale(z)).Add(tilt.Scale(0.6 - 0.3*math.Abs(z)))
+		for i := 0; i < 3; i++ {
+			t := float64(i)
+			wave := math.Sin(g.frameTime()*12 - t*0.9 + float64(j)*1.7)
+			next := p.Add(bf.Scale(-1.3)).Add(tilt.Scale(-0.75 - 0.3*t)).Add(bl.Scale(wave*0.3 + z*0.15))
+			s.addCapsule(p, next, 1.05-0.15*t, 0.95-0.15*t, hair)
+			p = next
+		}
 	}
-	s.addEllipsoid(head.Add(fw.Scale(-0.7)).Add(tilt.Scale(-0.6)), fw, tilt, 2.2, 2.2, 2.6, hair)
+	s.addEllipsoid(head.Add(bf.Scale(-0.7)).Add(tilt.Scale(-0.6)), bf, tilt, 2.2, 2.2, 2.6, hair)
 	// the helmet: a smooth dark dome, with a red stripe to match the skates
-	s.addEllipsoid(head.Add(tilt.Scale(1.9)), fw, tilt, 2.95, 2.3, 2.8, helmet)
+	s.addEllipsoid(head.Add(tilt.Scale(1.9)), bf, tilt, 2.95, 2.3, 2.8, helmet)
 	s.detail(func() {
-		s.addEllipsoid(head.Add(tilt.Scale(4.15)), fw, tilt, 2.2, 0.2, 0.45, glowRed)
+		s.addEllipsoid(head.Add(tilt.Scale(4.15)), bf, tilt, 2.2, 0.2, 0.45, glowRed)
 	})
 }
 

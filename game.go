@@ -42,6 +42,7 @@ type Game struct {
 	exitFrame int // >0: exit when frame reaches it
 	done      bool
 
+	studio   string       // -studio: write character contact sheets here, then exit
 	tour     []tourStop   // static landmark views for verification
 	script   []scriptStep // staged scenes for verification screenshots
 	scripted bool
@@ -272,6 +273,13 @@ func (g *Game) rebuildObstacles() {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.studio != "" {
+		if g.frame >= 2 {
+			g.renderStudio(g.studio)
+			g.studio, g.exitFrame = "", g.frame+1
+		}
+		return
+	}
 	start := time.Now()
 	g.render(screen)
 	// smoothed CPU cost of building and submitting the frame (diagnostics)
