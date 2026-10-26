@@ -51,12 +51,17 @@ func (g *Game) renderView(dst *ebiten.Image, p *Player) {
 	for _, c := range g.world.Cargo {
 		c.Render(g, s)
 	}
+	g.cabView = nil
+	if _, ok := p.Driving.(seated); ok && p.fp {
+		g.cabView = p.Driving
+	}
 	for _, v := range g.vehicles {
 		v.Render(g, s)
 	}
-	if st, ok := p.Driving.(seated); ok && p.fp {
+	if st, ok := g.cabView.(seated); ok {
 		st.RenderCockpit(s)
 	}
+	g.cabView = nil
 	for _, q := range g.players {
 		if q.Driving != nil {
 			continue
@@ -502,10 +507,14 @@ func (g *Game) buildLoader3D(s *Scene, l *Loader) {
 
 	// ---- front frame ----
 	fl := float64(frontLen)
+	top := 27.0
+	if g.cabView == Vehicle(l) {
+		top = 23 // a little lower from the driver's seat, to see over it
+	}
 	s.addPrism(frontO, fh, []ring{
 		{4, fl + 14, 14, 8, 3},
-		{4, fl + 14, 14, 22, 3},
-		{4, fl + 6, 12, 27, 4},
+		{4, fl + 14, 14, top - 5, 3},
+		{4, fl + 6, 12, top, 4},
 	}, yellow)
 	s.detail(func() {
 		for _, z := range []float64{-lat, lat} {
@@ -517,19 +526,29 @@ func (g *Game) buildLoader3D(s *Scene, l *Loader) {
 
 // buildArmsAndBucket draws the lift arms, cylinders, Z-bar linkage and a
 // U-shaped bucket. Lift raises the bucket pivot; tilt pitches the bucket.
+// Seen from the driver's own seat the view is fudged so the windscreen is
+// clear: slimmer arms set wider apart, and no towers, cylinders or linkage
+// in front of the glass. Everyone else sees the real machine.
 func (g *Game) buildArmsAndBucket(s *Scene, l *Loader, fh, bob float64, yellow color.RGBA, fAt func(x, z, y float64) Vec3) {
 	pivot2D := l.BucketPivot()
 	reach := pivot2D.Sub(l.Joint).Dot(dir(fh)) // local x of the bucket pivot
 	pivotY := 16 + l.Lift*72 + bob
 	armZ := bodyWidth * 0.36
+	cab := g.cabView == Vehicle(l)
+	armH, armW := 5.0, 3.5
+	if cab {
+		armZ, armH, armW = bodyWidth*0.5, 3, 2
+	}
 	beam := func(a, b Vec3, hh, hw float64, col color.RGBA) {
 		d := b.Sub(a)
 		s.addOBB(a.Add(d.Scale(0.5)), d, d.Len()/2, hh, hw, col)
 	}
 
 	// arm towers on the front frame
-	for _, z := range []float64{-armZ, armZ} {
-		s.addPrism(fAt(0, z, 0), fh, []ring{{6, 22, 3, 20, 1}, {10, 20, 3, 44, 1}}, shadeC(yellow, 0.9))
+	if !cab {
+		for _, z := range []float64{-armZ, armZ} {
+			s.addPrism(fAt(0, z, 0), fh, []ring{{6, 22, 3, 20, 1}, {10, 20, 3, 44, 1}}, shadeC(yellow, 0.9))
+		}
 	}
 	var armMid [2]Vec3
 	for k, z := range []float64{-armZ, armZ} {
@@ -537,9 +556,16 @@ func (g *Game) buildArmsAndBucket(s *Scene, l *Loader, fh, bob float64, yellow c
 		pv := fAt(reach, z, pivotY)
 		// a slight dog-leg: arms bow upward over the front tyres
 		knee := sh.Add(pv.Sub(sh).Scale(0.45)).Add(Vec3{0, 8, 0})
-		beam(sh, knee, 5, 3.5, yellow)
-		beam(knee, pv, 5, 3.5, yellow)
+		if cab {
+			sh = fAt(15, z, 30+bob*0.5) // low and out of the way
+			knee = sh.Add(pv.Sub(sh).Scale(0.45))
+		}
+		beam(sh, knee, armH, armW, yellow)
+		beam(knee, pv, armH, armW, yellow)
 		armMid[k] = knee
+		if cab {
+			continue
+		}
 		// lift cylinder from the low frame to the arm
 		base := fAt(28, z*0.7, 12+bob)
 		beam(base, base.Add(knee.Sub(base).Scale(0.55)), 2.8, 2.8, colSteel)
@@ -548,12 +574,14 @@ func (g *Game) buildArmsAndBucket(s *Scene, l *Loader, fh, bob float64, yellow c
 		s.addOBB2(sh, rotY(Vec3{0, 0, 1}, fh), Vec3{0, 1, 0}, 4.5, 3, 3, colSteel)
 	}
 	// cross tube between the arms and the Z-bar tilt linkage
-	beam(armMid[0], armMid[1], 3.5, 3.5, shadeC(yellow, 0.92))
 	crankTop := armMid[0].Add(armMid[1]).Scale(0.5).Add(Vec3{0, 14, 0})
-	tiltBase := fAt(26, 0, 30+bob)
-	beam(tiltBase, tiltBase.Add(crankTop.Sub(tiltBase).Scale(0.6)), 3, 3, colSteel)
-	beam(tiltBase.Add(crankTop.Sub(tiltBase).Scale(0.55)), crankTop, 1.8, 1.8, colChrom)
-	beam(crankTop.Sub(Vec3{0, 18, 0}), crankTop, 3.5, 2.5, shadeC(yellow, 0.9))
+	if !cab {
+		beam(armMid[0], armMid[1], 3.5, 3.5, shadeC(yellow, 0.92))
+		tiltBase := fAt(26, 0, 30+bob)
+		beam(tiltBase, tiltBase.Add(crankTop.Sub(tiltBase).Scale(0.6)), 3, 3, colSteel)
+		beam(tiltBase.Add(crankTop.Sub(tiltBase).Scale(0.55)), crankTop, 1.8, 1.8, colChrom)
+		beam(crankTop.Sub(Vec3{0, 18, 0}), crankTop, 3.5, 2.5, shadeC(yellow, 0.9))
+	}
 
 	// ---- bucket frame ----
 	tiltPitch := lerp(-0.85, 0.75, l.Tilt)
@@ -568,7 +596,9 @@ func (g *Game) buildArmsAndBucket(s *Scene, l *Loader, fh, bob float64, yellow c
 	worn := rgba(132, 134, 140, 255)
 
 	// link from the crank to the top of the bucket
-	beam(crankTop, B(-4, 12, 0), 2.5, 2.5, shadeC(yellow, 0.9))
+	if !cab {
+		beam(crankTop, B(-4, 12, 0), 2.5, 2.5, shadeC(yellow, 0.9))
+	}
 
 	// side plates (double-sided polygons tracing the bucket profile)
 	profile := [][2]float64{{40, -12}, {0, -12}, {-6, -4}, {-6, 14}, {12, 16}}

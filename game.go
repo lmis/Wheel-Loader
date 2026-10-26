@@ -24,6 +24,7 @@ type Game struct {
 	animals  []*Animal
 	players  []*Player
 	cam      *Camera // camera of the view being built (players[0] outside rendering)
+	cabView  Vehicle // machine whose driver this view looks out of, if any
 
 	ground *ebiten.Image // baked site ground texture
 	skirt  *ebiten.Image // repeating dirt for the land beyond the site

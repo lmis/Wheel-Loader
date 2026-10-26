@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"math"
 )
 
@@ -52,6 +53,32 @@ func (t *Truck) SeatPitch() float64    { return -0.1 }
 func (t *Truck) RenderCockpit(s *Scene) {
 	s.addRoundPrism(t.local(0, 0, 0), t.Angle, []ring{{52, 56, 27, 34, 1.2}, {52.5, 55.5, 27, 37.5, 1.2}}, rgba(62, 64, 70, 255), false, true)
 	s.addSteeringWheel(t.local(47, -11, 39.5), t.Angle, 2.4, rgba(30, 30, 33, 255))
+	fw := rotY(Vec3{1, 0, 0}, t.Angle)
+	up := Vec3{0, 1, 0}
+	s.detail(func() {
+		// two dials behind the wheel
+		for _, z := range []float64{-14, -8} {
+			s.addEllipsoid(t.local(52.4, z, 36.2), fw, up, 0.15, 1.2, 1.2, rgba(20, 20, 24, 255))
+			s.glowing(func() { s.addEllipsoid(t.local(52.3, z, 36.2), fw, up, 0.1, 0.9, 0.9, rgba(240, 236, 220, 255)) })
+			s.addCapsule(t.local(52.2, z, 36.2), t.local(52.2, z+0.5, 36.8), 0.08, 0.08, rgba(220, 40, 30, 255)) // needle
+		}
+		// a row of round buttons on the dash, and a big body-tip button
+		for i, c := range []color.RGBA{rgba(230, 50, 40, 255), rgba(250, 200, 30, 255), rgba(60, 190, 80, 255), rgba(50, 130, 230, 255)} {
+			z := -5.4 + float64(i)*1.5
+			s.addCone(t.local(53.2, z, 37.8), 0.6, 0.6, 0.6, 12, colDark)
+			s.glowing(func() { s.addCone(t.local(53.2, z, 38.2), 0.48, 0.44, 0.5, 12, c) })
+		}
+		tip := rgba(255, 140, 30, 255)
+		if t.BedTilt > 0.02 {
+			tip = rgba(255, 220, 120, 255) // lit while the body is up
+		}
+		s.addCone(t.local(53.4, -18.2, 37.9), 1.5, 1.5, 0.7, 16, colDark)
+		s.glowing(func() { s.addCone(t.local(53.4, -18.2, 38.5), 1.25, 1.1, 0.8, 16, tip) })
+		// a few switches
+		for _, z := range []float64{-20.6, -19.8} {
+			s.addCapsule(t.local(53.2, z, 36.2), t.local(52.6, z, 37.0), 0.18, 0.18, rgba(200, 200, 205, 255))
+		}
+	})
 }
 
 func (t *Truck) ExitPoint(side float64) Vec {
