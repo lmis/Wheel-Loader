@@ -250,76 +250,60 @@ func (a *Animal) frame() (func(x, z, y float64) Vec3, Vec3, Vec3) {
 	return at, rotY(Vec3{1, 0, 0}, a.Yaw), rotY(Vec3{0, 0, 1}, a.Yaw)
 }
 
-// renderDog draws a retriever-shaped dog. Bernese: black coat with a white
-// chest and muzzle and rust markings (accent) on the legs and cheeks.
+// renderDog draws a retriever-shaped dog from rounded parts. Bernese: black
+// coat with a white chest and muzzle and rust markings (accent) on the legs
+// and cheeks.
 func (a *Animal) renderDog(s *Scene, coat, light, accent color.RGBA, bernese bool, k float64) {
 	at, fw, lat := a.frame()
 	up := Vec3{0, 1, 0}
 	moving := clamp(a.speed/30, 0, 1.5)
-	// legs with a trot cycle
+	legCol, paw, chest, muzzle := coat, coat, coat, shadeC(coat, 1.08)
+	if bernese {
+		legCol, paw, chest, muzzle = accent, light, light, light
+	}
+	// legs with a trot cycle, and round paws
 	for i, p := range [][2]float64{{4.5, -1.8}, {4.5, 1.8}, {-4.5, -1.8}, {-4.5, 1.8}} {
 		sw := math.Sin(a.phase*2+float64(i%2)*math.Pi+float64(i/2)*math.Pi) * 0.45 * moving
-		hip := at(p[0]*k, p[1]*k, 6.2*k)
-		foot := hip.Add(fw.Scale(math.Sin(sw) * 5.8 * k)).Add(up.Scale(-math.Cos(sw) * 5.8 * k))
-		d := foot.Sub(hip)
-		legCol := coat
-		if bernese {
-			legCol = accent
-		}
-		s.addOBB2(hip.Add(d.Scale(0.5)), d, fw, d.Len()/2+0.6, 0.9*k, 0.9*k, legCol)
-		paw := light
-		if !bernese {
-			paw = coat
-		}
-		s.addOBB2(foot, fw, up, 1.1*k, 0.5*k, 0.9*k, paw)
+		hip := at(p[0]*k, p[1]*k, 6.6*k)
+		foot := hip.Add(fw.Scale(math.Sin(sw) * 5.6 * k)).Add(up.Scale(-math.Cos(sw) * 5.6 * k))
+		s.addCapsule(hip, foot, 1.05*k, 0.8*k, legCol)
+		s.addEllipsoid(foot.Add(fw.Scale(0.5*k)).Add(up.Scale(-0.3*k)), fw, up, 1.15*k, 0.55*k, 0.9*k, paw)
 	}
-	// body, chest
-	s.addPrism(at(0, 0, 0), a.Yaw, []ring{
-		{-6 * k, 5.5 * k, 2.3 * k, 5.2 * k, 1.4 * k},
-		{-6.4 * k, 6.2 * k, 2.7 * k, 7.2 * k, 1.6 * k},
-		{-5.8 * k, 5.6 * k, 2.3 * k, 9.2 * k, 1.6 * k},
-	}, coat)
-	chest := coat
-	if bernese {
-		chest = light
-	}
-	s.addOBB2(at(5.8*k, 0, 7.2*k), fw, up, 1.2*k, 2*k, 1.9*k, chest)
+	// body and chest
+	s.addEllipsoid(at(-0.2*k, 0, 7.4*k), fw, up, 6.6*k, 2.5*k, 2.75*k, coat)
+	s.addEllipsoid(at(4.9*k, 0, 7.4*k), fw, up, 2.0*k, 2.4*k, 2.2*k, chest)
 	// tail wags
 	wag := math.Sin(a.t*11) * 0.7
 	tb := at(-6*k, 0, 8.6*k)
 	td := fw.Scale(-math.Cos(wag) * 0.7).Add(lat.Scale(math.Sin(wag) * 0.7)).Add(up.Scale(0.55)).Norm()
-	s.addOBB2(tb.Add(td.Scale(3.2*k)), td, up, 3.4*k, 0.9*k, 1.1*k, coat)
+	s.addCapsule(tb, tb.Add(td.Scale(6.2*k)), 0.95*k, 0.55*k, coat)
 	if bernese {
-		s.addOBB2(tb.Add(td.Scale(6.4*k)), td, up, 0.9*k, 0.9*k, 1.1*k, light)
+		s.addSphere(tb.Add(td.Scale(6.6*k)), 0.7*k, light)
 	}
-	// head on a neck, turning toward the nearest kid
+	// head on a neck, turning toward its kid
 	hy := a.Yaw + a.headYaw
 	hf := rotY(Vec3{1, 0, 0}, hy)
 	hl := rotY(Vec3{0, 0, 1}, hy)
-	neck := at(6.4*k, 0, 9.6*k)
-	hc := neck.Add(hf.Scale(2 * k)).Add(up.Scale(2.4 * k))
-	s.addOBB2(neck.Add(hc.Sub(neck).Scale(0.5)), hc.Sub(neck), hf, hc.Sub(neck).Len()/2+0.5, 1.5*k, 1.6*k, coat)
-	s.addOBB2(hc, hf, up, 2.2*k, 2*k, 2*k, coat)
-	muzzle := light
-	if !bernese {
-		muzzle = shadeC(coat, 1.08)
-	}
-	s.addOBB2(hc.Add(hf.Scale(3*k)).Add(up.Scale(-0.6*k)), hf, up, 1.5*k, 1.1*k, 1.2*k, muzzle)
+	neck := at(5.8*k, 0, 9.2*k)
+	hc := neck.Add(hf.Scale(2.2 * k)).Add(up.Scale(2.6 * k))
+	s.addCapsule(neck, hc, 1.6*k, 1.5*k, coat)
+	s.addEllipsoid(hc, hf, up, 2.3*k, 2.0*k, 2.05*k, coat)
+	s.addEllipsoid(hc.Add(hf.Scale(2.7*k)).Add(up.Scale(-0.7*k)), hf, up, 1.7*k, 1.05*k, 1.15*k, muzzle)
 	s.detail(func() {
-		s.addOBB2(hc.Add(hf.Scale(4.6*k)).Add(up.Scale(-0.1*k)), hf, up, 0.4*k, 0.45*k, 0.6*k, rgba(20, 16, 14, 255)) // nose
+		s.addSphere(hc.Add(hf.Scale(4.35*k)).Add(up.Scale(-0.25*k)), 0.48*k, rgba(20, 16, 14, 255)) // nose
 		for _, z := range []float64{-1, 1} {
-			eye := hc.Add(hf.Scale(2.15 * k)).Add(hl.Scale(z * 0.95 * k)).Add(up.Scale(0.6 * k))
-			s.addOBB2(eye, hf, up, 0.1*k, 0.35*k, 0.35*k, rgba(40, 26, 16, 255))
+			eye := hc.Add(hf.Scale(1.85 * k)).Add(hl.Scale(z * 0.95 * k)).Add(up.Scale(0.6 * k))
+			s.addSphere(eye, 0.36*k, rgba(40, 26, 16, 255))
 			if bernese {
-				s.addOBB2(eye.Add(up.Scale(0.7*k)), hf, up, 0.12*k, 0.2*k, 0.4*k, accent) // rust brows
-				s.addOBB2(hc.Add(hf.Scale(2.2*k)).Add(hl.Scale(z*1.6*k)).Add(up.Scale(-0.9*k)), hf, up, 0.4*k, 0.5*k, 0.3*k, accent)
+				s.addEllipsoid(eye.Add(up.Scale(0.7*k)), hf, up, 0.3*k, 0.22*k, 0.42*k, accent) // rust brows
+				s.addEllipsoid(hc.Add(hf.Scale(2.0*k)).Add(hl.Scale(z*1.55*k)).Add(up.Scale(-0.9*k)), hf, up, 0.5*k, 0.55*k, 0.35*k, accent)
 			}
 			// floppy ears
-			ear := hc.Add(hl.Scale(z * 2.2 * k)).Add(up.Scale(0.2 * k))
-			s.addOBB2(ear, hf, up, 0.9*k, 1.6*k, 0.4*k, shadeC(coat, 0.85))
+			ear := hc.Add(hl.Scale(z * 2.05 * k)).Add(up.Scale(-0.3 * k)).Add(hf.Scale(-0.3 * k))
+			s.addEllipsoid(ear, hf, up.Add(hl.Scale(z*0.25)), 0.95*k, 1.75*k, 0.4*k, shadeC(coat, 0.85))
 		}
 		if bernese {
-			s.addOBB2(hc.Add(hf.Scale(2.05*k)).Add(up.Scale(1.2*k)), hf, up, 0.1*k, 1.2*k, 0.35*k, light) // blaze
+			s.addEllipsoid(hc.Add(hf.Scale(1.9*k)).Add(up.Scale(1.2*k)), hf, up, 0.35*k, 1.1*k, 0.4*k, light) // blaze
 		}
 	})
 }
@@ -338,40 +322,39 @@ func (a *Animal) renderChimp(s *Scene) {
 	// knuckle-walking stance: short legs, long arms
 	for i, z := range []float64{-1.6, 1.6} {
 		sw := math.Sin(a.phase*2+float64(i)*math.Pi) * 0.4 * moving
-		hip := at2(-1.5, z, 4.5)
+		hip := at2(-1.5, z, 4.6)
 		foot := hip.Add(fw.Scale(math.Sin(sw) * 4.2)).Add(up.Scale(-math.Cos(sw) * 4.2))
-		d := foot.Sub(hip)
-		s.addOBB2(hip.Add(d.Scale(0.5)), d, fw, d.Len()/2+0.4, 1, 1, fur)
-		s.addOBB2(foot.Add(fw.Scale(0.6)), fw, up, 1.2, 0.4, 0.8, face)
+		s.addCapsule(hip, foot, 1.15, 0.9, fur)
+		s.addEllipsoid(foot.Add(fw.Scale(0.6)), fw, up, 1.25, 0.45, 0.8, face)
 	}
 	for i, z := range []float64{-2.6, 2.6} {
 		sw := -math.Sin(a.phase*2+float64(i)*math.Pi) * 0.4 * moving
 		sh := at2(1.8, z, 8.6)
 		var hand Vec3
 		if i == 1 && a.speed < 5 && math.Sin(a.t*0.9) > 0.6 {
-			// scratching its head
-			hand = at2(1.6, 1.8, 12.6)
+			hand = at2(1.6, 1.8, 12.6) // scratching its head
 		} else {
 			hand = sh.Add(fw.Scale(1.5 + math.Sin(sw)*3)).Add(up.Scale(-8.2))
 		}
-		d := hand.Sub(sh)
-		s.addOBB2(sh.Add(d.Scale(0.5)), d, fw, d.Len()/2+0.4, 0.9, 0.9, fur)
-		s.addOBB2(hand, fw, up, 0.8, 0.6, 0.8, face)
+		elbow := sh.Add(hand.Sub(sh).Scale(0.5)).Add(fw.Scale(-0.6))
+		s.addCapsule(sh, elbow, 1.05, 0.95, fur)
+		s.addCapsule(elbow, hand, 0.95, 0.8, fur)
+		s.addEllipsoid(hand, fw, up, 0.85, 0.7, 0.8, face)
 	}
-	// body leaning forward, head
-	s.addPrism(at2(0, 0, 0), a.Yaw, []ring{{-2.8, 1.6, 2.3, 4.2, 1}, {-2.2, 2.6, 2.8, 7.4, 1.2}, {-1.2, 2.6, 2.3, 9.6, 1.2}}, fur)
+	// body leaning forward, and a round head
+	s.addEllipsoid(at2(0.1, 0, 7.0), fw.Add(up.Scale(0.35)), up, 2.7, 3.2, 2.8, fur)
 	hy := a.Yaw + a.headYaw
 	hf := rotY(Vec3{1, 0, 0}, hy)
 	hl := rotY(Vec3{0, 0, 1}, hy)
 	hc := at2(2.4, 0, 11.6)
-	s.addOBB2(hc, hf, up, 2, 2, 2, fur)
+	s.addEllipsoid(hc, hf, up, 2.0, 2.0, 2.05, fur)
 	s.detail(func() {
-		s.addOBB2(hc.Add(hf.Scale(1.7)).Add(up.Scale(-0.4)), hf, up, 0.6, 1.5, 1.5, face)
-		s.addOBB2(hc.Add(hf.Scale(2.2)).Add(up.Scale(-1.1)), hf, up, 0.7, 0.7, 1.1, shadeC(face, 0.92)) // muzzle
-		s.addOBB2(hc.Add(hf.Scale(1.8)).Add(up.Scale(0.75)), hf, up, 0.35, 0.3, 1.6, shadeC(fur, 1.2))  // brow ridge
+		s.addEllipsoid(hc.Add(hf.Scale(1.3)).Add(up.Scale(-0.3)), hf, up, 0.9, 1.5, 1.55, face)
+		s.addEllipsoid(hc.Add(hf.Scale(2.1)).Add(up.Scale(-1.0)), hf, up, 0.75, 0.7, 1.05, shadeC(face, 0.92)) // muzzle
+		s.addEllipsoid(hc.Add(hf.Scale(1.8)).Add(up.Scale(0.75)), hf, up, 0.4, 0.3, 1.55, shadeC(fur, 1.2))    // brow ridge
 		for _, z := range []float64{-1, 1} {
-			s.addOBB2(hc.Add(hf.Scale(2.3)).Add(hl.Scale(z*0.6)).Add(up.Scale(0.3)), hf, up, 0.1, 0.3, 0.3, rgba(36, 22, 12, 255))
-			s.addOBB2(hc.Add(hl.Scale(z*2.2)).Add(up.Scale(0.2)), hf, up, 0.9, 1, 0.4, face) // big ears
+			s.addSphere(hc.Add(hf.Scale(2.15)).Add(hl.Scale(z*0.6)).Add(up.Scale(0.25)), 0.3, rgba(36, 22, 12, 255))
+			s.addEllipsoid(hc.Add(hl.Scale(z*2.1)).Add(up.Scale(0.2)), hf, up, 0.9, 1.0, 0.4, face) // big ears
 		}
 	})
 }
@@ -382,28 +365,30 @@ func (a *Animal) renderOwl(s *Scene) {
 	up := Vec3{0, 1, 0}
 	white := rgba(246, 246, 242, 255)
 	speck := rgba(52, 50, 46, 255)
-	s.addOBB2(at(0.6, 0, 12.3), fw, up, 1.4, 0.4, 1.8, rgba(80, 80, 82, 255)) // talons
-	// plump, rounded body
-	s.addCone(at(0, 0, 13.2), 2.2, 3.2, 2.4, 14, white)
-	s.addCone(at(0, 0, 15.6), 3.2, 3.3, 2.4, 14, white)
-	s.addCone(at(0, 0, 17.8), 3.3, 2.7, 2, 14, white)
+	for _, z := range []float64{-1, 1} {
+		s.addEllipsoid(at(0.7, z, 12.4), fw, up, 1.0, 0.4, 0.7, rgba(80, 80, 82, 255)) // talons
+	}
+	// plump, round body
+	const bx, by, bz = 3.2, 3.9, 3.3
+	bc := at(0, 0, 16.2)
+	s.addEllipsoid(bc, fw, up, bx, by, bz, white)
 	// wings: folded and speckled, or spread and flapping in flight
 	for _, z := range []float64{-1, 1} {
 		if a.flying || a.hopping || a.bounce > 0 {
 			flap := math.Sin(a.t*9) * 0.6
 			span := lat.Scale(z * math.Cos(flap)).Add(up.Scale(math.Sin(flap)))
-			root := at(-0.4, z*2.8, 16.2)
-			s.addOBB2(root.Add(span.Scale(5.5)), span, fw, 5.5, 3, 0.4, shadeC(white, 0.95))
+			root := at(-0.4, z*2.8, 16.6)
+			s.addEllipsoid(root.Add(span.Scale(5.5)), span, fw, 5.8, 2.9, 0.45, shadeC(white, 0.95))
 			continue
 		}
-		wc := at(-0.6, z*3.1, 15.8)
-		s.addOBB2(wc, fw.Scale(0.9).Add(up.Scale(-0.4)), lat.Scale(z), 3, 0.5, 3, shadeC(white, 0.95))
+		s.addEllipsoid(at(-0.6, z*2.9, 15.8), fw.Scale(0.9).Add(up.Scale(-0.4)), up, 3.1, 2.4, 0.75, shadeC(white, 0.95))
 	}
 	s.detail(func() {
 		for i := 0; i < 16; i++ {
 			ang := 1.2 + float64(i)*0.55
-			r := 3.0 + 0.2*float64(i%2)
-			p := at(math.Cos(ang)*r, math.Sin(ang)*r, 13.4+float64(i%4)*1.3)
+			dy := -2.6 + float64(i%4)*1.3
+			sc := math.Sqrt(1 - (dy/by)*(dy/by))
+			p := bc.Add(fw.Scale(math.Cos(ang) * bx * sc)).Add(lat.Scale(math.Sin(ang) * bz * sc)).Add(up.Scale(dy))
 			s.addOBB2(p, fw, up, 0.22, 0.2, 0.45, speck)
 		}
 	})
@@ -411,25 +396,24 @@ func (a *Animal) renderOwl(s *Scene) {
 	hy := a.Yaw + a.headYaw
 	hf := rotY(Vec3{1, 0, 0}, hy)
 	hl := rotY(Vec3{0, 0, 1}, hy)
-	hc := at(0, 0, 21.2)
-	s.addCone(hc.Sub(Vec3{0, 1.6, 0}), 2.6, 3.1, 1.6, 14, white)
-	s.addCone(hc.Add(Vec3{0, 0.6, 0}), 3.1, 1.6, 2.8, 14, white)
+	hc := at(0, 0, 21.4)
+	s.addEllipsoid(hc, hf, up, 2.9, 2.5, 3.0, white)
 	s.detail(func() {
-		disc := hc.Add(hf.Scale(2.75)).Add(up.Scale(-0.3))
-		s.addOBB2(disc, hf, up, 0.15, 1.9, 2.4, rgba(252, 252, 250, 255))
+		disc := hc.Add(hf.Scale(2.45)).Add(up.Scale(-0.3))
+		s.addEllipsoid(disc, hf, up, 0.4, 1.95, 2.35, rgba(252, 252, 250, 255))
 		for _, z := range []float64{-1.1, 1.1} {
-			e := disc.Add(hf.Scale(0.2)).Add(hl.Scale(z)).Add(up.Scale(0.45))
+			e := disc.Add(hf.Scale(0.3)).Add(hl.Scale(z)).Add(up.Scale(0.45))
 			if a.blink > 0 {
-				s.addOBB2(e, hf, up, 0.1, 0.12, 0.75, rgba(210, 210, 206, 255))
+				s.addEllipsoid(e, hf, up, 0.2, 0.14, 0.72, rgba(210, 210, 206, 255))
 				continue
 			}
-			s.addOBB2(e, hf, up, 0.1, 0.72, 0.72, rgba(250, 200, 24, 255))
-			s.addOBB2(e.Add(hf.Scale(0.1)), hf, up, 0.08, 0.36, 0.36, rgba(14, 12, 10, 255))
+			s.addEllipsoid(e, hf, up, 0.3, 0.72, 0.72, rgba(250, 200, 24, 255))
+			s.addSphere(e.Add(hf.Scale(0.22)), 0.36, rgba(14, 12, 10, 255))
 		}
-		s.addOBB2(disc.Add(hf.Scale(0.35)).Add(up.Scale(-0.6)), hf, up, 0.35, 0.55, 0.32, rgba(40, 38, 36, 255)) // beak
+		s.addEllipsoid(disc.Add(hf.Scale(0.45)).Add(up.Scale(-0.6)), hf, up, 0.45, 0.6, 0.32, rgba(40, 38, 36, 255)) // beak
 		for i := 0; i < 5; i++ {
 			ang := 2.2 + float64(i)*0.45
-			p := hc.Add(hf.Scale(math.Cos(ang) * 2.9)).Add(hl.Scale(math.Sin(ang) * 2.9)).Add(up.Scale(0.8))
+			p := hc.Add(hf.Scale(math.Cos(ang) * 2.8)).Add(hl.Scale(math.Sin(ang) * 2.9)).Add(up.Scale(0.9))
 			s.addOBB2(p, hf, up, 0.2, 0.18, 0.4, speck)
 		}
 	})
