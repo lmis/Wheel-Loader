@@ -1,11 +1,14 @@
 # A bubblewrap FHS environment with everything the game needs in the usual
-# places (/usr/include, /usr/lib), so ./run.sh and go run . work unchanged:
-#   nix-shell fhs.nix        (or, with flakes: nix develop .#fhs)
-#   ./run.sh
+# places (/usr/include, /usr/lib), so ./run.sh and go run . work unchanged.
+#
+#   $(nix-build fhs.nix --no-out-link)/bin/wheel-loader-fhs ./run.sh
+#   nix run .#fhs -- ./run.sh                 (with flakes)
+#   nix-shell -A env fhs.nix                  (an interactive shell in it)
+#
 # The host's OpenGL driver (/run/opengl-driver on NixOS) is used as is.
 { pkgs ? import <nixpkgs> { } }:
 
-(pkgs.buildFHSEnv {
+pkgs.buildFHSEnv {
   name = "wheel-loader-fhs";
   targetPkgs = p: with p; [
     go
@@ -29,8 +32,12 @@
   ];
   # raylib's build needs the headers, which live in the -dev outputs
   extraOutputsToInstall = [ "dev" ];
-  runScript = "bash";
+  # with arguments, run them (e.g. ./run.sh); without, an interactive shell
+  runScript = pkgs.writeShellScript "wheel-loader-fhs-run" ''
+    if [ $# -eq 0 ]; then exec bash; fi
+    exec "$@"
+  '';
   profile = ''
     export WHEEL_LOADER_FHS=1
   '';
-}).env
+}
