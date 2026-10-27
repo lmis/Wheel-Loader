@@ -3,13 +3,12 @@ package main
 import (
 	"image/color"
 	"math"
-	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // coverTitle is the name on the cover art.
-const coverTitle = "Léo & Louis Ons|te" // the | is drawn as a traffic cone
+const coverTitle = "Léo & Louis Onsite"
 
 // stageCover sets up one still for the cover art: both kids out front with
 // their animal friends, the loaders behind them, a skater gliding past on
@@ -79,46 +78,107 @@ func (g *Game) stageCover(path string) {
 }
 
 // drawTitle writes the cover title across the bottom of the frame (the
-// helicopter has the sky) in chunky loader yellow with a dark outline. A "|"
-// in the title is drawn as a traffic cone standing in for the letter i.
+// helicopter has the sky) in chunky loader yellow with a dark outline. Each
+// lowercase i is a traffic cone and each lowercase o a wheel.
 func (g *Game) drawTitle(title string) {
 	f := g.art.Title
-	before, after, cone := strings.Cut(title, "|")
 	size := float64(f.size)
-	coneW := 0.0
-	if cone {
-		coneW = size * 0.5
-	}
 	gap := size * 0.03
-	w1 := textWidth(before, f)
-	total := w1 + textWidth(after, f)
-	if cone {
-		total += coneW + 2*gap
+	type piece struct {
+		text string
+		kind rune // 0: text, 'i': a cone, 'o': a wheel
+		x, w float64
+	}
+	var pieces []piece
+	run := ""
+	flush := func() {
+		if run != "" {
+			pieces = append(pieces, piece{text: run, w: textWidth(run, f)})
+			run = ""
+		}
+	}
+	for _, r := range title {
+		switch r {
+		case 'i':
+			flush()
+			pieces = append(pieces, piece{kind: 'i', w: size*0.5 + 2*gap})
+		case 'o':
+			flush()
+			pieces = append(pieces, piece{kind: 'o', w: textWidth("o", f) + 2*gap})
+		default:
+			run += string(r)
+		}
+	}
+	flush()
+	total := 0.0
+	for _, p := range pieces {
+		total += p.w
 	}
 	x := (screenW - total) / 2
+	for i := range pieces {
+		pieces[i].x = x
+		x += pieces[i].w
+	}
 	y := screenH - size - 40
-	x2 := x + w1 + coneW + 2*gap
 	ink := rgba(46, 30, 16, 255)
 	text := func(dx, dy float64, c color.RGBA) {
-		g.drawText(canvas{}, before, f, x+dx, y+dy, c)
-		if cone {
-			g.drawText(canvas{}, after, f, x2+dx, y+dy, c)
+		for _, p := range pieces {
+			if p.kind == 0 {
+				g.drawText(canvas{}, p.text, f, p.x+dx, y+dy, c)
+			}
+		}
+	}
+	shapes := func(grow, drop float64) {
+		for _, p := range pieces {
+			switch p.kind {
+			case 'i':
+				drawCone(p.x+gap, y, p.w-2*gap, size, grow, drop, ink)
+			case 'o':
+				drawWheel(p.x+gap, y, p.w-2*gap, size, grow, drop, ink)
+			}
 		}
 	}
 	for a := 0.0; a < 2*math.Pi; a += math.Pi / 8 {
 		text(math.Cos(a)*5, math.Sin(a)*5+3, ink)
 	}
-	if cone {
-		drawCone(x+w1+gap, y, coneW, size, 5, 3, ink)
-	}
+	shapes(5, 3)
 	text(0, 0, colLoader)
 	// a lighter band across the top of the letters
 	rl.BeginScissorMode(0, int32(y+10), screenW, int32(size*0.32))
 	text(0, 0, rgba(255, 222, 96, 255))
 	rl.EndScissorMode()
-	if cone {
-		drawCone(x+w1+gap, y, coneW, size, 0, 0, color.RGBA{})
+	shapes(0, 0)
+}
+
+// drawWheel draws a chunky tyre the size of a lowercase o in a line of text
+// of the given size whose glyph box starts at (x, y) and is w wide. With
+// grow > 0 it draws just the outline, as drawCone does.
+func drawWheel(x, y, w, size, grow, drop float64, ink color.RGBA) {
+	base := y + size*0.80 // the text baseline
+	r := w * 0.46
+	c := rl.NewVector2(float32(x+w/2), float32(base-r+drop))
+	if grow > 0 {
+		rl.DrawCircleV(c, float32(r+grow), rlc(ink))
+		return
 	}
+	tyre := rgba(42, 42, 48, 255)
+	rl.DrawCircleV(c, float32(r), rlc(tyre))
+	// chunky tread blocks round the rim
+	for k := 0; k < 12; k++ {
+		a := float64(k) * math.Pi / 6
+		p := rl.NewVector2(c.X+float32(math.Cos(a)*r*0.9), c.Y+float32(math.Sin(a)*r*0.9))
+		rl.DrawPoly(p, 4, float32(r*0.2), float32(a*180/math.Pi+45), rlc(tyre))
+	}
+	rl.DrawCircleV(c, float32(r*0.74), rlc(rgba(66, 66, 74, 255))) // sidewall
+	rl.DrawCircleV(c, float32(r*0.52), rlc(colLoader))             // the rim
+	rl.DrawCircleV(c, float32(r*0.4), rlc(rgba(214, 160, 18, 255)))
+	for k := 0; k < 5; k++ { // wheel nuts
+		a := float64(k)*2*math.Pi/5 - math.Pi/2
+		rl.DrawCircleV(rl.NewVector2(c.X+float32(math.Cos(a)*r*0.26), c.Y+float32(math.Sin(a)*r*0.26)), float32(r*0.06), rlc(rgba(90, 70, 20, 255)))
+	}
+	rl.DrawCircleV(c, float32(r*0.12), rlc(rgba(90, 70, 20, 255))) // hub cap
+	// a highlight across the top of the tyre
+	rl.DrawRing(c, float32(r*0.78), float32(r*0.92), 200, 250, 16, rlc(rgba(110, 110, 120, 200)))
 }
 
 // drawCone draws a traffic cone as tall as a t in a line of
