@@ -1,0 +1,66 @@
+<title>Little Dino Comes Home</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika&family=Fredoka:wght@500;700&display=swap">
+<style>
+  /* One picture book lying on a dark wooden table: the page fills the width,
+     with the keys underneath like a row of chunky keycaps. */
+  :root {
+    --table: #2b1c22;
+    --table-2: #3b2730;
+    --paper: #fffaf0;
+    --ink: #46282f;
+    --cap: #f6eedd;
+    --cap-edge: #c9b79c;
+    --glow: #ffd27a;
+    --display: "Fredoka", "Baloo 2", system-ui, sans-serif;
+    --body: "Andika", "Trebuchet MS", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(ellipse at 50% 30%, var(--table-2), var(--table) 70%);
+    color: var(--paper);
+    font-family: var(--body);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .book {
+    position: relative;
+    width: min(100%, calc((100vh - 120px) * 16 / 9));
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px 14px 14px 6px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55), 0 2px 0 6px #5a3a44, 0 2px 0 9px #2a181e;
+  }
+  #page { display: block; width: 100%; height: 100%; border-radius: inherit; outline: none; cursor: pointer; touch-action: manipulation; }
+  #page:focus-visible { box-shadow: 0 0 0 4px var(--glow); }
+  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+  .keys button, #mute {
+    font: 600 16px/1 var(--display);
+    color: var(--ink);
+    background: var(--cap);
+    border: 0; border-radius: 10px;
+    padding: 10px 16px 12px;
+    box-shadow: 0 4px 0 var(--cap-edge), 0 6px 10px rgba(0,0,0,0.35);
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .keys button small { display: block; font: 400 12px/1.2 var(--body); opacity: 0.7; margin-top: 3px; }
+  .keys button.wide { min-width: 110px; }
+  .keys button:active, .keys button.hit { transform: translateY(3px); box-shadow: 0 1px 0 var(--cap-edge), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys button:focus-visible, #mute:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
+  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font-size: 14px; }
+  @media (max-width: 600px) {
+    .keys { gap: 6px; }
+    .keys button { padding: 8px 10px 10px; font-size: 14px; }
+    .keys button small { display: none; }
+    .keys button.wide { min-width: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } }
+</style>
