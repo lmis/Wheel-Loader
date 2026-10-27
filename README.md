@@ -29,6 +29,10 @@ centre joint, and a bucket (lift + tilt) that scoops, carries, dumps, pushes
 and spills loose material; the helpers in `toddler.go` work the bucket, the
 dump body and the crane hook for the kids.
 
+There is also a second, smaller game in this repository: **Candy Factory**
+(`./run.sh candy`), a living storybook page with candy-munching robots and a
+hopping dino, played with Space, Enter and Ctrl. See [candy/README.md](candy/README.md).
+
 ## Running
 
 On Linux, clone it and run the script; it installs what is missing, builds
