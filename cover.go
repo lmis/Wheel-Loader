@@ -1,13 +1,15 @@
 package main
 
 import (
+	"image/color"
 	"math"
+	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // coverTitle is the name on the cover art.
-const coverTitle = "Léo & Louis onsite"
+const coverTitle = "Léo & Louis Ons|te" // the | is drawn as a traffic cone
 
 // stageCover sets up one still for the cover art: both kids out front with
 // their animal friends, the loaders behind them, a skater gliding past on
@@ -77,18 +79,82 @@ func (g *Game) stageCover(path string) {
 }
 
 // drawTitle writes the cover title across the bottom of the frame (the
-// helicopter has the sky) in chunky loader yellow with a dark outline.
+// helicopter has the sky) in chunky loader yellow with a dark outline. A "|"
+// in the title is drawn as a traffic cone standing in for the letter i.
 func (g *Game) drawTitle(title string) {
 	f := g.art.Title
-	x := (screenW - textWidth(title, f)) / 2
-	y := screenH - float64(f.size) - 40
-	ink := rgba(46, 30, 16, 255)
-	for a := 0.0; a < 2*math.Pi; a += math.Pi / 8 {
-		g.drawText(canvas{}, title, f, x+math.Cos(a)*5, y+math.Sin(a)*5+3, ink)
+	before, after, cone := strings.Cut(title, "|")
+	size := float64(f.size)
+	coneW := 0.0
+	if cone {
+		coneW = size * 0.5
 	}
-	g.drawText(canvas{}, title, f, x, y, colLoader)
+	gap := size * 0.03
+	w1 := textWidth(before, f)
+	total := w1 + textWidth(after, f)
+	if cone {
+		total += coneW + 2*gap
+	}
+	x := (screenW - total) / 2
+	y := screenH - size - 40
+	x2 := x + w1 + coneW + 2*gap
+	ink := rgba(46, 30, 16, 255)
+	text := func(dx, dy float64, c color.RGBA) {
+		g.drawText(canvas{}, before, f, x+dx, y+dy, c)
+		if cone {
+			g.drawText(canvas{}, after, f, x2+dx, y+dy, c)
+		}
+	}
+	for a := 0.0; a < 2*math.Pi; a += math.Pi / 8 {
+		text(math.Cos(a)*5, math.Sin(a)*5+3, ink)
+	}
+	if cone {
+		drawCone(x+w1+gap, y, coneW, size, 5, 3, ink)
+	}
+	text(0, 0, colLoader)
 	// a lighter band across the top of the letters
-	rl.BeginScissorMode(0, int32(y+10), screenW, int32(f.size*0.32))
-	g.drawText(canvas{}, title, f, x, y, rgba(255, 222, 96, 255))
+	rl.BeginScissorMode(0, int32(y+10), screenW, int32(size*0.32))
+	text(0, 0, rgba(255, 222, 96, 255))
 	rl.EndScissorMode()
+	if cone {
+		drawCone(x+w1+gap, y, coneW, size, 0, 0, color.RGBA{})
+	}
+}
+
+// drawCone draws a traffic cone as tall as a t in a line of
+// text of the given size whose glyph box starts at (x, y) and is w wide. With
+// grow > 0 it draws just the outline: the shape grown by that much in ink,
+// dropped by drop.
+func drawCone(x, y, w, size, grow, drop float64, ink color.RGBA) {
+	base := y + size*0.80 // the text baseline
+	top := y + size*0.15  // level with the t
+	foot := size * 0.08
+	cx := x + w/2
+	// trap fills a trapezoid between heights yt and yb, wt and wb wide there,
+	// centred on cx+dx
+	trap := func(yt, yb, wt, wb, dx float64, c color.RGBA) {
+		tl := rl.NewVector2(float32(cx+dx-wt/2-grow), float32(yt-grow+drop))
+		tr := rl.NewVector2(float32(cx+dx+wt/2+grow), float32(yt-grow+drop))
+		bl := rl.NewVector2(float32(cx+dx-wb/2-grow), float32(yb+grow+drop))
+		br := rl.NewVector2(float32(cx+dx+wb/2+grow), float32(yb+grow+drop))
+		rl.DrawTriangle(tl, bl, br, rlc(c))
+		rl.DrawTriangle(tl, br, tr, rlc(c))
+	}
+	wb, wt := w*0.78, w*0.2 // the body's width at its foot and its tip
+	yb := base - foot
+	if grow > 0 {
+		trap(yb, base, w, w, 0, ink)
+		trap(top, yb, wt, wb, 0, ink)
+		return
+	}
+	trap(yb, base, w, w, 0, rgba(60, 60, 66, 255)) // the square foot
+	trap(top, yb, wt, wb, 0, rgba(255, 112, 24, 255))
+	// two white reflective bands
+	width := func(t float64) float64 { return wb + (wt-wb)*t } // t: 0 foot, 1 tip
+	height := func(t float64) float64 { return yb - (yb-top)*t }
+	for _, b := range [][2]float64{{0.2, 0.36}, {0.54, 0.68}} {
+		trap(height(b[1]), height(b[0]), width(b[1]), width(b[0]), 0, rgba(250, 248, 240, 255))
+	}
+	// sunlight down the left side
+	trap(top, yb, wt*0.3, wb*0.3, -(wt+wb)/4*0.55, rgba(255, 160, 90, 140))
 }
