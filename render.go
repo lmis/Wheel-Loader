@@ -40,6 +40,9 @@ func (g *Game) render() {
 		}
 		panel(canvas{}, vw-2, 0, 4, screenH, rgba(18, 20, 24, 255))
 	}
+	if g.title != "" {
+		g.drawTitle(g.title)
+	}
 	g.drawGlobalHUD(canvas{})
 	rl.EndTextureMode()
 	g.cam = g.players[0].cam

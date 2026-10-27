@@ -56,6 +56,8 @@ type Game struct {
 	tour     []tourStop   // static landmark views for verification
 	script   []scriptStep // staged scenes for verification screenshots
 	scripted bool
+	frozen   bool   // hold the simulation still (the cover)
+	title    string // drawn over the frame (the cover)
 }
 
 type tourStop struct {
@@ -175,7 +177,7 @@ func (g *Game) Update() error {
 	if steps < 1 {
 		steps = 1
 	}
-	for s := 0; s < steps; s++ {
+	for s := 0; s < steps && !g.frozen; s++ {
 		g.step(fixedDT)
 	}
 

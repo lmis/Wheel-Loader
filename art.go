@@ -21,6 +21,7 @@ type Face struct {
 // Art holds the fonts.
 type Art struct {
 	Small, Mid, Big, Bold *Face
+	Title                 *Face // the cover title
 }
 
 func NewArt() *Art {
@@ -29,17 +30,21 @@ func NewArt() *Art {
 		Mid:   &Face{ttf: goregular.TTF, size: 17},
 		Big:   &Face{ttf: gobold.TTF, size: 26},
 		Bold:  &Face{ttf: gobold.TTF, size: 15},
+		Title: &Face{ttf: gobold.TTF, size: 84},
 	}
 }
 
-// load rasterises the fonts (ASCII and the em dash) at twice their size for
-// crisp scaling.
+// load rasterises the fonts (ASCII, Latin-1 accents such as the é in Léo,
+// and the em dash) at twice their size for crisp scaling.
 func (a *Art) load() {
 	runes := []rune{'—'}
 	for r := rune(32); r < 127; r++ {
 		runes = append(runes, r)
 	}
-	for _, f := range []*Face{a.Small, a.Mid, a.Big, a.Bold} {
+	for r := rune(0xC0); r <= 0xFF; r++ {
+		runes = append(runes, r)
+	}
+	for _, f := range []*Face{a.Small, a.Mid, a.Big, a.Bold, a.Title} {
 		f.font = rl.LoadFontFromMemory(".ttf", f.ttf, int32(f.size*2), runes)
 		rl.SetTextureFilter(f.font.Texture, rl.FilterBilinear)
 	}

@@ -25,6 +25,7 @@ func main() {
 	doggo := flag.Bool("doggo", false, "single screen: the two dogs come along")
 	owl := flag.Bool("owl", false, "single screen: the owl and the chimp come along (the default)")
 	singleDir := flag.String("single-scenes", "", "capture single-screen play to this dir, then exit")
+	coverFile := flag.String("cover", "", "render the cover art to this PNG file, then exit")
 	flag.Parse()
 
 	if *cpuProfile != "" {
@@ -40,7 +41,7 @@ func main() {
 
 	g := NewGame()
 	_ = *owl
-	if !*split && *scenesDir == "" && *studioDir == "" && *tourDir == "" {
+	if !*split && *scenesDir == "" && *studioDir == "" && *tourDir == "" && *coverFile == "" {
 		companions := companionsOwl
 		if *doggo {
 			companions = companionsDogs
@@ -52,6 +53,12 @@ func main() {
 			log.Fatal(err)
 		}
 		g.stageSingleScenes(*singleDir)
+	}
+	if *coverFile != "" {
+		if err := os.MkdirAll(filepath.Dir(*coverFile), 0o755); err != nil {
+			log.Fatal(err)
+		}
+		g.stageCover(*coverFile)
 	}
 	if *frames > 0 {
 		g.exitFrame = *frames
@@ -85,7 +92,7 @@ func main() {
 		g.exitFrame = 136
 	}
 
-	headless := *scenesDir != "" || *studioDir != "" || *tourDir != "" || *singleDir != ""
+	headless := *scenesDir != "" || *studioDir != "" || *tourDir != "" || *singleDir != "" || *coverFile != ""
 	flags := uint32(rl.FlagWindowResizable | rl.FlagVsyncHint | rl.FlagMsaa4xHint)
 	if headless {
 		flags = rl.FlagWindowHidden

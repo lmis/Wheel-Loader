@@ -1,5 +1,7 @@
 # Wheel Loader — Construction Site
 
+![Léo & Louis onsite](assets/cover.png)
+
 A **3D** construction-site game for two small kids on one keyboard. Each kid
 has their own **articulated wheel loader**, dump truck and tower crane, and
 plays with four direction keys and one button. Built in Go with
@@ -194,6 +196,7 @@ go run . -single-scenes ./shots  # headless: capture single-screen play
 go run . -scenes ./shots -only crane  # just the scenes whose name matches
 go run . -tour ./shots      # headless: static views of site landmarks
 go run . -studio ./shots    # headless: contact sheets of every character in every pose
+go run . -cover cover.png   # headless: the cover art, Léo & Louis onsite
 go run . -cpuprofile cpu.prof  # write a CPU profile (combine with any mode)
 ```
 
