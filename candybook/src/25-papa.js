@@ -85,8 +85,8 @@ class PapaPage extends StoryPage {
     // the ramp, rolling in under them
     const tx = p.x + 60;
     drawTrolley(tx, 650, t, [
-      () => { this.leo.x = tx + 48; this.leo.y = 616; this.leo.draw(); },
-      () => { this.louis.x = tx + 104; this.louis.y = 616; this.louis.draw(); },
+      () => { this.leo.x = tx + 40; this.leo.y = art('prop-trolley') ? 528 : 616; this.leo.draw(); },
+      () => { this.louis.x = tx + 110; this.louis.y = art('prop-trolley') ? 528 : 616; this.louis.draw(); },
     ], this.scroll / 9);
     p.rot = -wheelie * 14;
     p.draw({ reach: !p.is('spin') && !p.is('talk'), skateSpin: this.scroll / 6 });

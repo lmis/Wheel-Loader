@@ -78,6 +78,14 @@ function drawRails(y, x0 = 0, x1 = W) {
 }
 // Papa's trolley, a wire basket on glowing wheels; the twins ride inside
 function drawTrolley(x, y, t, kids, spin = t * 14) {
+  const tr = art('prop-trolley');
+  if (tr) { // the painted trolley, handle at the back (left), twins inside the basket, red glow under the feet
+    const w = 250, h = w * tr.naturalHeight / tr.naturalWidth, x0 = x - 70;
+    for (const wx of [x0 + 52, x0 + 222]) glow(wx, y - 4, 34, '#ff3c3c', 0.45);
+    for (const k of kids) k();
+    ctx.drawImage(tr, x0, y - h, w, h);
+    return;
+  }
   const tl = 150, top = y - 110;
   line(x + tl - 10, top + 10, x + tl + 30, top - 30, 6, '#9a9ab4');
   for (const wx of [x + 20, x + tl - 20]) { glow(wx, y - 8, 30, '#ff3c3c', 0.4); circ(wx, y - 8, 9, '#ff4646', 2.5); line(wx, y - 8, wx + Math.cos(spin) * 6, y - 8 + Math.sin(spin) * 6, 2, '#ffd0d0', 0); }

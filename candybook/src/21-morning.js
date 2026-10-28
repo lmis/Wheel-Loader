@@ -66,7 +66,7 @@ class MorningPage extends StoryPage {
     const pan = art('prop-pan'), cake = art('prop-pancake-side');
     const px = hx + dir * 112, ph = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * 230 : 0;
     if (pan && cake) { // the painted pan, handle in Papa's hand, and the pancake flying up
-      push(hx, hy, tip * 57.3 * dir, -dir, 1);
+      push(hx, hy, tip * 57.3 * dir, dir, 1); // handle in his hand, the pan out in front of him
       ctx.drawImage(pan, -14, -28, 190, 190 * pan.naturalHeight / pan.naturalWidth);
       pop();
       push(px, hy - 22 - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ctx.drawImage(cake, -34, -13, 68, 26); pop();
