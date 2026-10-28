@@ -55,9 +55,12 @@ class TuckPage extends StoryPage {
   draw() {
     const st = this.st, t = st.t, A = this.acts;
     const dark = A.on('lamp') ? ease(A.t('lamp') / 0.4) * (1 - ease((A.t('lamp') - 5.4) / 0.5)) : 0;
-    drawRoom('#5a5aa0', '#7a74b4', '#b47c5a', '#9a6448');
-    ctx.globalAlpha = 0.22; for (let x = 30; x < W; x += 90) for (let y = 150; y < 560; y += 90) star(x + (y / 90 % 2) * 45, y, 7, 0, 5, '#fff3c8', 0); ctx.globalAlpha = 1;
-    drawWindow(120, 150, 210, 210, '#1e2456', () => { drawStars(this.stars, t); drawMoon(270, 220, 34, t, 0); });
+    const bg = art('bg-14-tuck-in'); if (bg) drawArt(bg);
+    if (!bg) {
+      drawRoom('#5a5aa0', '#7a74b4', '#b47c5a', '#9a6448');
+      ctx.globalAlpha = 0.22; for (let x = 30; x < W; x += 90) for (let y = 150; y < 560; y += 90) star(x + (y / 90 % 2) * 45, y, 7, 0, 5, '#fff3c8', 0); ctx.globalAlpha = 1;
+      drawWindow(120, 150, 210, 210, '#1e2456', () => { drawStars(this.stars, t); drawMoon(270, 220, 34, t, 0); });
+    }
     // the mobile over the beds
     const spin = A.on('mobile') ? t * 2.4 : t * 0.35;
     line(640, 0, 640, 150, 2, INK, 0); rrect(530, 148, 220, 8, 4, '#c8965a', 2.5);
@@ -69,7 +72,9 @@ class TuckPage extends StoryPage {
     this.drawBed(470, LEO_COLS, '#7c8cf0', this.blinkA < 0, false);
     this.drawBed(810, LOUIS_COLS, '#ff8cb4', this.blinkB < 0, true);
     // Papa leaning in the doorway, Mama between the beds
-    rrect(1100, 300, 140, 310, 12, '#ffd88a'); glow(1170, 450, 140, '#ffd27a', 0.3);
+    if (!bg) {
+      rrect(1100, 300, 140, 310, 12, '#ffd88a'); glow(1170, 450, 140, '#ffd27a', 0.3);
+    }
     this.papa.draw();
     this.mama.draw();
     if (dark > 0) {

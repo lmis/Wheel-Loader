@@ -41,24 +41,29 @@ class HomeAgainPage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    rect(0, 0, W, H, grad(0, 0, 0, 560, ['#18204e', '#2e3c7a', '#4a5490']));
-    drawStars(this.stars, t);
+    const bg = art('bg-13-home'); if (bg) drawArt(bg);
+    if (!bg) {
+      rect(0, 0, W, H, grad(0, 0, 0, 560, ['#18204e', '#2e3c7a', '#4a5490']));
+      drawStars(this.stars, t);
+    }
     drawMoon(180, 180, 46, t, 0.6);
     // the robots fly away into the night
     if (A.on('byebots')) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => { const x = lerp(300, 1400, k) + i * 60, y = lerp(260, 120, k) + Math.sin(t * 4 + i) * 10; glow(x, y, 26, '#a0ffd2', 0.6); rrect(x - 12, y - 12, 24, 24, 6, LOOKS[i].col, 2); line(x + 12, y - 4, x + 22 + Math.sin(t * 14) * 4, y - 22, 3, '#aaaabe', 2); }); }
     else if (t < 3) { const k = t / 3; [0, 1, 2].forEach(i => { const x = lerp(200, 900, k) + i * 50, y = lerp(160, 90, k); glow(x, y, 20, '#a0ffd2', 0.5 * (1 - k)); }); }
     // the house: a warm open doorway in the middle
-    rect(0, 560, W, H - 560, grad(0, 560, 0, H, ['#4e8a68', '#3c7058']));
-    rect(760, 200, 520, 400, '#f5e6c8'); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(760, 200, 523, 400);
-    poly([730, 210, W + 40, 210, 1050, 70], '#d2505a');
-    rrect(1040, 120, 40, 70, 4, '#a05a50');
-    const open = A.on('door') ? 1 : 0.85;
-    glow(860, 470, 200, '#ffd27a', 0.5 * open);
-    rrect(800, 340, 120, 260, 16, '#ffd88a');
-    rrect(1120, 330, 110, 100, 10, '#ffe08a'); line(1175, 330, 1175, 430, 4, INK, 0);
-    ctx.globalAlpha = 0.3 * open; poly([800, 600, 920, 600, 1000, H, 640, H], '#ffe9a8', 0); ctx.globalAlpha = 1;
-    // path
-    for (let i = 0; i < 5; i++) ell(700 - i * 130, 630 + i * 10, 40, 10, '#b4aab4', 2.5);
+    if (!bg) {
+      rect(0, 560, W, H - 560, grad(0, 560, 0, H, ['#4e8a68', '#3c7058']));
+      rect(760, 200, 520, 400, '#f5e6c8'); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(760, 200, 523, 400);
+      poly([730, 210, W + 40, 210, 1050, 70], '#d2505a');
+      rrect(1040, 120, 40, 70, 4, '#a05a50');
+      const open = A.on('door') ? 1 : 0.85;
+      glow(860, 470, 200, '#ffd27a', 0.5 * open);
+      rrect(800, 340, 120, 260, 16, '#ffd88a');
+      rrect(1120, 330, 110, 100, 10, '#ffe08a'); line(1175, 330, 1175, 430, 4, INK, 0);
+      ctx.globalAlpha = 0.3 * open; poly([800, 600, 920, 600, 1000, H, 640, H], '#ffe9a8', 0); ctx.globalAlpha = 1;
+      // path
+      for (let i = 0; i < 5; i++) ell(700 - i * 130, 630 + i * 10, 40, 10, '#b4aab4', 2.5);
+    }
     st.draw(0);
     this.papa.draw();
     this.mama.draw(); this.leo.draw(); this.louis.draw();
