@@ -9,6 +9,7 @@ class CoverPage extends StoryPage {
     this.louis = louis(this.st, { x: 690, y: 660, face: -1 });
     this.cast = [this.mama, this.papa, this.leo, this.louis];
     this.stars = makeStars(40, 0, W, 20, 300);
+    this.flies = makeFlies(12, 40, W - 40, 470, 690);
   }
   act(a) {
     if (a === 'letters') { sfx('boing', 0.7, 1.3); this.st.sparkles(640, 200, 16, 300); }
@@ -17,15 +18,31 @@ class CoverPage extends StoryPage {
   }
   draw() {
     const t = this.st.t, A = this.acts;
-    rect(0, 0, W, H, grad(0, 0, 0, H, ['#2f3a7c', '#8a6fc0', '#ff9fb0', '#ffd08a']));
-    drawStars(this.stars, t, 0.8);
-    drawCity(t, 560, '#6a5a9c', 0.5, 1.3);
-    // the office tower on the left, the house on the right
-    rect(80, 140, 140, 420, '#5a6aa8'); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(80, 140, 140, 420);
-    for (let r = 0; r < 13; r++) for (let c = 0; c < 4; c++) rect(92 + c * 32, 154 + r * 31, 22, 20, (r + c) % 3 ? 'rgba(255,224,140,0.8)' : '#7c8cc8');
-    ctx.beginPath(); ctx.moveTo(0, 580); ctx.quadraticCurveTo(640, 520, W, 580); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); paint('#6faa7a', 3);
-    rect(1010, 430, 150, 120, '#f5e6c8'); ctx.strokeStyle = INK; ctx.strokeRect(1010, 430, 150, 120); poly([995, 434, 1175, 434, 1085, 350], '#d2505a');
-    rrect(1030, 460, 34, 34, 5, '#ffe08a'); glow(1047, 477, 50, '#ffd27a', 0.5); rrect(1090, 480, 40, 70, 18, '#5aa06e');
+    const bg = art('bg-00-cover');
+    if (bg) {
+      drawArt(bg);
+      // small living touches placed on the painting itself
+      const k = W / 1672;
+      glow(165 * k, 233 * k, 22, '#ff4040', 0.35 + 0.35 * Math.max(0, Math.sin(t * 3)));
+      glow(1515 * k, 516 * k, 40, '#ffd27a', 0.35 + 0.1 * Math.sin(t * 2.3));
+      glow(1470 * k, 532 * k, 30, '#ffd27a', 0.3 + 0.08 * Math.sin(t * 1.7 + 1));
+      for (const [x, y, ph] of [[155, 72, 0], [415, 66, 1.3], [1142, 70, 2.1], [1492, 46, 0.7], [1372, 96, 2.9], [60, 115, 1.8]]) {
+        const a = 0.5 + 0.5 * Math.sin(t * 2 + ph);
+        ctx.globalAlpha = a; star(x * k, y * k, 5 + 3 * a, t * 0.3 + ph, 4, '#fff6c8', 0); ctx.globalAlpha = 1;
+      }
+      updateFlies(this.flies, t, 1 / 60);
+      drawFlies(this.flies, t);
+    } else {
+      rect(0, 0, W, H, grad(0, 0, 0, H, ['#2f3a7c', '#8a6fc0', '#ff9fb0', '#ffd08a']));
+      drawStars(this.stars, t, 0.8);
+      drawCity(t, 560, '#6a5a9c', 0.5, 1.3);
+      // the office tower on the left, the house on the right
+      rect(80, 140, 140, 420, '#5a6aa8'); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(80, 140, 140, 420);
+      for (let r = 0; r < 13; r++) for (let c = 0; c < 4; c++) rect(92 + c * 32, 154 + r * 31, 22, 20, (r + c) % 3 ? 'rgba(255,224,140,0.8)' : '#7c8cc8');
+      ctx.beginPath(); ctx.moveTo(0, 580); ctx.quadraticCurveTo(640, 520, W, 580); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); paint('#6faa7a', 3);
+      rect(1010, 430, 150, 120, '#f5e6c8'); ctx.strokeStyle = INK; ctx.strokeRect(1010, 430, 150, 120); poly([995, 434, 1175, 434, 1085, 350], '#d2505a');
+      rrect(1030, 460, 34, 34, 5, '#ffe08a'); glow(1047, 477, 50, '#ffd27a', 0.5); rrect(1090, 480, 40, 70, 18, '#5aa06e');
+    }
     const title = ['Mama', 'Comes Home'];
     title.forEach((ln, r) => {
       ctx.font = '700 110px Fredoka, "Baloo 2", system-ui, sans-serif';

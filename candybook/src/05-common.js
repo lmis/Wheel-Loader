@@ -85,3 +85,19 @@ function drawBird(x, y, s, flap, col = '#6482d2', face = 1) {
   ell(-2, 3, 7, 5, shade(col, 0.4), 0);
   pop();
 }
+
+// ---- painted pictures ----
+// art(name) gives the painted picture from art/<name>.jpg once it has
+// loaded, or null; pages fall back to drawing the scene themselves.
+const ART_IMG = {};
+function art(name) {
+  if (typeof ART === 'undefined' || !ART[name]) return null;
+  let im = ART_IMG[name];
+  if (!im) { im = new Image(); im.src = ART[name]; ART_IMG[name] = im; }
+  return im.complete && im.naturalWidth ? im : null;
+}
+// drawArt fills the page with a picture, cropping the edges if its shape differs
+function drawArt(im) {
+  const s = Math.max(W / im.naturalWidth, H / im.naturalHeight), w = im.naturalWidth * s, h = im.naturalHeight * s;
+  ctx.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+}
