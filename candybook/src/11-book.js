@@ -4,7 +4,7 @@ const TEXT_DELAY = 0.25, TEXT_WPS = 9;
 const LABEL = {
   letters: 'Bouncy letters', cheer: 'Cheer!', familywave: 'Wave hello',
   pancake: 'Flip a pancake', toast: 'Toast pops', kettle: 'Kettle whistles', wave: 'Wave bye-bye', giggle: 'Giggle', spoons: 'Bang the spoons',
-  kiss: 'Kisses', bye: 'See you tonight', twirl: 'Twirl',
+  kiss: 'Kisses', kissLeo: 'Kiss Léo', kissLouis: 'Kiss Louis', kissPapa: 'Kiss Papa', bye: 'See you tonight', twirl: 'Twirl',
   whistle: 'Choo choo!', chug: 'Chugga chugga', hearts: 'Heart puffs', conductor: 'All aboard!', pigeons: 'Pigeons fly', clock: 'Station clock', peek: 'Peek out',
   zoom: 'Zoom!', lights: 'Light the windows', blimp: 'Blimp', washer: 'Window washer', birds: 'Birds fly by', copter: 'Helicopter', press: 'Press the button', hello: 'Hello!', wow: 'Wow!',
   copier: 'Paper blizzard', planes: 'Paper planes', coffee: 'Coffee fountain', dance: 'Robot disco', heads: 'Boing heads', burp: 'Robot burps',
@@ -23,7 +23,7 @@ const LABEL = {
 // made of small things (characters moving, hearts, steam, a pancake)
 const BUTTONS = {
   cover: ['letters', 'cheer', 'familywave'],
-  morning: ['pancake', 'toast', 'kettle', 'wave', 'giggle', 'kiss'],
+  morning: ['pancake', 'wave', 'giggle', 'kissLeo', 'kissLouis', 'kissPapa'],
   station: ['whistle', 'hearts', 'pigeons', 'wave', 'peek', 'kiss'],
   tower: ['birds', 'hello', 'wow'],
   office: ['planes', 'copier', 'dance', 'heads', 'boss', 'tidy'],

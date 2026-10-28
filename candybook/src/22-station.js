@@ -60,7 +60,7 @@ class StationPage extends StoryPage {
         pop();
       } else {
         push(x - peek * 6, y - 10 - peek * 26, -peek * 14, -0.55, 0.55);
-        drawDinoHead({ t, cols: MAMA_COLS, bow: true, open: waving || kissing ? 0.4 : 0, blink: false });
+        drawFace(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, open: waving || kissing ? 0.4 : 0, blink: false });
         pop();
         if (waving) line(x - 18, y + 4, x - 36 + Math.sin(t * 14) * 6, y - 40, 6, MAMA_COLS.body);
       }

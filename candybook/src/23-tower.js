@@ -61,7 +61,7 @@ class TowerPage extends StoryPage {
     rect(lx - 6, 70, 12, 650, '#4a5a90'); line(lx + 70, 70, lx + 70, ly - 80, 2, INK, 0);
     rrect(lx + 10, ly - 80, 120, 110, 12, 'rgba(220,240,255,0.6)'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.beginPath(); ctx.roundRect(lx + 10, ly - 80, 120, 110, 12); ctx.stroke();
     push(lx + 70, ly + 26, 0, -0.55, 0.55);
-    drawDino({ t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, reach: A.on('press'), cheer: A.on('wow'), blink: false, arm: 0 });
+    drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, reach: A.on('press'), cheer: A.on('wow'), blink: false, arm: 0 });
     pop();
     rect(lx + 10, ly + 30, 120, 10, '#4a5a90');
     // birds and the little helicopter

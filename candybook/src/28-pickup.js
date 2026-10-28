@@ -18,9 +18,10 @@ class PickupPage extends PapaPage {
     const st = this.st, t = st.t;
     this.drawStreet(t);
     // the sun going down behind the houses, and the daycare sign rolling away
-    glow(1000, 420, 220, '#ffe08a', 0.4);
+    const painted = art('bg-08-street-sunset');
+    if (!painted) glow(1000, 420, 220, '#ffe08a', 0.4);
     const sx = 900 - Math.min(this.scroll * 0.5, 1400);
-    if (sx > -300) { rrect(sx, 300, 220, 220, 10, '#ffd2e6'); word('DAYCARE', sx + 110, 330, 30, 0, '#ff6e9a'); rrect(sx + 80, 420, 60, 100, 20, '#5aa06e'); }
+    if (sx > -300 && !painted) { rrect(sx, 300, 220, 220, 10, '#ffd2e6'); word('DAYCARE', sx + 110, 330, 30, 0, '#ff6e9a'); rrect(sx + 80, 420, 60, 100, 20, '#5aa06e'); }
     const A = this.acts;
     if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
     if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; ell(x, 660, 90, 14, '#e6a07a', 2.5); }

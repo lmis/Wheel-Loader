@@ -116,6 +116,14 @@
     // only as many colour buttons as this page has tricks
     const n = Book.buttons().length;
     document.querySelectorAll('[data-slot]').forEach(b => { b.hidden = +b.dataset.slot >= n; });
+    // a picture of what the button does, where the page has them (page 1 for now)
+    const names = Book.buttons(), pg = Book.page().name;
+    document.querySelectorAll('[data-slot]').forEach(b => {
+      const src = typeof ART !== 'undefined' && ART[`btn-${pg}-${names[+b.dataset.slot]}`];
+      b.classList.toggle('pic', !!src);
+      b.style.backgroundImage = src ? `url(${src})` : '';
+      b.setAttribute('aria-label', LABEL[names[+b.dataset.slot]] || `Button ${+b.dataset.slot + 1}`);
+    });
   }, 200);
   const mute = document.getElementById('mute');
   mute.addEventListener('click', () => {

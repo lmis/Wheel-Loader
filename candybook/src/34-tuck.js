@@ -42,7 +42,7 @@ class TuckPage extends StoryPage {
     if (!painted) { rrect(x - 130, 420, 26, 200, 12, '#c8965a');
     ell(x - 70, 470, 60, 26, '#fffaf0'); }
     push(x - 66 + wig * 0.3, 446, -10 + wig, 0.75, 0.75);
-    drawDinoHead({ t, cols, hair: true, open, blink, sleepy: open > 0.3 ? 0 : sleepy });
+    drawFace(cols === LEO_COLS ? LEO_RIG : LOUIS_RIG, { t, cols, hair: true, open, blink, sleepy: open > 0.3 ? 0 : sleepy });
     pop();
     if (painted) return;
     const tuck = A.on('blanket') ? Math.sin(Math.PI * clamp(A.t('blanket') / 2, 0, 1)) * 10 : 0;

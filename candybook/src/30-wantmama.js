@@ -69,7 +69,7 @@ class WantMamaPage extends StoryPage {
       const [hx, hy] = this.papa.head();
       rrect(hx - 64, hy + 10, 30, 50, 6, '#3c3c50');
       const k = clamp((A.t('phone') - 0.8) * 3, 0, 1) * clamp((4 - A.t('phone')) * 3, 0, 1);
-      if (k > 0) { push(hx - 120, hy - 120, 0, k, k); rrect(-70, -60, 140, 110, 20, '#fff6ea'); push(0, 10, 0, 0.7, 0.7); drawDinoHead({ t, cols: MAMA_COLS, bow: true, open: 0.3 + 0.3 * Math.sin(t * 20) }); pop(); poly([30, 50, 60, 50, 60, 80], '#fff6ea', 0); pop(); }
+      if (k > 0) { push(hx - 120, hy - 120, 0, k, k); rrect(-70, -60, 140, 110, 20, '#fff6ea'); push(0, 10, 0, 0.7, 0.7); drawFace(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, open: 0.3 + 0.3 * Math.sin(t * 20) }); pop(); poly([30, 50, 60, 50, 60, 80], '#fff6ea', 0); pop(); }
     }
     if (A.on('story')) { const [hx, hy] = this.papa.head(); poly([hx - 90, hy + 50, hx - 40, hy + 40, hx - 40, hy + 80, hx - 90, hy + 86], '#fffaf0'); poly([hx - 40, hy + 40, hx + 10, hy + 50, hx + 10, hy + 86, hx - 40, hy + 80], '#fffaf0'); }
     this.finish();

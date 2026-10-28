@@ -30,8 +30,12 @@ class MeetingPage extends OfficePage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    drawRoom('#e8e0f5', '#d4caec', '#a89ac8', '#9488b8', 620);
-    drawWindow(60, 130, 200, 180, grad(0, 130, 0, 310, ['#ffc88c', '#ffe6c0']), () => { drawCity(t, 320, '#c8a0b4', 0.3, 3); });
+    const bg = art('bg-07-meeting');
+    if (bg) drawArt(bg);
+    else {
+      drawRoom('#e8e0f5', '#d4caec', '#a89ac8', '#9488b8', 620);
+      drawWindow(60, 130, 200, 180, grad(0, 130, 0, 310, ['#ffc88c', '#ffe6c0']), () => { drawCity(t, 320, '#c8a0b4', 0.3, 3); });
+    }
     // the clock, with its cuckoo
     const ck = A.on('cuckoo') ? Math.sin(Math.PI * clamp(A.t('cuckoo') / 2, 0, 1)) : 0;
     rrect(1130, 140, 80, 100, 16, '#a06950'); circ(1170, 200, 26, WHITE, 3);
@@ -47,8 +51,8 @@ class MeetingPage extends OfficePage {
       circ(530, 250, 60, '#c8c8d7'); poly([480, 210, 490, 160, 520, 200], '#c8c8d7'); poly([580, 210, 570, 160, 540, 200], '#c8c8d7');
       rrect(500, 230, 60, 16, 6, '#8cffc8', 0); word('MEOW.EXE', 530, 340, 22, 0, '#5a5a6e');
     } else if (this.slide === 2) { // Léo and Louis!
-      push(470, 320, 0, 0.7, 0.7); drawDinoHead({ t, cols: LEO_COLS, hair: true, open: 0.3 }); pop();
-      push(600, 320, 0, -0.7, 0.7); drawDinoHead({ t, cols: LOUIS_COLS, hair: true, open: 0.3 }); pop();
+      push(470, 320, 0, 0.7, 0.7); drawFace(LEO_RIG, { t, cols: LEO_COLS, hair: true, open: 0.3 }); pop();
+      push(600, 320, 0, -0.7, 0.7); drawFace(LOUIS_RIG, { t, cols: LOUIS_COLS, hair: true, open: 0.3 }); pop();
       heart(535, 200, 18, '#ff6082');
     } else { word('LUNCH?', 530, 245, 64, 0, '#ffa03c'); }
     // the long table; robots sit behind it
@@ -61,8 +65,8 @@ class MeetingPage extends OfficePage {
     const lift = this.mama.is('reach') ? 40 : 0;
     push(300, 500 - lift, lift ? -8 : 0);
     rrect(-34, -44, 68, 50, 6, '#ffd25a'); rrect(-28, -38, 56, 38, 3, '#cdeeff');
-    push(-12, -12, 0, 0.3, 0.3); drawDinoHead({ t, cols: LEO_COLS, hair: true }); pop();
-    push(12, -12, 0, -0.3, 0.3); drawDinoHead({ t, cols: LOUIS_COLS, hair: true }); pop();
+    push(-12, -12, 0, 0.3, 0.3); drawFace(LEO_RIG, { t, cols: LEO_COLS, hair: true }); pop();
+    push(12, -12, 0, -0.3, 0.3); drawFace(LOUIS_RIG, { t, cols: LOUIS_COLS, hair: true }); pop();
     pop();
     if (A.on('idea')) { const k = A.t('idea'); glow(230, 400, 70, '#fff3a0', 0.7 * Math.sin(Math.PI * clamp(k / 2.4, 0, 1))); circ(230, 400, 18, '#fff3a0', 3); rrect(222, 418, 16, 10, 3, '#c8c8d7'); }
     st.draw(0); st.draw(1);

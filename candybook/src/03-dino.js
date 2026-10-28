@@ -377,6 +377,8 @@ class Puppet {
     }
     if (this.sleeping) o.blink = true;
     const gy = this.y;
+    const page = ctx.getTransform();
+    o.handOut = p => { const q = page.inverse().transformPoint(p); this.hand = [q.x, q.y]; };
     if (!this.noShadow) ell(this.x, gy + 4, 50 * this.scale, 9 * this.scale, 'rgba(70,40,47,0.2)', 0);
     push(this.x, gy + this.jy + bob, 0, this.face * sx * this.scale, sy * this.scale);
     if (rot) { ctx.translate(0, -55); ctx.rotate(rot * Math.PI / 180); ctx.translate(0, 55); }
@@ -466,6 +468,12 @@ function drawRig(rig, o) {
   rigPiece(rig, rigImg(rig, 'head-' + face), 'head', 'head', (o.noseUp || 0) + Math.sin(t * 1.3) * 2, 0, bob);
   if (o.bag && rig.at.bag) rigPiece(rig, rigImg(rig, 'bag'), 'bag', 'arm', Math.sin(t * 2) * 3);
   if (o.helmet) rigPiece(rig, rigImg(rig, 'helmet'), 'helmet', 'head', (o.noseUp || 0) + Math.sin(t * 1.3) * 2, 0, bob);
+  if (o.handOut) { // where the near hand ends up, for things held in it
+    const [ax, ay, as = 1] = rig.at.arm, w = arm.naturalWidth * as, h = arm.naturalHeight * as, [px, py] = rig.pivot.arm;
+    ctx.save(); ctx.translate(ax + w * px, ay + h * py); ctx.rotate(armRot * Math.PI / 180);
+    o.handOut(ctx.getTransform().transformPoint(new DOMPoint(w * (0.82 - px), h * (0.72 - py))));
+    ctx.restore();
+  }
   rigPiece(rig, arm, 'arm', 'arm', armRot);
   ctx.restore();
 }
@@ -487,3 +495,24 @@ function drawRigSkate(rig, legKey, t, spin = t * 12, dark = 0) {
   ctx.drawImage(boot, bx, by, bw, bh);
   ctx.restore();
 }
+
+// ---------- painted heads and bodies outside a puppet ----------
+// drawFace draws a character's head centred on 0,0 in the current frame,
+// about as big as the drawn head; painted when the rig's pictures are in.
+function rigFace(rig, o) {
+  if (o.kiss && rig.heads.includes('kiss')) return 'kiss';
+  if (o.sad && rig.heads.includes('sad')) return 'sad';
+  if ((o.open || 0) > 0.55) return 'wide';
+  if ((o.open || 0) > 0.12) return 'talk';
+  if (o.blink || o.sleepy > 0.9) return 'blink';
+  if (o.sleepy > 0.3) return 'sleepy';
+  return 'happy';
+}
+function drawFace(rig, o) {
+  const img = rig && rigReady(rig) && rigImg(rig, 'head-' + rigFace(rig, o));
+  if (!img) { drawDinoHead(o); return; }
+  const s = 100 / img.naturalWidth;
+  ctx.drawImage(img, -img.naturalWidth * s * 0.42, -img.naturalHeight * s * 0.5, img.naturalWidth * s, img.naturalHeight * s);
+}
+// drawFigure draws a whole character (feet at 0,0, facing right)
+function drawFigure(rig, o) { if (rig && rigReady(rig)) drawRig(rig, o); else drawDino(o); }
