@@ -30,6 +30,20 @@ const papa = (st, o) => new Puppet(st, Object.assign({ cols: PAPA_COLS, scale: 1
 const leo = (st, o) => new Puppet(st, Object.assign({ cols: LEO_COLS, scale: 0.62, look: { hair: true }, name: 'Léo', rig: LEO_RIG }, o));
 const louis = (st, o) => new Puppet(st, Object.assign({ cols: LOUIS_COLS, scale: 0.62, look: { hair: true }, name: 'Louis', rig: LOUIS_RIG }, o));
 
+// the painted train: engine in front (facing right), carriages behind; x is
+// the nose, y the rails. Falls back to the drawn train until the pictures load.
+function drawTrainArt(x, y, t, o = {}) {
+  const eng = art('train-engine'), car = art('train-car');
+  if (!eng || !car) return drawTrain(x, y, t, o);
+  const bob = Math.sin(t * 9) * (o.moving ? 1.5 : 0.4), ew = 520, eh = ew * eng.naturalHeight / eng.naturalWidth;
+  const cw = 540, ch = cw * car.naturalHeight / car.naturalWidth;
+  for (let i = (o.cars ?? 2) - 1; i >= 0; i--) {
+    const cx = x - ew - 6 - (i + 1) * (cw + 6);
+    ctx.drawImage(car, cx, y - ch + bob, cw, ch);
+    if (o.window && o.window.car === i) o.window.draw(cx + cw * 0.5, y - ch * 0.42 + bob);
+  }
+  push(x, y - eh + bob, 0, -1, 1); ctx.drawImage(eng, 0, 0, ew, eh); pop();
+}
 // the dino train: a smiling engine and two carriages
 function drawTrain(x, y, t, o = {}) {
   const bob = Math.sin(t * 9) * (o.moving ? 1.5 : 0.4), spin = o.moving ? t * 12 : 0;

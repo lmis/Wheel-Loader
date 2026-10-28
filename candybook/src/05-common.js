@@ -72,6 +72,7 @@ function grassTufts(xs, groundY, t, col) {
   }
 }
 function drawBird(x, y, s, flap, col = '#6482d2', face = 1) {
+  if (col !== '#ffd25a' && paintedBird(x, y, s, flap, col, face)) return;
   push(x, y, 0, s * face, s);
   if (flap !== null) {
     const f = Math.sin(flap) * 14;
@@ -111,4 +112,54 @@ function drawArtScroll(im, off) {
     ctx.save(); ctx.translate(x + (i & 1 ? w : 0), 0); ctx.scale(i & 1 ? -1 : 1, 1);
     ctx.drawImage(im, 0, 0, w, H); ctx.restore();
   }
+}
+
+// ---- painted animals and props (fall back to the drawn ones until loaded) ----
+// pic draws a picture with its bottom centre at x,y, w pixels wide, mirrored if flip
+function pic(im, x, y, w, flip = false, rot = 0) {
+  const h = w * im.naturalHeight / im.naturalWidth;
+  ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot); if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+}
+const allArt = (...n) => n.every(x => art(x));
+// a pigeon (grey-ish colours) or a songbird, facing right unless face < 0;
+// flap is null when standing, otherwise the wings beat with it
+function paintedBird(x, y, s, flap, col, face = 1) {
+  const kind = col === '#a0a0c8' ? 'pigeon' : 'bird';
+  if (!allArt(`${kind}-body`, `${kind}-head`, `${kind}-wing`, `${kind}-wing-open`)) return false;
+  const k = s * (kind === 'pigeon' ? 0.7 : 0.6);
+  ctx.save(); ctx.translate(x, y + 8); ctx.scale(face * k, k);
+  const body = art(`${kind}-body`), head = art(`${kind}-head`);
+  ctx.drawImage(body, -body.naturalWidth / 2, -body.naturalHeight, body.naturalWidth, body.naturalHeight);
+  ctx.drawImage(head, body.naturalWidth * 0.08, -body.naturalHeight * 1.32, head.naturalWidth, head.naturalHeight);
+  const w = art(flap === null ? `${kind}-wing` : `${kind}-wing-open`);
+  ctx.save(); ctx.translate(-body.naturalWidth * 0.05, -body.naturalHeight * 0.6);
+  if (flap !== null) ctx.rotate(-0.4 + Math.sin(flap) * 0.6);
+  ctx.drawImage(w, -w.naturalWidth * 0.7, -w.naturalHeight * (flap === null ? 0.4 : 0.9), w.naturalWidth, w.naturalHeight);
+  ctx.restore(); ctx.restore();
+  return true;
+}
+function paintedCat(x, y, state) { // state: sleepy, awake, meow
+  if (!allArt('cat-body', 'cat-tail', 'cat-head-sleepy', 'cat-head-awake', 'cat-head-meow')) return false;
+  const t = performance.now() / 1000;
+  pic(art('cat-tail'), x - 46, y - 4, 50, false, Math.sin(t * 2) * 0.15);
+  pic(art('cat-body'), x, y, 92);
+  pic(art('cat-head-' + state), x + 38, y - 22 - (state === 'sleepy' ? 0 : 6), 62);
+  return true;
+}
+function paintedFrog(x, y, pose) { // pose: sit, jump, croak
+  if (!art('frog-' + pose)) return false;
+  pic(art('frog-' + pose), x, y, pose === 'jump' ? 78 : 54);
+  return true;
+}
+function paintedPuddle(x, y, w) { if (!art('frog-puddle')) return false; pic(art('frog-puddle'), x, y + 14, w); return true; }
+function paintedDog(x, y, t, bark, face = -1) {
+  if (!allArt('dog-body', 'dog-tail', 'dog-head-happy', 'dog-head-bark')) return false;
+  const step = Math.abs(Math.sin(t * 10)) * 3;
+  ctx.save(); ctx.translate(x, y - step); ctx.scale(face, 1);
+  pic(art('dog-tail'), -44, -40, 40, false, Math.sin(t * 20) * 0.4);
+  pic(art('dog-body'), 0, 0, 100);
+  pic(art(bark ? 'dog-head-bark' : 'dog-head-happy'), 50, -34, 76);
+  ctx.restore();
+  return true;
 }

@@ -8,8 +8,8 @@ class MorningPage extends StoryPage {
       durs: { pancake: 2.2, wave: 2, giggle: 1.8, spoons: 1.8, bye: 2.4, twirl: 1.6 } });
     this.mama = mama(this.st, { x: 250, y: 660, face: 1, look: { bow: true, bag: true } });
     this.papa = papa(this.st, { x: 1010, y: 664, face: -1 });
-    this.leo = leo(this.st, { x: 530, y: 540, face: 1 });
-    this.louis = louis(this.st, { x: 700, y: 540, face: -1 });
+    this.leo = leo(this.st, { x: 520, y: 500, face: 1, noShadow: true });
+    this.louis = louis(this.st, { x: 710, y: 500, face: -1, noShadow: true });
     this.cast = [this.mama, this.papa, this.leo, this.louis];
     this.kiss = null;
   }
@@ -68,14 +68,21 @@ class MorningPage extends StoryPage {
     pop();
     const px = hx + dir * 100, ph = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * 230 : 0;
     push(px, hy - 14 - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ell(0, 0, 28, 7, '#f0c070'); pop();
-    // the twins in their chairs behind the table
-    for (const k of [this.leo, this.louis]) { line(k.x - 40, 600, k.x - 40, 470, 8, '#c8965a'); line(k.x + 40, 600, k.x + 40, 470, 8, '#c8965a'); }
-    this.leo.draw(); this.louis.draw();
-    // table with breakfast
-    rrect(400, 520, 460, 30, 10, '#c8965a');
-    line(430, 550, 430, 650, 12, '#a0703c'); line(830, 550, 830, 650, 12, '#a0703c');
-    ell(570, 516, 34, 9, WHITE); ell(570, 510, 22, 6, '#ffb45a', 0); ell(690, 516, 34, 9, WHITE); ell(690, 510, 22, 6, '#ffb45a', 0);
-    rrect(625, 490, 22, 28, 5, '#fff6dc'); rect(628, 498, 16, 16, '#ffa03c');
+    // the twins in their high chairs behind the breakfast table
+    const P = n => art('prop-' + n), img = (im, x, y, w) => ctx.drawImage(im, x, y, w, w * im.naturalHeight / im.naturalWidth);
+    if (['table', 'chair-blue', 'chair-green', 'plate', 'juice'].every(P)) {
+      img(P('chair-blue'), this.leo.x - 95, 360, 190); img(P('chair-green'), this.louis.x - 95, 360, 190);
+      this.leo.draw(); this.louis.draw();
+      img(P('table'), 380, 450, 470);
+      img(P('plate'), this.leo.x - 60, 440, 120); img(P('plate'), this.louis.x - 60, 440, 120); img(P('juice'), 600, 405, 46);
+    } else {
+      for (const k of [this.leo, this.louis]) { line(k.x - 40, 600, k.x - 40, 470, 8, '#c8965a'); line(k.x + 40, 600, k.x + 40, 470, 8, '#c8965a'); }
+      this.leo.draw(); this.louis.draw();
+      rrect(400, 520, 460, 30, 10, '#c8965a');
+      line(430, 550, 430, 650, 12, '#a0703c'); line(830, 550, 830, 650, 12, '#a0703c');
+      ell(570, 516, 34, 9, WHITE); ell(570, 510, 22, 6, '#ffb45a', 0); ell(690, 516, 34, 9, WHITE); ell(690, 510, 22, 6, '#ffb45a', 0);
+      rrect(625, 490, 22, 28, 5, '#fff6dc'); rect(628, 498, 16, 16, '#ffa03c');
+    }
     this.mama.draw();
     this.finish();
   }

@@ -49,7 +49,7 @@ class StationPage extends StoryPage {
     // the train, with Mama at a window
     const peek = A.on('peek') ? Math.sin(Math.PI * clamp(A.t('peek') / 2.4, 0, 1)) : 0;
     const waving = A.on('wave'), kissing = A.on('kiss');
-    drawTrain(this.trainX, ry, t, { moving: A.on('chug'), cars: 2, window: { car: 0, seat: 1, draw: (x, y) => {
+    drawTrainArt(this.trainX + 60, ry, t, { moving: A.on('chug'), cars: 2, window: { car: 0, seat: 1, draw: (x, y) => {
       const head = rigImg(MAMA_RIG, kissing ? 'head-kiss' : waving ? 'head-talk' : 'head-happy');
       if (head && rigReady(MAMA_RIG)) {
         // painted Mama, facing the way the train will go, leaning out to peek
@@ -69,6 +69,13 @@ class StationPage extends StoryPage {
     if (!bg) { rect(0, 620, W, H - 620, grad(0, 620, 0, H, ['#d9cfc4', '#c4b8ab'])); rect(0, 616, W, 8, '#ffd25a'); }
     // the conductor robot
     const c = A.on('conductor') ? A.t('conductor') : -1;
+    if (robotReady()) { // the painted robot as conductor, cap on, whistle up
+      ctx.save(); ctx.filter = ROBOT_TINT[0];
+      pic(robotArt('body'), 200, 668, 104); pic(robotArt(c >= 0 ? 'head-talk' : 'head-happy'), 196, 590, 92);
+      ctx.restore();
+      rrect(166, 498, 64, 14, 4, '#3c3c50'); rrect(176, 482, 44, 20, 6, '#3c3c50');
+      if (c >= 0) rrect(236, 560, 18, 8, 3, '#ffd250');
+    } else {
     push(200, 660, 0);
     rrect(-24, -80, 48, 70, 10, '#5acdc3'); rrect(-26, -126, 52, 44, 10, '#78dcd2');
     rrect(-30, -136, 60, 14, 4, '#3c3c50'); rrect(-20, -150, 40, 18, 6, '#3c3c50');
@@ -77,6 +84,7 @@ class StationPage extends StoryPage {
     if (c >= 0) rrect(36, -112, 18, 8, 3, '#ffd250');
     line(-12, -10, -12, 4, 6, '#3c3c50'); line(12, -10, 12, 4, 6, '#3c3c50');
     pop();
+    }
     // pigeons on the platform
     const pf = A.on('pigeons') ? A.t('pigeons') : -1;
     [380, 450, 620].forEach((x, i) => {

@@ -98,13 +98,14 @@ class PapaPage extends StoryPage {
     this.drawStreet(t);
     // a ramp or a puddle comes along the road
     if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
-    if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; ell(x, 660, 90, 14, '#7ab8e6', 2.5); }
+    if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; if (!paintedPuddle(x, 660, 220)) ell(x, 660, 90, 14, '#7ab8e6', 2.5); }
     if (A.on('hello')) { const x = W + 80 - A.t('hello') * 380; this.drawDog(x, 600, t); }
     st.draw(0);
     this.drawGang(t);
     st.draw(1); st.draw(2); st.drawWords();
   }
   drawDog(x, y, t) {
+    if (paintedDog(x, y + 10, t, this.acts.on('hello') && this.acts.t('hello') % 1 < 0.5)) return;
     const wag = Math.sin(t * 20) * 10;
     line(x + 30, y - 30, x + 50, y - 50 + wag, 6, '#c88c50');
     ell(x, y - 30, 36, 20, '#c88c50');

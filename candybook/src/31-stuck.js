@@ -59,14 +59,17 @@ class StuckPage extends StoryPage {
       rrect(860, 600, 180, 14, 5, '#8c6450'); line(880, 614, 880, 650, 6, '#3c3c50'); line(1020, 614, 1020, 650, 6, '#3c3c50');
     }
     const cat = A.on('cat') ? A.t('cat') : -1;
+    if (!paintedCat(960, 656, cat < 0 ? 'sleepy' : cat < 1.2 ? 'meow' : 'awake')) {
     ell(960, 640, 26, 14, '#ff9a46'); circ(985, 628 - (cat >= 0 ? 6 : 0), 11, '#ff9a46');
     poly([978, 620 - (cat >= 0 ? 6 : 0), 980, 608, 986, 618], '#ff9a46', 2); poly([988, 618, 994, 608, 994, 622], '#ff9a46', 2);
     if (cat >= 0) { circ(982, 627, 1.8, INK, 0); circ(990, 627, 1.8, INK, 0); } else { line(979, 627, 984, 627, 2, INK, 0); line(987, 627, 992, 627, 2, INK, 0); }
+    }
     // the frog in the puddle
     const fx = this.frogPos ? 360 : 260;
-    ell(310, 676, 80, 10, '#6a7ab4', 0);
+    if (!paintedPuddle(310, 676, 220)) ell(310, 676, 80, 10, '#6a7ab4', 0);
     const fj = A.on('frog') ? Math.sin(Math.PI * clamp(A.t('frog') / 0.6, 0, 1)) * 50 : 0;
-    ell(fx, 664 - fj, 14, 10, '#8ce678'); circ(fx - 6, 654 - fj, 5, '#8ce678'); circ(fx + 6, 654 - fj, 5, '#8ce678'); circ(fx - 6, 653 - fj, 2, INK, 0); circ(fx + 6, 653 - fj, 2, INK, 0);
+    const fr = A.on('frog') ? A.t('frog') : -1;
+    if (!paintedFrog(fx, 676 - fj, fr >= 0 && fr < 0.6 ? 'jump' : fr >= 0.6 && fr < 1.6 ? 'croak' : 'sit')) ell(fx, 664 - fj, 14, 10, '#8ce678'); circ(fx - 6, 654 - fj, 5, '#8ce678'); circ(fx + 6, 654 - fj, 5, '#8ce678'); circ(fx - 6, 653 - fj, 2, INK, 0); circ(fx + 6, 653 - fj, 2, INK, 0);
     // Mama under her umbrella
     const um = this.mama.is('spin') ? A.t('umbrella') * 12 : 0;
     st.draw(0); st.draw(1);

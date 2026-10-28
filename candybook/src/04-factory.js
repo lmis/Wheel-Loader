@@ -70,6 +70,10 @@ class Belt {
   }
 }
 
+// the painted robot: one set of pictures, tinted per crew member
+const ROBOT_TINT = ['sepia(0.55) hue-rotate(120deg) saturate(1.7)', 'sepia(0.7) saturate(2.2) hue-rotate(-12deg)', 'sepia(0.55) hue-rotate(215deg) saturate(1.5)'];
+const robotArt = n => art('robot-' + n);
+const robotReady = () => ['body', 'arm', 'spring', 'head-happy', 'head-blink', 'head-talk', 'head-surprised'].every(robotArt);
 class Robot {
   constructor(page, kind, x) {
     Object.assign(this, { page, kind, x, look: LOOKS[kind], blink: 1 + kind * 1.3, cool: 1.5 + kind, phase: 'idle', pt: 0,
@@ -152,16 +156,26 @@ class Robot {
   drawBody() {
     const [dy, lean] = this.pose(), l = this.look, lift = this.headLift();
     push(this.x, ROBOT_BASE + dy, lean);
-    this.drawTorso();
+    const painted = robotReady();
+    if (painted) { // body with legs; the spring neck shows when the head pops up
+      const b = robotArt('body'), h = l.bh * 1.45, w = h * b.naturalWidth / b.naturalHeight;
+      ctx.save(); ctx.filter = ROBOT_TINT[this.kind]; ctx.drawImage(b, -w / 2, -h + l.bh * 0.25, w, h); ctx.restore();
+      if (lift > 3) { const sp = robotArt('spring'); ctx.drawImage(sp, -16, -l.bh - lift - 6, 32, lift + 14); }
+    } else this.drawTorso();
     const ny0 = -l.bh, ny1 = -l.bh - l.neck - lift;
-    if (lift > 3 || this.kind === 2) for (let i = 0; i < 8; i++) ell(0, lerp(ny0, ny1, (i + 0.5) / 8), 13, 4, '#c8c8d7', 2.5);
+    if (painted) {} else if (lift > 3 || this.kind === 2) for (let i = 0; i < 8; i++) ell(0, lerp(ny0, ny1, (i + 0.5) / 8), 13, 4, '#c8c8d7', 2.5);
     else rrect(-12, ny1, 24, l.neck + 6, 4, '#aaaabe');
     pop();
     const [hx, hy] = this.headPos();
     let sq = 1;
     if (this.page.crew.gag === 'burp') { const t = this.gagT(); if (t > 0 && t < 0.45) sq = 1 + 0.18 * ease(t / 0.45); }
     push(hx, hy, lean + this.ant * 0.4, sq, 1 / Math.sqrt(sq));
-    this.drawHead();
+    if (robotReady()) {
+      const open = this.mouthOpen(), face = this.surprise > 0 || (this.page.crew.gag === 'heads' && lift > 10) ? 'surprised'
+        : open > 0.3 ? 'talk' : this.blink < 0 ? 'blink' : 'happy';
+      const im = robotArt('head-' + face), hh = l.hh * 1.75, hw = hh * im.naturalWidth / im.naturalHeight;
+      ctx.save(); ctx.filter = ROBOT_TINT[this.kind]; ctx.drawImage(im, -hw / 2, -hh * 0.62, hw, hh); ctx.restore();
+    } else this.drawHead();
     pop();
   }
   drawTorso() {
@@ -246,6 +260,13 @@ class Robot {
       if (crew.gag === 'heads' && this.headLift() > 10) { hx = sx + s * 44; hy = shY - 10; }
       if (this.surprise > 0) { hx = sx + s * 40; hy = shY - 50; }
       if (this.waveT > 0 && s === 1) { hx = sx + 30 + Math.sin(t * 14) * 10; hy = shY - 60; }
+      if (robotReady()) { // the painted arm stretched from shoulder to hand
+        const a = robotArt('arm'), len = Math.max(30, Math.hypot(hx - sx, hy - shY)), ang = Math.atan2(hy - shY, hx - sx);
+        ctx.save(); ctx.translate(sx, shY); ctx.rotate(ang); if (s < 0) ctx.scale(1, -1);
+        ctx.filter = ROBOT_TINT[this.kind]; ctx.drawImage(a, -len * 0.08, -len * 0.25, len * 1.15, len * 1.15 * a.naturalHeight / a.naturalWidth); ctx.restore();
+        if (eating && this.held) drawCandy(hx, hy - 6, 0.3 * s, 13, this.held.col, this.held.kind);
+        continue;
+      }
       curve(sx, shY, (sx + hx) / 2 + s * 20, Math.max(shY, hy) + 10, hx, hy, 9, '#aaaabe');
       if (eating && this.held) drawCandy(hx, hy - 6, 0.3 * s, 13, this.held.col, this.held.kind);
       if (this.kind === 2) { line(hx, hy, hx + s * 8, hy - 10, 5, '#ffd250'); line(hx, hy, hx + s * 10, hy + 6, 5, '#ffd250'); }
