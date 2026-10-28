@@ -8,6 +8,7 @@ function riverGround(x) {
 class RiverPage {
   constructor() {
     this.name = 'river';
+    this.tricks = [['fish', 'flies', 'boat'], ['ducks', 'frog', 'turtle']]; this.who = ['River', 'River friends', 'Little Dino'];
     this.text = 'Over the little wooden bridge, the ducks are tucking in for the night. “Goodnight, ducks,” says Little Dino.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ fish: 2.2, flies: 4.5, boat: 9, ducks: 1.6, frog: 1.2, turtle: 3 });
@@ -28,7 +29,7 @@ class RiverPage {
   press(k) {
     const st = this.st;
     if (k === 2) return this.dino.press();
-    const a = k === 0 ? cycle(st, 0, ['fish', 'flies', 'boat']) : cycle(st, 1, ['ducks', 'frog', 'turtle']);
+    const a = cycle(st, k, this.tricks[k]);
     this.acts.run(a);
     if (a === 'fish') { this.fishX = rnd(380, 760); sfx('splash', 0.7); }
     if (a === 'flies') { sfx('shimmer', 0.8); }

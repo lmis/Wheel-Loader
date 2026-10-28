@@ -111,6 +111,26 @@
     if (!b) return;
     b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
   }
+  // the three colour buttons say what they will do next on this page
+  const actBtns = ['space', 'enter', 'ctrl'].map(k => document.querySelector(`[data-key="${k}"]`));
+  const keyNames = ['Space', 'Enter', 'Ctrl'];
+  let lastLabels = '';
+  function updateLabels() {
+    const L = Book.labels(), key = JSON.stringify(L);
+    if (key === lastLabels) return;
+    const old = lastLabels; lastLabels = key;
+    L.forEach((l, i) => {
+      const b = actBtns[i];
+      if (old && b.querySelector('.what').textContent !== l.what) { b.classList.remove('fresh'); void b.offsetWidth; b.classList.add('fresh'); }
+      b.querySelector('.who').textContent = l.who;
+      b.querySelector('.what').textContent = l.what;
+      b.setAttribute('aria-label', `${l.who}: ${l.what} (${keyNames[i]})`);
+    });
+    document.querySelector('[data-key="prev"]').disabled = Book.cur === 0;
+    document.querySelector('[data-key="next"]').disabled = Book.cur === Book.pages.length - 1;
+  }
+  setInterval(updateLabels, 150);
+  updateLabels();
   const mute = document.getElementById('mute');
   mute.addEventListener('click', () => {
     audioStart(); setMuted(!AU.muted);

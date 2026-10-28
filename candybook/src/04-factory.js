@@ -263,8 +263,7 @@ class Machine {
     this.start();
   }
   start() {
-    const list = ['fountain', 'lollipop', 'bubble'];
-    this.gag = list[this.st.next[0]++ % 3]; this.gt = 0; this.shot = 0; this.pending = false;
+    this.gag = cycle(this.st, 0, this.page.tricks[0]); this.gt = 0; this.shot = 0; this.pending = false;
     sfx({ fountain: 'windup', lollipop: 'slide', bubble: 'blow' }[this.gag], 1);
   }
   lollipop() {
@@ -385,6 +384,7 @@ class Machine {
 class FactoryPage {
   constructor() {
     this.name = 'factory';
+    this.tricks = [['fountain', 'lollipop', 'bubble'], ['dance', 'heads', 'burp']]; this.who = ['Candy machine', 'Robots', 'Little Dino'];
     this.text = 'Little Dino spent the whole day at the candy factory with Bolt, Gumdrop and Tinny. Now the sun is getting low. Time to go home.';
     this.st = new Stage(); this.st.floor = 692;
     this.belt = new Belt(this.st);
@@ -417,7 +417,7 @@ class FactoryPage {
   }
   crewStart() {
     const c = this.crew;
-    c.gag = ['dance', 'heads', 'burp'][this.st.next[1]++ % 3]; c.gt = 0; c.pending = false;
+    c.gag = cycle(this.st, 1, this.tricks[1]); c.gt = 0; c.pending = false;
     if (c.gag === 'dance') { this.disco = 4.4; sfx('tune', 0.9); this.st.say('DANCE!', 640, 170, 70, '#82dcff'); }
   }
   updateCrew(dt) {

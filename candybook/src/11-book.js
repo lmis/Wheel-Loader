@@ -1,11 +1,37 @@
 // ---------- the book: pages, the story text, and turning pages ----------
+const LABEL = {
+  letters: 'Bouncy letters', rain: 'Candy rain',
+  fountain: 'Candy fountain', lollipop: 'Giant lollipop', bubble: 'Bubblegum bubble',
+  dance: 'Robot disco', heads: 'Boing heads', burp: 'Robot burps',
+  jump: 'Big jump', roar: 'Rawr!', catch: 'Catch a candy', ride: 'Ride the belt', wave: 'Wave', spin: 'Spin', yawn: 'Big yawn', hug: 'Hug Mama',
+  geyser: 'Big fountain', leaves: 'Gust of wind', icecream: 'Ice cream!', squirrel: 'Squirrel', pigeons: 'Pigeons fly', kite: 'Fly a kite', slide: 'Down the slide', swing: 'On the swing',
+  lamps: 'Light the lamps', bus: 'Here comes the bus', bakery: 'Pie at the bakery', birds: 'Birds fly', cat: 'Cat says meow', dog: 'Dog says woof',
+  fish: 'Fish jumps', flies: 'Firefly heart', boat: 'Paper boat', ducks: 'Ducks quack', frog: 'Frog hops', turtle: 'Turtle pops up',
+  barn: 'Open the barn', tractor: 'Tractor', crows: 'Scarecrow', cow: 'Cow says moo', pig: 'Pig says oink', chickens: 'Chickens cluck',
+  mushrooms: 'Mushroom music', moonbeam: 'Moonbeams', web: 'Dewy web', hedgehog: 'Hedgehog rolls', fox: 'Sleepy fox', deer: 'Deer peeks', tiptoe: 'Tiptoe',
+  shoot: 'Shooting star', stars: 'Dino stars', moon: 'Wake the moon', owl: 'Owl hoots', sheep: 'Count the sheep', bunny: 'Bunny peeks',
+  door: 'Open the door', chimney: 'Heart smoke', lantern: 'Lantern glow', mamawave: 'Mama waves', kiss: 'Blow a kiss', call: 'Mama says hi',
+  bubbles: 'Lots of bubbles', tap: 'Turn on the tap', toyboat: 'Toy boat', duck: 'Squeaky duck', sponge: 'Squeeze the sponge', fishy: 'Squirty fish',
+  splash: 'Splash!', beard: 'Bubble beard', dive: 'Dive under',
+  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out', read: 'Turn the page', robot: 'Robot nightlight', giggle: 'Giggle', sleep: 'Fall asleep',
+};
 const Book = {
   pages: [], cur: 0, turn: null, queued: 0, started: false,
   init() {
-    this.pages = [new CoverPage(), new FactoryPage(), new TownPage(), new RiverPage(), new HillPage(), new HomePage(), new BedPage()];
+    this.pages = [new CoverPage(), new FactoryPage(), new ParkPage(), new TownPage(), new RiverPage(), new FarmPage(), new WoodsPage(), new HillPage(), new HomePage(), new BathPage(), new BedPage()];
     this.pages.forEach(p => { p.shown = 0; });
   },
   page() { return this.pages[this.cur]; },
+  // what each of the three buttons does next on this page
+  labels() {
+    const p = this.page();
+    return [0, 1, 2].map(k => {
+      const useDino = k === 2 && p.dino && !p.tricks[2];
+      const list = useDino ? p.dino.tricks : p.tricks[k];
+      const i = useDino ? p.dino.next : p.st.next[k];
+      return { who: p.who[k], what: LABEL[list[i % list.length]] || list[i % list.length] };
+    });
+  },
   go(dir) {
     if (this.turn) { this.queued = dir; return; }
     const to = this.cur + dir;

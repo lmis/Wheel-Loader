@@ -2,7 +2,8 @@
 class TownPage {
   constructor() {
     this.name = 'town';
-    this.text = 'Goodbye, robots! Goodbye, factory! Little Dino walks down the street as the sun goes down and the lamps begin to glow.';
+    this.tricks = [['lamps', 'bus', 'bakery'], ['birds', 'cat', 'dog']]; this.who = ['Street', 'Animals', 'Little Dino'];
+    this.text = 'Down the street, the sun sinks low and paints the sky pink. One by one, the lamps begin to glow.';
     this.st = new Stage(); this.st.floor = 700;
     this.acts = new Acts({ lamps: 2, bus: 3.4, bakery: 4.5, birds: 3, cat: 2.4, dog: 2.4 });
     this.houses = [
@@ -23,7 +24,7 @@ class TownPage {
     this.dino = new Dino(this.st, {
       x: 200, ground: () => 664, minX: 90, maxX: 1080, tricks: ['wave', 'jump', 'roar', 'spin'],
       host: {
-        waveTo: 100, waveWord: 'BYE-BYE!', waved: () => { this.robotWave = 2.5; },
+        waveTo: 100, waveWord: 'BYE, ROBOTS!', waved: () => { this.robotWave = 2.5; },
         roarAt: 1150, startle: () => { this.cat.startle = 1; sfx('meow', 0.8, 1.3); if (!this.acts.on('birds')) this.flyBirds(); },
         cheer: () => this.st.hearts(1150, 330, 2),
       },
@@ -35,12 +36,12 @@ class TownPage {
     const st = this.st;
     if (k === 2) return this.dino.press();
     if (k === 0) {
-      const a = cycle(st, 0, ['lamps', 'bus', 'bakery']);
+      const a = cycle(st, 0, this.tricks[0]);
       this.acts.run(a);
       if (a === 'bus') { sfx('engine', 1); }
       if (a === 'bakery') { sfx('creak', 1); }
     } else {
-      const a = cycle(st, 1, ['birds', 'cat', 'dog']);
+      const a = cycle(st, 1, this.tricks[1]);
       if (a === 'birds') this.flyBirds(); else this.acts.run(a);
       if (a === 'cat') { sfx('meow', 1); st.say('MEOW!', 1150, 300, 54, '#ffb45a'); }
       if (a === 'dog') { this.windows[2].on = true; }

@@ -64,6 +64,14 @@ class Stage {
   zzz(x, y) {
     this.add({ kind: 'z', layer: 2, x, y, vx: 20, vy: -30, rot: 0, size: rnd(22, 30), col: '#a8c8ff', life: 2.6 });
   }
+  leaf(x, y) {
+    this.add({ kind: 'leaf', layer: 2, x, y, vx: rnd(10, 60), vy: rnd(20, 50), rot: rnd(0, 6), vr: rnd(-3, 3), size: rnd(7, 11),
+      col: pick(['#f08c3c', '#e65a3c', '#f5c446', '#c8783c']), life: rnd(5, 8), ph: rnd(0, 6) });
+  }
+  drops(x, y, n, speed = 260, col = '#bfe6ff') {
+    for (let i = 0; i < n; i++)
+      this.add({ kind: 'drop', layer: 2, x, y, vx: rnd(-1, 1) * speed * 0.6, vy: -rnd(0.4, 1) * speed, size: rnd(3, 6), col, life: rnd(0.6, 1), g: 800 });
+  }
   say(text, x, y, size, col) { this.words.push({ text, x, y, size, col, life: 1.6, max: 1.6, rot: rnd(-10, 10) }); }
 
   update(dt) {
@@ -80,6 +88,7 @@ class Stage {
         case 'heart': case 'note': case 'z': b.x += Math.sin(b.life * 5 + b.rot) * 30 * dt; break;
         case 'bubble': b.x += Math.sin(b.life * 3 + b.rot) * 40 * dt; b.vy *= 1 - 0.5 * dt; break;
         case 'dust': b.vx *= 1 - 5 * dt; b.size += 25 * dt; break;
+        case 'leaf': b.vx += Math.sin(b.life * 2 + b.ph) * 50 * dt; b.vy = Math.min(b.vy + 20 * dt, 45); if (b.y > this.floor - 6) { b.y = this.floor - 6; b.vx = 0; b.vy = 0; b.vr = 0; } break;
       }
       b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.vr * dt;
       if (b.kind === 'candy') this.candyPhysics(b);
@@ -134,6 +143,11 @@ class Stage {
           ctx.globalAlpha = a * 0.55; circ(b.x, b.y, b.size, b.col, 2);
           ctx.globalAlpha = a; ell(b.x - b.size * 0.35, b.y - b.size * 0.4, b.size * 0.3, b.size * 0.18, WHITE, 0); break;
         case 'crumb': circ(b.x, b.y, b.size, b.col, 0); break;
+        case 'drop': ell(b.x, b.y, b.size * 0.7, b.size, b.col, 1.5); break;
+        case 'leaf':
+          push(b.x, b.y, b.rot * 57, Math.cos(b.life * 3 + b.ph), 1);
+          ctx.beginPath(); ctx.moveTo(-b.size, 0); ctx.quadraticCurveTo(0, -b.size * 0.9, b.size, 0); ctx.quadraticCurveTo(0, b.size * 0.9, -b.size, 0);
+          paint(b.col, 2); pop(); break;
         case 'dust': ctx.globalAlpha = a * 0.9; circ(b.x, b.y, b.size, b.col, 0); break;
         case 'z': ctx.globalAlpha = Math.min(1, b.life); word('z', b.x, b.y, b.size * (1.2 - b.life / b.max * 0.5), -10, b.col); break;
       }

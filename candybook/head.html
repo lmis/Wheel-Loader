@@ -14,6 +14,9 @@
     --cap: #f6eedd;
     --cap-edge: #c9b79c;
     --glow: #ffd27a;
+    --pink: #ffa3c4; --pink-edge: #d4678f;
+    --blue: #96d4ff; --blue-edge: #4f9bd2;
+    --green: #a4e294; --green-edge: #5ea752;
     --display: "Fredoka", "Baloo 2", system-ui, sans-serif;
     --body: "Andika", "Trebuchet MS", system-ui, sans-serif;
     color-scheme: dark;
@@ -32,7 +35,7 @@
   }
   .book {
     position: relative;
-    width: min(100%, calc((100vh - 120px) * 16 / 9));
+    width: min(100%, calc((100vh - 130px) * 16 / 9));
     max-width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: 6px 14px 14px 6px;
@@ -40,27 +43,39 @@
   }
   #page { display: block; width: 100%; height: 100%; border-radius: inherit; outline: none; cursor: pointer; touch-action: manipulation; }
   #page:focus-visible { box-shadow: 0 0 0 4px var(--glow); }
-  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
-  .keys button, #mute {
-    font: 600 16px/1 var(--display);
+  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: stretch; max-width: 100%; }
+  .keys button {
+    font-family: var(--display);
     color: var(--ink);
-    background: var(--cap);
-    border: 0; border-radius: 10px;
-    padding: 10px 16px 12px;
-    box-shadow: 0 4px 0 var(--cap-edge), 0 6px 10px rgba(0,0,0,0.35);
+    border: 0; border-radius: 14px;
+    padding: 8px 16px 10px;
     cursor: pointer;
-    transition: transform 0.08s, box-shadow 0.08s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    transition: transform 0.08s, box-shadow 0.08s, background-color 0.2s;
   }
-  .keys button small { display: block; font: 400 12px/1.2 var(--body); opacity: 0.7; margin-top: 3px; }
-  .keys button.wide { min-width: 110px; }
-  .keys button:active, .keys button.hit { transform: translateY(3px); box-shadow: 0 1px 0 var(--cap-edge), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys .act { min-width: 168px; background: var(--c); box-shadow: 0 5px 0 var(--edge), 0 8px 14px rgba(0,0,0,0.35); }
+  .keys .pink { --c: var(--pink); --edge: var(--pink-edge); }
+  .keys .blue { --c: var(--blue); --edge: var(--blue-edge); }
+  .keys .green { --c: var(--green); --edge: var(--green-edge); }
+  .keys .turn { flex-direction: row; gap: 8px; background: var(--cap); box-shadow: 0 5px 0 var(--cap-edge), 0 8px 14px rgba(0,0,0,0.35); font: 600 17px/1 var(--display); }
+  .keys .who { font: 500 12px/1.1 var(--body); opacity: 0.75; letter-spacing: 0.02em; }
+  .keys .what { font: 700 19px/1.15 var(--display); }
+  .keys .turn .what { font: 600 17px/1 var(--display); }
+  .keys .arrow { font-size: 14px; }
+  .keys button:active, .keys button.hit { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge, var(--cap-edge)), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys button:disabled { opacity: 0.35; cursor: default; transform: none; }
   .keys button:focus-visible, #mute:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
-  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font-size: 14px; }
+  .keys button.fresh .what { animation: pop 0.35s ease-out; }
+  @keyframes pop { from { transform: scale(0.8); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
+  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font: 500 14px/1 var(--display); }
   @media (max-width: 600px) {
     .keys { gap: 6px; }
-    .keys button { padding: 8px 10px 10px; font-size: 14px; }
-    .keys button small { display: none; }
-    .keys button.wide { min-width: 0; }
+    .keys button { padding: 6px 10px 8px; }
+    .keys .act { min-width: 0; flex: 1 1 0; }
+    .keys .turn { flex: 0 0 auto; padding: 6px 10px; }
+    .keys .who { display: none; }
+    .keys .what { font-size: 14px; }
+    .keys .turn .what { display: none; }
   }
-  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } .keys button.fresh .what { animation: none; } }
 </style>

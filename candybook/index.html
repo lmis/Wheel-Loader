@@ -14,6 +14,9 @@
     --cap: #f6eedd;
     --cap-edge: #c9b79c;
     --glow: #ffd27a;
+    --pink: #ffa3c4; --pink-edge: #d4678f;
+    --blue: #96d4ff; --blue-edge: #4f9bd2;
+    --green: #a4e294; --green-edge: #5ea752;
     --display: "Fredoka", "Baloo 2", system-ui, sans-serif;
     --body: "Andika", "Trebuchet MS", system-ui, sans-serif;
     color-scheme: dark;
@@ -32,7 +35,7 @@
   }
   .book {
     position: relative;
-    width: min(100%, calc((100vh - 120px) * 16 / 9));
+    width: min(100%, calc((100vh - 130px) * 16 / 9));
     max-width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: 6px 14px 14px 6px;
@@ -40,37 +43,49 @@
   }
   #page { display: block; width: 100%; height: 100%; border-radius: inherit; outline: none; cursor: pointer; touch-action: manipulation; }
   #page:focus-visible { box-shadow: 0 0 0 4px var(--glow); }
-  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
-  .keys button, #mute {
-    font: 600 16px/1 var(--display);
+  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: stretch; max-width: 100%; }
+  .keys button {
+    font-family: var(--display);
     color: var(--ink);
-    background: var(--cap);
-    border: 0; border-radius: 10px;
-    padding: 10px 16px 12px;
-    box-shadow: 0 4px 0 var(--cap-edge), 0 6px 10px rgba(0,0,0,0.35);
+    border: 0; border-radius: 14px;
+    padding: 8px 16px 10px;
     cursor: pointer;
-    transition: transform 0.08s, box-shadow 0.08s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    transition: transform 0.08s, box-shadow 0.08s, background-color 0.2s;
   }
-  .keys button small { display: block; font: 400 12px/1.2 var(--body); opacity: 0.7; margin-top: 3px; }
-  .keys button.wide { min-width: 110px; }
-  .keys button:active, .keys button.hit { transform: translateY(3px); box-shadow: 0 1px 0 var(--cap-edge), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys .act { min-width: 168px; background: var(--c); box-shadow: 0 5px 0 var(--edge), 0 8px 14px rgba(0,0,0,0.35); }
+  .keys .pink { --c: var(--pink); --edge: var(--pink-edge); }
+  .keys .blue { --c: var(--blue); --edge: var(--blue-edge); }
+  .keys .green { --c: var(--green); --edge: var(--green-edge); }
+  .keys .turn { flex-direction: row; gap: 8px; background: var(--cap); box-shadow: 0 5px 0 var(--cap-edge), 0 8px 14px rgba(0,0,0,0.35); font: 600 17px/1 var(--display); }
+  .keys .who { font: 500 12px/1.1 var(--body); opacity: 0.75; letter-spacing: 0.02em; }
+  .keys .what { font: 700 19px/1.15 var(--display); }
+  .keys .turn .what { font: 600 17px/1 var(--display); }
+  .keys .arrow { font-size: 14px; }
+  .keys button:active, .keys button.hit { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge, var(--cap-edge)), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys button:disabled { opacity: 0.35; cursor: default; transform: none; }
   .keys button:focus-visible, #mute:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
-  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font-size: 14px; }
+  .keys button.fresh .what { animation: pop 0.35s ease-out; }
+  @keyframes pop { from { transform: scale(0.8); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
+  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font: 500 14px/1 var(--display); }
   @media (max-width: 600px) {
     .keys { gap: 6px; }
-    .keys button { padding: 8px 10px 10px; font-size: 14px; }
-    .keys button small { display: none; }
-    .keys button.wide { min-width: 0; }
+    .keys button { padding: 6px 10px 8px; }
+    .keys .act { min-width: 0; flex: 1 1 0; }
+    .keys .turn { flex: 0 0 auto; padding: 6px 10px; }
+    .keys .who { display: none; }
+    .keys .what { font-size: 14px; }
+    .keys .turn .what { display: none; }
   }
-  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } .keys button.fresh .what { animation: none; } }
 </style>
-<div class="book"><canvas id="page" tabindex="0" aria-label="Little Dino Comes Home, a picture book. Left and right arrows turn the pages; Space, Enter and Ctrl make things happen."></canvas></div>
+<div class="book"><canvas id="page" tabindex="0" aria-label="Little Dino Comes Home, a picture book. Left and right arrows turn the pages; the pink, blue and green buttons (Space, Enter and Ctrl) make things happen."></canvas></div>
 <div class="keys">
-  <button type="button" data-key="prev">←<small>back</small></button>
-  <button type="button" class="wide" data-key="space">Space<small>the big thing</small></button>
-  <button type="button" data-key="enter">Enter<small>the friends</small></button>
-  <button type="button" data-key="ctrl">Ctrl<small>Little Dino</small></button>
-  <button type="button" data-key="next">→<small>next page</small></button>
+  <button type="button" class="turn" data-key="prev" title="Left arrow" aria-keyshortcuts="ArrowLeft"><span class="arrow" aria-hidden="true">◀</span><span class="what">Back</span></button>
+  <button type="button" class="act pink" data-key="space" title="Space bar" aria-keyshortcuts="Space"><span class="who">Candy machine</span><span class="what">Candy fountain</span></button>
+  <button type="button" class="act blue" data-key="enter" title="Enter key" aria-keyshortcuts="Enter"><span class="who">Robots</span><span class="what">Robot disco</span></button>
+  <button type="button" class="act green" data-key="ctrl" title="Ctrl key" aria-keyshortcuts="Control"><span class="who">Little Dino</span><span class="what">Big jump</span></button>
+  <button type="button" class="turn" data-key="next" title="Right arrow" aria-keyshortcuts="ArrowRight"><span class="what">Next page</span><span class="arrow" aria-hidden="true">▶</span></button>
   <button type="button" id="mute" aria-pressed="false">Sound on</button>
 </div>
 <script>
@@ -307,6 +322,14 @@ class Stage {
   zzz(x, y) {
     this.add({ kind: 'z', layer: 2, x, y, vx: 20, vy: -30, rot: 0, size: rnd(22, 30), col: '#a8c8ff', life: 2.6 });
   }
+  leaf(x, y) {
+    this.add({ kind: 'leaf', layer: 2, x, y, vx: rnd(10, 60), vy: rnd(20, 50), rot: rnd(0, 6), vr: rnd(-3, 3), size: rnd(7, 11),
+      col: pick(['#f08c3c', '#e65a3c', '#f5c446', '#c8783c']), life: rnd(5, 8), ph: rnd(0, 6) });
+  }
+  drops(x, y, n, speed = 260, col = '#bfe6ff') {
+    for (let i = 0; i < n; i++)
+      this.add({ kind: 'drop', layer: 2, x, y, vx: rnd(-1, 1) * speed * 0.6, vy: -rnd(0.4, 1) * speed, size: rnd(3, 6), col, life: rnd(0.6, 1), g: 800 });
+  }
   say(text, x, y, size, col) { this.words.push({ text, x, y, size, col, life: 1.6, max: 1.6, rot: rnd(-10, 10) }); }
 
   update(dt) {
@@ -323,6 +346,7 @@ class Stage {
         case 'heart': case 'note': case 'z': b.x += Math.sin(b.life * 5 + b.rot) * 30 * dt; break;
         case 'bubble': b.x += Math.sin(b.life * 3 + b.rot) * 40 * dt; b.vy *= 1 - 0.5 * dt; break;
         case 'dust': b.vx *= 1 - 5 * dt; b.size += 25 * dt; break;
+        case 'leaf': b.vx += Math.sin(b.life * 2 + b.ph) * 50 * dt; b.vy = Math.min(b.vy + 20 * dt, 45); if (b.y > this.floor - 6) { b.y = this.floor - 6; b.vx = 0; b.vy = 0; b.vr = 0; } break;
       }
       b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.vr * dt;
       if (b.kind === 'candy') this.candyPhysics(b);
@@ -377,6 +401,11 @@ class Stage {
           ctx.globalAlpha = a * 0.55; circ(b.x, b.y, b.size, b.col, 2);
           ctx.globalAlpha = a; ell(b.x - b.size * 0.35, b.y - b.size * 0.4, b.size * 0.3, b.size * 0.18, WHITE, 0); break;
         case 'crumb': circ(b.x, b.y, b.size, b.col, 0); break;
+        case 'drop': ell(b.x, b.y, b.size * 0.7, b.size, b.col, 1.5); break;
+        case 'leaf':
+          push(b.x, b.y, b.rot * 57, Math.cos(b.life * 3 + b.ph), 1);
+          ctx.beginPath(); ctx.moveTo(-b.size, 0); ctx.quadraticCurveTo(0, -b.size * 0.9, b.size, 0); ctx.quadraticCurveTo(0, b.size * 0.9, -b.size, 0);
+          paint(b.col, 2); pop(); break;
         case 'dust': ctx.globalAlpha = a * 0.9; circ(b.x, b.y, b.size, b.col, 0); break;
         case 'z': ctx.globalAlpha = Math.min(1, b.life); word('z', b.x, b.y, b.size * (1.2 - b.life / b.max * 0.5), -10, b.col); break;
       }
@@ -519,7 +548,11 @@ const CHORD = { C: [48, 52, 55], Em: [52, 55, 59], F: [53, 57, 60], Dm: [50, 53,
 const ARRANGE = {
   cover: { bpm: 76, lead: 'box', oct: 12, pad: 0.8, arp: 'harp', bass: 0 },
   factory: { bpm: 104, lead: 'marimba', oct: 0, pad: 0, arp: 'pluck', bass: 'pizz', perc: 1 },
+  park: { bpm: 94, lead: 'bell', oct: 0, pad: 0, arp: 'harp', bass: 'pizz' },
   town: { bpm: 86, lead: 'epiano', oct: 0, pad: 0.8, arp: 0, bass: 'bass' },
+  farm: { bpm: 90, lead: 'marimba', oct: 0, pad: 0.5, arp: 0, bass: 'pizz', perc: 1 },
+  woods: { bpm: 64, lead: 'flute', oct: 0, pad: 0.9, arp: 'harp', bass: 'bass', soft: 0.85 },
+  bath: { bpm: 96, lead: 'box', oct: 12, pad: 0, arp: 'pluck', bass: 'pizz' },
   river: { bpm: 74, lead: 'flute', oct: 12, pad: 0.7, arp: 'harp', bass: 'bass' },
   hill: { bpm: 66, lead: 'box', oct: 12, pad: 1, arp: 0, bass: 'bass' },
   home: { bpm: 70, lead: 'epiano', oct: 0, pad: 0.9, arp: 'harp', bass: 'bass' },
@@ -593,6 +626,10 @@ const Amb = {
     if (name === 'river') { bed(0.09, 'bandpass', 520, 0.6, 0.23); bed(0.012, 'highpass', 4000, 0.7, 0.4); }
     if (name === 'hill') bed(0.1, 'lowpass', 420, 0.8, 0.09);
     if (name === 'home') bed(0.05, 'lowpass', 380, 0.8, 0.08);
+    if (name === 'park') bed(0.03, 'highpass', 2500, 0.7, 0.15);
+    if (name === 'farm') bed(0.04, 'lowpass', 400, 0.8, 0.1);
+    if (name === 'woods') { bed(0.06, 'lowpass', 350, 0.8, 0.07); bed(0.008, 'highpass', 5000, 0.7, 0.3); }
+    if (name === 'bath') bed(0.02, 'bandpass', 900, 0.8, 0.2);
   },
   // little sounds now and then, called every frame
   update(dt) {
@@ -607,6 +644,10 @@ const Amb = {
     if (n === 'river') { every('drip', 0.6, 2.4, () => osc('sine', rnd(500, 900), t, 0.08, 0.04, out, { f1: rnd(1000, 1600), sweep: 0.06, d: 0.02 })); every('frog', 6, 12, () => sfx('ribbit', 0.25, rnd(0.9, 1.1), 0.6, out)); every('crk', 0.5, 1.6, cricket); }
     if (n === 'hill') { every('crk', 0.3, 1.1, cricket); every('owl', 9, 16, () => sfx('hoo', 0.18, 1, -0.7, out)); }
     if (n === 'home') every('crk', 0.4, 1.4, cricket);
+    if (n === 'park') { every('bird', 1.2, 3.5, () => sfx('tweet', 0.3, rnd(0.9, 1.25), rnd(-0.9, 0.9), out)); every('coo', 6, 11, () => sfx('coo', 0.2, 1, 0.4, out)); }
+    if (n === 'farm') { every('crk', 0.5, 1.5, cricket); every('moo', 9, 16, () => sfx('moo', 0.15, 0.9, -0.5, out)); every('cluck', 5, 9, () => sfx('bawk', 0.08, 1.2, -0.7, out)); }
+    if (n === 'woods') { every('crk', 0.4, 1.2, cricket); every('owl', 8, 14, () => sfx('hoo', 0.14, 0.9, 0.6, out)); every('twig', 4, 9, () => noise(t, 0.04, 0.05, out, { f0: 2500, q: 2, d: 0.01 })); }
+    if (n === 'bath') every('drip', 1.2, 2.6, () => osc('sine', rnd(700, 1000), t, 0.08, 0.05, out, { f1: rnd(1400, 1900), sweep: 0.05, d: 0.02 }));
     if (n === 'bed') every('tick', 0.5, 0.5, () => { this.clock ^= 1; osc('sine', this.clock ? 2100 : 1600, t, 0.03, 0.03, out, { d: 0.008 }); });
   },
 };
@@ -654,6 +695,21 @@ const SFX = {
   sparkle: (t, v, p, o) => [2093, 2637, 3136].forEach((f, i) => INST.bell(f * p, t + i * 0.07, 0.4, v * 0.5, o)),
   snore: (t, v, p, o) => noise(t, 1.2, 0.08 * v, o, { f0: 300, q: 2, a: 0.5, hold: 0.3, d: 0.15 }),
   lampOn: (t, v, p, o) => { osc('square', 120, t, 0.03, 0.05 * v, o, { d: 0.01, lp: 2000 }); INST.bell(1047 * p, t + 0.02, 1, v * 0.8, o); },
+  gust: (t, v, p, o) => noise(t, 2.2, 0.28 * v, o, { f0: 400, f1: 1400, q: 0.6, a: 0.7, hold: 0.6, d: 0.3 }),
+  leaves: (t, v, p, o) => { for (let i = 0; i < 6; i++) noise(t + i * 0.09, 0.08, 0.1 * v, o, { f0: 3000, q: 0.7, d: 0.03 }); },
+  chitter: (t, v, p, o) => { for (let i = 0; i < 7; i++) osc('square', 2200 * p, t + i * 0.055, 0.03, 0.05 * v, o, { f1: 1600 * p, d: 0.01, lp: 4000 }); },
+  coo: (t, v, p, pan, o) => { o = o || AU.fx; for (let i = 0; i < 2; i++) osc('sine', 330 * p, t + i * 0.35, 0.3, 0.22 * v, o, { path: [[0.1, 380 * p], [0.28, 300 * p]], a: 0.04, d: 0.06, vib: [10, 8], pan: pan ?? 0 }); },
+  moo: (t, v, p, pan, o) => { o = o || AU.fx; osc('sawtooth', 150 * p, t, 1.2, 0.3 * v, o, { path: [[0.25, 175 * p], [1.1, 120 * p]], a: 0.12, hold: 0.8, d: 0.12, lp: 600, vib: [5, 3], pan: pan ?? 0 }); },
+  oink: (t, v, p, o) => { for (let i = 0; i < 2; i++) { osc('sawtooth', 260 * p, t + i * 0.25, 0.16, 0.25 * v, o, { f1: 180 * p, a: 0.01, d: 0.04, bp: 700, q: 2 }); noise(t + i * 0.25, 0.12, 0.12 * v, o, { f0: 500, q: 3, d: 0.03 }); } },
+  bawk: (t, v, p, pan, o) => { o = o || AU.fx; [0, 0.12, 0.24, 0.5].forEach((d, i) => osc('sawtooth', (i === 3 ? 900 : 600) * p, t + d, i === 3 ? 0.3 : 0.08, 0.2 * v, o, { f1: (i === 3 ? 700 : 500) * p, a: 0.01, d: 0.03, bp: 1400, q: 2, pan: pan ?? 0 })); },
+  neigh: (t, v, p, o) => osc('sawtooth', 500 * p, t, 1, 0.22 * v, o, { path: [[0.15, 900 * p], [0.9, 380 * p]], a: 0.03, hold: 0.7, d: 0.1, vib: [22, 60], bp: 1300, q: 1.4 }),
+  caw: (t, v, p, o) => { for (let i = 0; i < 2; i++) osc('sawtooth', 700 * p, t + i * 0.3, 0.22, 0.22 * v, o, { f1: 520 * p, a: 0.01, hold: 0.1, d: 0.04, bp: 1100, q: 2.5 }); },
+  tractor: (t, v, p, o) => { for (let i = 0; i < 40; i++) osc('square', 70 * p, t + i * 0.14, 0.08, 0.07 * v * Math.sin(Math.PI * i / 40), o, { d: 0.03, lp: 400, pan: -0.9 + i / 22 }); },
+  shh: (t, v, p, o) => noise(t, 0.9, 0.2 * v, o, { type: 'highpass', f0: 3500, q: 0.7, a: 0.1, hold: 0.5, d: 0.1 }),
+  tap: (t, v, p, o) => noise(t, 3.2, 0.14 * v, o, { f0: 1600, q: 0.6, a: 0.2, hold: 2.6, d: 0.2 }),
+  toot: (t, v, p, o) => { for (let i = 0; i < 2; i++) osc('triangle', 440 * p, t + i * 0.3, 0.22, 0.25 * v, o, { a: 0.02, hold: 0.15, d: 0.04, vib: [6, 6] }); },
+  rubberduck: (t, v, p, o) => osc('square', 1100 * p, t, 0.3, 0.12 * v, o, { path: [[0.08, 1500 * p], [0.28, 900 * p]], a: 0.01, hold: 0.18, d: 0.04, bp: 1600, q: 1.5 }),
+  squirt: (t, v, p, o) => noise(t, 0.8, 0.22 * v, o, { f0: 2500, f1: 1200, q: 1, a: 0.02, hold: 0.5, d: 0.1 }),
   hug: (t, v, p, o) => [60, 64, 67, 72].forEach((m, i) => INST.epiano(mtof(m + 12) * p, t + i * 0.09, 0.6, v * 1.2, o)),
 };
 function sfx(name, v = 1, p = 1, pan, out) {
@@ -1211,8 +1267,7 @@ class Machine {
     this.start();
   }
   start() {
-    const list = ['fountain', 'lollipop', 'bubble'];
-    this.gag = list[this.st.next[0]++ % 3]; this.gt = 0; this.shot = 0; this.pending = false;
+    this.gag = cycle(this.st, 0, this.page.tricks[0]); this.gt = 0; this.shot = 0; this.pending = false;
     sfx({ fountain: 'windup', lollipop: 'slide', bubble: 'blow' }[this.gag], 1);
   }
   lollipop() {
@@ -1333,6 +1388,7 @@ class Machine {
 class FactoryPage {
   constructor() {
     this.name = 'factory';
+    this.tricks = [['fountain', 'lollipop', 'bubble'], ['dance', 'heads', 'burp']]; this.who = ['Candy machine', 'Robots', 'Little Dino'];
     this.text = 'Little Dino spent the whole day at the candy factory with Bolt, Gumdrop and Tinny. Now the sun is getting low. Time to go home.';
     this.st = new Stage(); this.st.floor = 692;
     this.belt = new Belt(this.st);
@@ -1365,7 +1421,7 @@ class FactoryPage {
   }
   crewStart() {
     const c = this.crew;
-    c.gag = ['dance', 'heads', 'burp'][this.st.next[1]++ % 3]; c.gt = 0; c.pending = false;
+    c.gag = cycle(this.st, 1, this.tricks[1]); c.gt = 0; c.pending = false;
     if (c.gag === 'dance') { this.disco = 4.4; sfx('tune', 0.9); this.st.say('DANCE!', 640, 170, 70, '#82dcff'); }
   }
   updateCrew(dt) {
@@ -1595,7 +1651,8 @@ function drawBird(x, y, s, flap, col = '#6482d2', face = 1) {
 class TownPage {
   constructor() {
     this.name = 'town';
-    this.text = 'Goodbye, robots! Goodbye, factory! Little Dino walks down the street as the sun goes down and the lamps begin to glow.';
+    this.tricks = [['lamps', 'bus', 'bakery'], ['birds', 'cat', 'dog']]; this.who = ['Street', 'Animals', 'Little Dino'];
+    this.text = 'Down the street, the sun sinks low and paints the sky pink. One by one, the lamps begin to glow.';
     this.st = new Stage(); this.st.floor = 700;
     this.acts = new Acts({ lamps: 2, bus: 3.4, bakery: 4.5, birds: 3, cat: 2.4, dog: 2.4 });
     this.houses = [
@@ -1616,7 +1673,7 @@ class TownPage {
     this.dino = new Dino(this.st, {
       x: 200, ground: () => 664, minX: 90, maxX: 1080, tricks: ['wave', 'jump', 'roar', 'spin'],
       host: {
-        waveTo: 100, waveWord: 'BYE-BYE!', waved: () => { this.robotWave = 2.5; },
+        waveTo: 100, waveWord: 'BYE, ROBOTS!', waved: () => { this.robotWave = 2.5; },
         roarAt: 1150, startle: () => { this.cat.startle = 1; sfx('meow', 0.8, 1.3); if (!this.acts.on('birds')) this.flyBirds(); },
         cheer: () => this.st.hearts(1150, 330, 2),
       },
@@ -1628,12 +1685,12 @@ class TownPage {
     const st = this.st;
     if (k === 2) return this.dino.press();
     if (k === 0) {
-      const a = cycle(st, 0, ['lamps', 'bus', 'bakery']);
+      const a = cycle(st, 0, this.tricks[0]);
       this.acts.run(a);
       if (a === 'bus') { sfx('engine', 1); }
       if (a === 'bakery') { sfx('creak', 1); }
     } else {
-      const a = cycle(st, 1, ['birds', 'cat', 'dog']);
+      const a = cycle(st, 1, this.tricks[1]);
       if (a === 'birds') this.flyBirds(); else this.acts.run(a);
       if (a === 'cat') { sfx('meow', 1); st.say('MEOW!', 1150, 300, 54, '#ffb45a'); }
       if (a === 'dog') { this.windows[2].on = true; }
@@ -1835,6 +1892,7 @@ function riverGround(x) {
 class RiverPage {
   constructor() {
     this.name = 'river';
+    this.tricks = [['fish', 'flies', 'boat'], ['ducks', 'frog', 'turtle']]; this.who = ['River', 'River friends', 'Little Dino'];
     this.text = 'Over the little wooden bridge, the ducks are tucking in for the night. “Goodnight, ducks,” says Little Dino.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ fish: 2.2, flies: 4.5, boat: 9, ducks: 1.6, frog: 1.2, turtle: 3 });
@@ -1855,7 +1913,7 @@ class RiverPage {
   press(k) {
     const st = this.st;
     if (k === 2) return this.dino.press();
-    const a = k === 0 ? cycle(st, 0, ['fish', 'flies', 'boat']) : cycle(st, 1, ['ducks', 'frog', 'turtle']);
+    const a = cycle(st, k, this.tricks[k]);
     this.acts.run(a);
     if (a === 'fish') { this.fishX = rnd(380, 760); sfx('splash', 0.7); }
     if (a === 'flies') { sfx('shimmer', 0.8); }
@@ -2018,6 +2076,7 @@ const DINO_LINES = [[8, 7], [7, 6], [6, 5], [5, 4], [4, 3], [3, 2], [2, 1], [1, 
 class HillPage {
   constructor() {
     this.name = 'hill';
+    this.tricks = [['shoot', 'stars', 'moon'], ['owl', 'sheep', 'bunny']]; this.who = ['Night sky', 'Hill friends', 'Little Dino'];
     this.text = 'Up the hill, under the big round moon. The stars come out, one by one, to light the way.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ shoot: 2.4, stars: 5, moon: 3.5, owl: 2.2, sheep: 4.8, bunny: 3 });
@@ -2039,7 +2098,7 @@ class HillPage {
   press(k) {
     const st = this.st;
     if (k === 2) return this.dino.press();
-    const a = k === 0 ? cycle(st, 0, ['shoot', 'stars', 'moon']) : cycle(st, 1, ['owl', 'sheep', 'bunny']);
+    const a = cycle(st, k, this.tricks[k]);
     this.acts.run(a);
     if (a === 'shoot') { sfx('shimmer', 1); st.say('MAKE A WISH!', 640, 200, 48, '#fff3a0'); }
     if (a === 'stars') { sfx('chime', 0.8); }
@@ -2178,6 +2237,7 @@ class HillPage {
 class HomePage {
   constructor() {
     this.name = 'home';
+    this.tricks = [['door', 'chimney', 'lantern'], ['mamawave', 'kiss', 'call']]; this.who = ['House', 'Mama', 'Little Dino'];
     this.text = 'And there it is. Home! The windows glow warm and yellow, and Mama is waiting at the door.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ door: 6, chimney: 4, lantern: 4, hug: 2.6 });
@@ -2195,7 +2255,7 @@ class HomePage {
     const st = this.st;
     if (k === 2) return this.dino.press();
     if (k === 0) {
-      const a = cycle(st, 0, ['door', 'chimney', 'lantern']);
+      const a = cycle(st, 0, this.tricks[0]);
       this.acts.run(a);
       if (a === 'door') { sfx('creak', 1); }
       if (a === 'lantern') { sfx('sparkle', 0.8); }
@@ -2203,7 +2263,8 @@ class HomePage {
     } else {
       const m = this.mama;
       if (m.trick) { m.pending = true; return; }
-      m.start(cycle(st, 1, ['wave', 'kiss', 'call']));
+      const a = cycle(st, 1, this.tricks[1]);
+      m.start(a === 'mamawave' ? 'wave' : a);
     }
   }
   mamaTrick(d, t, dt) {
@@ -2338,6 +2399,7 @@ class HomePage {
 class BedPage {
   constructor() {
     this.name = 'bed';
+    this.tricks = [['mobile', 'glowstars', 'lamp'], ['read', 'kiss', 'robot'], ['yawn', 'giggle', 'sleep']]; this.who = ['Bedroom', 'Mama & robot', 'Little Dino'];
     this.text = 'Home, snug and warm. Mama reads a story, and the candy mobile turns round and round. Goodnight, Little Dino.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ mobile: 3.5, glowstars: 5, lamp: 6, read: 3, kiss: 2.4, robot: 2.4, yawn: 2.4, giggle: 2.2, sleep: 5 });
@@ -2347,7 +2409,7 @@ class BedPage {
   }
   press(k) {
     const st = this.st;
-    const a = k === 0 ? cycle(st, 0, ['mobile', 'glowstars', 'lamp']) : k === 1 ? cycle(st, 1, ['read', 'kiss', 'robot']) : cycle(st, 2, ['yawn', 'giggle', 'sleep']);
+    const a = cycle(st, k, this.tricks[k]);
     this.acts.run(a);
     if (a === 'mobile') sfx('chime', 1);
     if (a === 'glowstars') sfx('shimmer', 0.7);
@@ -2489,6 +2551,7 @@ class BedPage {
 class CoverPage {
   constructor() {
     this.name = 'cover'; this.text = null;
+    this.tricks = [['letters'], ['rain']]; this.who = ['Title', 'Sky', 'Little Dino'];
     this.st = new Stage(); this.st.floor = 640;
     this.acts = new Acts({ letters: 1.6, rain: 3 });
     this.stars = makeStars(50, 0, W, 20, 300);
@@ -2546,13 +2609,39 @@ class CoverPage {
   }
 }
 // ---------- the book: pages, the story text, and turning pages ----------
+const LABEL = {
+  letters: 'Bouncy letters', rain: 'Candy rain',
+  fountain: 'Candy fountain', lollipop: 'Giant lollipop', bubble: 'Bubblegum bubble',
+  dance: 'Robot disco', heads: 'Boing heads', burp: 'Robot burps',
+  jump: 'Big jump', roar: 'Rawr!', catch: 'Catch a candy', ride: 'Ride the belt', wave: 'Wave', spin: 'Spin', yawn: 'Big yawn', hug: 'Hug Mama',
+  geyser: 'Big fountain', leaves: 'Gust of wind', icecream: 'Ice cream!', squirrel: 'Squirrel', pigeons: 'Pigeons fly', kite: 'Fly a kite', slide: 'Down the slide', swing: 'On the swing',
+  lamps: 'Light the lamps', bus: 'Here comes the bus', bakery: 'Pie at the bakery', birds: 'Birds fly', cat: 'Cat says meow', dog: 'Dog says woof',
+  fish: 'Fish jumps', flies: 'Firefly heart', boat: 'Paper boat', ducks: 'Ducks quack', frog: 'Frog hops', turtle: 'Turtle pops up',
+  barn: 'Open the barn', tractor: 'Tractor', crows: 'Scarecrow', cow: 'Cow says moo', pig: 'Pig says oink', chickens: 'Chickens cluck',
+  mushrooms: 'Mushroom music', moonbeam: 'Moonbeams', web: 'Dewy web', hedgehog: 'Hedgehog rolls', fox: 'Sleepy fox', deer: 'Deer peeks', tiptoe: 'Tiptoe',
+  shoot: 'Shooting star', stars: 'Dino stars', moon: 'Wake the moon', owl: 'Owl hoots', sheep: 'Count the sheep', bunny: 'Bunny peeks',
+  door: 'Open the door', chimney: 'Heart smoke', lantern: 'Lantern glow', mamawave: 'Mama waves', kiss: 'Blow a kiss', call: 'Mama says hi',
+  bubbles: 'Lots of bubbles', tap: 'Turn on the tap', toyboat: 'Toy boat', duck: 'Squeaky duck', sponge: 'Squeeze the sponge', fishy: 'Squirty fish',
+  splash: 'Splash!', beard: 'Bubble beard', dive: 'Dive under',
+  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out', read: 'Turn the page', robot: 'Robot nightlight', giggle: 'Giggle', sleep: 'Fall asleep',
+};
 const Book = {
   pages: [], cur: 0, turn: null, queued: 0, started: false,
   init() {
-    this.pages = [new CoverPage(), new FactoryPage(), new TownPage(), new RiverPage(), new HillPage(), new HomePage(), new BedPage()];
+    this.pages = [new CoverPage(), new FactoryPage(), new ParkPage(), new TownPage(), new RiverPage(), new FarmPage(), new WoodsPage(), new HillPage(), new HomePage(), new BathPage(), new BedPage()];
     this.pages.forEach(p => { p.shown = 0; });
   },
   page() { return this.pages[this.cur]; },
+  // what each of the three buttons does next on this page
+  labels() {
+    const p = this.page();
+    return [0, 1, 2].map(k => {
+      const useDino = k === 2 && p.dino && !p.tricks[2];
+      const list = useDino ? p.dino.tricks : p.tricks[k];
+      const i = useDino ? p.dino.next : p.st.next[k];
+      return { who: p.who[k], what: LABEL[list[i % list.length]] || list[i % list.length] };
+    });
+  },
   go(dir) {
     if (this.turn) { this.queued = dir; return; }
     const to = this.cur + dir;
@@ -2667,6 +2756,718 @@ function drawTurn(main, A, B, e) {
   g.fillStyle = cg; g.fillRect(0, 0, W, H);
   g.restore();
 }
+// ---------- page: the park in the golden light ----------
+const PARK = { ground: 652, ladderX: 822, top: 430, swingX: 360, pivotY: 392, rope: 168 };
+// the slide's chute, as a curve from the platform down to the grass
+const slideAt = u => {
+  const x0 = 882, y0 = PARK.top, cx = 930, cy = 640, x1 = 1060, y1 = PARK.ground;
+  const v = 1 - u;
+  return [v * v * x0 + 2 * v * u * cx + u * u * x1, v * v * y0 + 2 * v * u * cy + u * u * y1];
+};
+class ParkPage {
+  constructor() {
+    this.name = 'park';
+    this.text = 'Goodbye, robots! Little Dino skips home through the park, where the leaves twirl down in the golden light.';
+    this.tricks = [['geyser', 'leaves', 'icecream'], ['squirrel', 'pigeons', 'kite']]; this.who = ['Park', 'Park friends', 'Little Dino'];
+    this.st = new Stage(); this.st.floor = 664;
+    this.acts = new Acts({ geyser: 3.2, leaves: 3.5, icecream: 4, squirrel: 3.4, pigeons: 3, kite: 7 });
+    this.pigeons = [520, 590, 660, 1180].map((x, i) => ({ x, ph: rnd(0, 6), face: i % 2 ? 1 : -1 }));
+    this.swingA = 0; this.swingV = 0.6; this.swing2 = 0;
+    this.leafT = 0;
+    this.dino = new Dino(this.st, {
+      x: 160, ground: () => PARK.ground, minX: 80, maxX: 1090, tricks: ['slide', 'swing', 'jump', 'spin'],
+      host: { trick: (d, t, dt) => this.dinoTrick(d, t, dt), startle: () => this.acts.run('pigeons'), roarAt: 600 },
+    });
+  }
+  press(k) {
+    const st = this.st;
+    if (k === 2) return this.dino.press();
+    const a = cycle(st, k, this.tricks[k]);
+    this.acts.run(a);
+    if (a === 'geyser') { sfx('splash', 0.6, 1.3); st.say('WHOOSH!', 640, 260, 56, '#8cd2ff'); }
+    if (a === 'leaves') { sfx('gust', 1); this.swingV += 1.2; }
+    if (a === 'icecream') { sfx('ding', 0.9, 1.4); setTimeout(() => sfx('ding', 0.9, 1.4), 220); st.say('ICE CREAM!', 1150, 330, 50, '#ff9ac8'); }
+    if (a === 'squirrel') { sfx('chitter', 1); }
+    if (a === 'pigeons') { sfx('flutter', 1); sfx('coo', 0.8); }
+    if (a === 'kite') { sfx('whee', 0.5, 0.8); st.say('UP, UP, UP!', 520, 200, 48, '#ffd25a'); }
+  }
+  // Little Dino's park tricks: down the slide, and a go on the swing
+  dinoTrick(d, t, dt) {
+    const st = this.st;
+    if (d.trick === 'slide') {
+      if (d.stage === 0) { // hop over to the ladder
+        if (d.stepHop(dt) || !d.hopping) {
+          if (Math.abs(d.x - PARK.ladderX) < 4) { d.stage = 1; d.tt = 0; d.face = 1; sfx('creak', 0.4, 2); }
+          else { d.hop(d.x + clamp(PARK.ladderX - d.x, -80, 80), 0, 0.26, 22); sfx('hop', 0.4, 1.2); }
+        }
+      } else if (d.stage === 1) { // climb
+        const p = clamp(t / 1.1, 0, 1);
+        d.x = lerp(PARK.ladderX, PARK.ladderX + 34, p); d.y = lerp(PARK.ground, PARK.top, p) + Math.abs(Math.sin(p * 18)) * 4;
+        if (Math.floor(p * 6) !== Math.floor(clamp((t - dt) / 1.1, 0, 1) * 6)) sfx('tick', 0.4, 0.7 + p);
+        if (p >= 1) { d.stage = 2; d.tt = 0; st.say('WHEE!', 900, 330, 64, '#ff8ca0'); sfx('whee', 1, 1.1); }
+      } else if (d.stage === 2) { // slide down
+        const u = ease(clamp(t / 0.9, 0, 1)), [x, y] = slideAt(u), [x2, y2] = slideAt(Math.min(1, u + 0.02));
+        d.x = x; d.y = y; d.rot = Math.atan2(y2 - y, x2 - x) * 57.3 * 0.7;
+        if (t >= 0.9) { d.stage = 3; d.tt = 0; d.rot = 0; d.y = PARK.ground; d.squash = 1; st.dust(d.x, d.y, 8); sfx('thump', 0.5, 1.4); st.sparkles(d.x, d.y - 60, 8, 50); }
+      } else return t > 0.5;
+      return false;
+    }
+    if (d.trick === 'swing') {
+      if (d.stage === 0) {
+        if (d.stepHop(dt) || !d.hopping) {
+          if (Math.abs(d.x - PARK.swingX) < 4) { d.stage = 1; d.tt = 0; d.hop(PARK.swingX, PARK.pivotY + PARK.rope, 0.4, 40); }
+          else { d.hop(d.x + clamp(PARK.swingX - d.x, -80, 80), 0, 0.26, 22); sfx('hop', 0.4, 1.2); }
+        }
+      } else if (d.stage === 1) {
+        if (d.stepHop(dt, false)) { d.stage = 2; d.tt = 0; sfx('whee', 0.7, 0.9); }
+      } else if (d.stage === 2) { // swing, higher and higher, then gently down
+        const k = Math.sin(Math.PI * clamp(t / 4, 0, 1)), a = 0.75 * k * Math.sin(t * 2.6);
+        this.swingA = a;
+        d.face = 1; d.x = PARK.swingX + Math.sin(a) * PARK.rope; d.y = PARK.pivotY + Math.cos(a) * PARK.rope; d.rot = -a * 57.3;
+        if (Math.floor(t * 2.6 / Math.PI) !== Math.floor((t - dt) * 2.6 / Math.PI) && k > 0.3) sfx('whee', 0.3, 1 + k * 0.4);
+        if (t > 4) { d.rot = 0; d.stage = 3; this.swingA = 0; d.hop(PARK.swingX + 120, PARK.ground, 0.5, 50); }
+      } else if (d.stepHop(dt, false)) { st.dust(d.x, d.y, 5); return true; }
+      return false;
+    }
+    return true;
+  }
+  update(dt) {
+    const st = this.st, A = this.acts;
+    st.update(dt); A.update(dt);
+    const t = st.t;
+    // leaves drift down all the time, lots in a gust
+    this.leafT -= dt * (A.on('leaves') ? 12 : 1);
+    if (this.leafT <= 0) { this.leafT = rnd(0.4, 1.1); st.leaf(rnd(-40, W - 200), rnd(120, 300)); }
+    if (A.on('leaves')) for (const b of st.bits) if (b.kind === 'leaf') b.vx += 140 * dt;
+    // the empty swing sways
+    this.swingV *= Math.pow(0.6, dt);
+    this.swing2 = Math.sin(t * 2.4) * (0.06 + this.swingV * 0.25);
+    if (A.on('geyser') && Math.random() < dt * 30) st.drops(640, 470 - A.t('geyser') * 0, 1, 380);
+    if (A.at('squirrel', 1.5, dt)) { st.say('NUT!', 120, 400, 48, '#c8783c'); sfx('chitter', 0.8, 1.2); }
+    if (A.at('pigeons', 0.2, dt)) st.say('COO COO!', 600, 480, 46, '#b4b4dc');
+    this.dino.update(dt);
+  }
+  draw() {
+    const st = this.st, t = st.t, A = this.acts;
+    rect(0, 0, W, 560, grad(0, 0, 0, 560, ['#f3a36b', '#ffc98a', '#ffe7b0']));
+    glow(1100, 420, 260, '#fff0b4', 0.6);
+    circ(1100, 430, 66, '#ffe9a0', 0);
+    // far trees in autumn colours
+    const far = ['#e8975a', '#d9784a', '#efb45a'];
+    for (let x = -40, i = 0; x < W + 60; x += 90, i++) { const r = 56 + (i * 29 % 30); circ(x, 500 - r * 0.5, r, far[i % 3], 0); }
+    rect(0, 510, W, H - 510, grad(0, 510, 0, H, ['#a8c86e', '#86b05a']));
+    ctx.beginPath(); ctx.moveTo(0, 512); ctx.lineTo(W, 512); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+    // the path
+    ctx.beginPath(); ctx.moveTo(0, 610); ctx.quadraticCurveTo(640, 590, W, 615); ctx.lineTo(W, 700); ctx.quadraticCurveTo(640, 680, 0, 702); ctx.closePath(); paint('#ecd4a8', 3);
+    this.drawKite(t);
+    this.drawTree(t);
+    this.drawFountain(t);
+    this.drawSwings(t);
+    this.drawSlide(t);
+    this.drawCart(t);
+    this.drawPigeons(t);
+    grassTufts([40, 260, 560, 760, 1240], 600, t, '#6e9a4a');
+    st.draw(0); st.draw(1);
+    this.dino.draw();
+    st.draw(2);
+    st.drawWords();
+  }
+  drawTree(t) {
+    line(130, 600, 140, 250, 40, '#8c5a3c');
+    line(135, 330, 230, 290, 14, '#8c5a3c');
+    for (const [x, y, r, c] of [[80, 220, 80, '#e6783c'], [180, 190, 90, '#f0a03c'], [250, 250, 70, '#e65a3c'], [120, 290, 66, '#f5c446']]) circ(x, y, r, c, 3);
+    for (const [x, y, r, c] of [[80, 220, 76, '#e6783c'], [180, 190, 86, '#f0a03c'], [250, 250, 66, '#e65a3c'], [120, 290, 62, '#f5c446']]) circ(x, y, r, c, 0);
+    // the squirrel scampers down for a nut and back up
+    const A = this.acts, s = A.on('squirrel') ? A.t('squirrel') : -1;
+    let sx = 160, sy = 330, down = 0;
+    if (s >= 0) { down = Math.sin(Math.PI * clamp(s / 3.2, 0, 1)); sy = lerp(330, 560, down); sx = 160 + down * 40; }
+    push(sx, sy, s >= 0 && s < 1.6 ? 90 : s >= 1.6 ? -90 : 0);
+    curve(-10, 4, -34, -10, -26, -34, 12, '#c8783c');
+    ell(0, 0, 14, 10, '#c8783c'); circ(12, -6, 8, '#c8783c'); poly([10, -12, 12, -20, 16, -12], '#c8783c', 2);
+    circ(15, -8, 1.8, INK, 0);
+    if (s > 1.5) circ(20, 0, 5, '#8c5a32', 2);
+    pop();
+  }
+  drawFountain(t) {
+    const A = this.acts, x = 640, y = 560;
+    const big = A.on('geyser') ? Math.sin(Math.PI * clamp(A.t('geyser') / 3, 0, 1)) : 0;
+    const h = 60 + big * 230;
+    // the water
+    ctx.globalAlpha = 0.75;
+    for (const s of [-1, 1]) curve(x, y - 40, x + s * 30, y - 40 - h * 0.9, x + s * (50 + big * 40), y - 20, 6 + big * 4, '#9ad8ff', 0);
+    line(x, y - 40, x, y - 40 - h, 7 + big * 6, '#bfe6ff', 0);
+    ctx.globalAlpha = 1;
+    if (big > 0.3) { glow(x, y - 40 - h, 80, '#ffffff', 0.4); ctx.globalAlpha = big * 0.5; ctx.beginPath(); ctx.arc(x, y - 40, h * 0.6, Math.PI, TAU); ctx.lineWidth = 8; ctx.strokeStyle = '#ff9ab4'; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y - 40, h * 0.6 - 8, Math.PI, TAU); ctx.strokeStyle = '#ffe680'; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y - 40, h * 0.6 - 16, Math.PI, TAU); ctx.strokeStyle = '#9ad8ff'; ctx.stroke(); ctx.globalAlpha = 1; }
+    ell(x, y, 90, 22, '#c8c8d7'); ell(x, y - 6, 78, 14, '#9ad8ff', 2);
+    rrect(x - 14, y - 50, 28, 40, 6, '#c8c8d7'); ell(x, y - 50, 26, 8, '#b4b4c8');
+  }
+  drawSwings(t) {
+    const px = PARK.swingX, py = PARK.pivotY;
+    line(260, 600, 300, py - 6, 10, '#5a82d2'); line(340, 600, 300, py - 6, 10, '#5a82d2');
+    line(460, 600, 500, py - 6, 10, '#5a82d2'); line(540, 600, 500, py - 6, 10, '#5a82d2');
+    line(290, py, 510, py, 12, '#4a6ec0');
+    const onSwing = this.dino.trick === 'swing' && this.dino.stage === 2;
+    for (const [x, a] of [[px, onSwing ? this.swingA : this.swing2 * 0.7], [px + 80, -this.swing2]]) {
+      const sx = x + Math.sin(a) * PARK.rope, sy = py + Math.cos(a) * PARK.rope;
+      line(x - 14, py, sx - 16, sy, 2.5, INK, 0); line(x + 14, py, sx + 16, sy, 2.5, INK, 0);
+      push(sx, sy, -a * 57.3); rrect(-22, -2, 44, 10, 4, '#ff8c5a'); pop();
+    }
+  }
+  drawSlide(t) {
+    const lx = PARK.ladderX, top = PARK.top;
+    line(lx - 12, 640, lx - 4, top - 30, 8, '#ffcd46'); line(lx + 28, 640, lx + 36, top - 30, 8, '#ffcd46');
+    for (let y = 620; y > top; y -= 30) line(lx - 9, y, lx + 31, y, 5, '#ffcd46');
+    rrect(lx - 6, top - 4, 70, 14, 5, '#5a82d2');
+    // the chute
+    ctx.beginPath(); for (let u = 0; u <= 1.001; u += 0.05) { const [x, y] = slideAt(u); ctx.lineTo(x, y); }
+    ctx.lineWidth = 30; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = 24; ctx.strokeStyle = '#f05a5a'; ctx.stroke();
+    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.stroke();
+    line(1000, 600, 1010, 650, 8, '#ffcd46');
+  }
+  drawCart(t) {
+    const A = this.acts, x = 1150, y = 600, ic = A.on('icecream') ? A.t('icecream') : -1;
+    line(x + 6, y - 90, x + 6, y - 210, 5, '#8c8ca0');
+    const sw = Math.sin(t * 1.2) * 3;
+    for (let i = 0; i < 6; i++) poly([x + 6, y - 230, x + 6 + Math.cos(Math.PI + i * Math.PI / 6) * 90 + sw, y - 190, x + 6 + Math.cos(Math.PI + (i + 1) * Math.PI / 6) * 90 + sw, y - 190], i % 2 ? WHITE : '#ff9ac8', 2.5);
+    rrect(x - 70, y - 100, 150, 80, 12, '#9ad8ff');
+    word('ICE CREAM', x + 5, y - 60, 22, 0, '#ff8cc8');
+    for (const wx of [x - 40, x + 50]) { circ(wx, y - 14, 16, '#5a5a6e'); circ(wx, y - 14, 6, '#c8c8d7'); }
+    // the cone tower grows when the bell rings
+    if (ic >= 0) {
+      const n = Math.min(4, Math.floor(ic * 3)), pop1 = 1 - ease((ic - 3.4) / 0.5);
+      push(x + 5, y - 104, 0, pop1, pop1);
+      poly([-16, 0, 16, 0, 0, 40], '#e6b46e');
+      for (let i = 0; i < n; i++) { circ(Math.sin(t * 4 + i) * 2, -10 - i * 22, 18, ['#ffb4d2', '#fff0c8', '#b4e6a0', '#c8a0e6'][i]); }
+      if (n === 4) circ(0, -10 - 4 * 22 + 6, 7, '#ff3c50');
+      pop();
+    }
+  }
+  drawPigeons(t) {
+    const A = this.acts, f = A.on('pigeons') ? A.t('pigeons') : -1;
+    this.pigeons.forEach((p, i) => {
+      let x = p.x, y = 646, flap = null;
+      if (f >= 0) { const k = clamp(f / 2.8, 0, 1); x += Math.sin(k * TAU) * 120 * p.face; y -= Math.sin(k * Math.PI) * 180; flap = k < 1 ? f * 26 + i : null; }
+      const peck = flap === null ? Math.max(0, Math.sin(t * 3 + p.ph)) * 8 : 0;
+      push(x, y, peck * 3 * p.face);
+      drawBird(0, 0, 0.9, flap, '#a0a0c8', p.face);
+      pop();
+    });
+  }
+  drawKite(t) {
+    const A = this.acts, k = A.on('kite') ? A.t('kite') : -1;
+    if (k < 0) return;
+    const up = Math.sin(Math.PI * clamp(k / 7, 0, 1)), x = 300 + up * 260 + Math.sin(t * 1.3) * 30, y = 520 - up * 380 + Math.sin(t * 2) * 14;
+    ctx.beginPath(); ctx.moveTo(230, 290); ctx.quadraticCurveTo((x + 230) / 2, (y + 290) / 2 + 60, x, y + 30); ctx.lineWidth = 1.5; ctx.strokeStyle = INK; ctx.stroke();
+    push(x, y, Math.sin(t * 2.4) * 10);
+    poly([0, -40, 28, 0, 0, 40, -28, 0], '#ff6e8c');
+    line(0, -40, 0, 40, 2, INK, 0); line(-28, 0, 28, 0, 2, INK, 0);
+    ctx.beginPath(); for (let i = 0; i <= 8; i++) ctx.lineTo(Math.sin(t * 5 + i) * 10, 40 + i * 12); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+    for (let i = 1; i < 8; i += 2) poly([Math.sin(t * 5 + i) * 10 - 6, 40 + i * 12, Math.sin(t * 5 + i) * 10 + 6, 40 + i * 12 - 6, Math.sin(t * 5 + i) * 10 + 6, 40 + i * 12 + 6], CANDY[i % 7], 1.5);
+    pop();
+  }
+}
+// ---------- page: past the sleepy farm ----------
+class FarmPage {
+  constructor() {
+    this.name = 'farm';
+    this.text = 'Past the sleepy farm. The cows are munching, the chickens are roosting, and the old red barn says goodnight.';
+    this.tricks = [['barn', 'tractor', 'crows'], ['cow', 'pig', 'chickens']]; this.who = ['Farm', 'Farm animals', 'Little Dino'];
+    this.st = new Stage(); this.st.floor = 680;
+    this.acts = new Acts({ barn: 4.2, tractor: 6, crows: 3.6, cow: 2.2, pig: 2.4, chickens: 2.4 });
+    this.stars = makeStars(30, 0, W, 110, 280);
+    this.flies = makeFlies(10, 40, W - 40, 420, 620);
+    this.cowBlink = 2; this.eggs = [];
+    this.dino = new Dino(this.st, {
+      x: 140, ground: () => 668, minX: 80, maxX: W - 110, tricks: ['wave', 'jump', 'roar', 'spin'],
+      host: {
+        waveWord: 'GOODNIGHT, COW!', waveTo: 380, waved: () => { this.acts.run('cow'); sfx('moo', 0.8); },
+        roarAt: 220, startle: () => { this.acts.run('chickens'); sfx('bawk', 1, 1.2); },
+        cheer: () => this.st.hearts(380, 430, 2),
+      },
+    });
+  }
+  press(k) {
+    const st = this.st;
+    if (k === 2) return this.dino.press();
+    const a = cycle(st, k, this.tricks[k]);
+    this.acts.run(a);
+    if (a === 'barn') sfx('creak', 1, 0.8);
+    if (a === 'tractor') sfx('tractor', 1);
+    if (a === 'crows') { sfx('caw', 1); st.say('CAW CAW!', 1180, 300, 48, '#c8c8dc'); }
+    if (a === 'cow') { sfx('moo', 1); st.say('MOO!', 380, 360, 64, WHITE); }
+    if (a === 'pig') { sfx('oink', 1); st.say('OINK OINK!', 600, 470, 50, '#ffb4c8'); }
+    if (a === 'chickens') { sfx('bawk', 1); st.say('BAWK!', 200, 420, 52, '#fff0b4'); }
+  }
+  update(dt) {
+    const st = this.st, A = this.acts;
+    st.update(dt); A.update(dt);
+    const t = st.t;
+    this.cowBlink -= dt; if (this.cowBlink < -0.2) this.cowBlink = rnd(2, 5);
+    if (A.at('barn', 1.0, dt)) { sfx('neigh', 1); st.say('NEIGH!', 850, 330, 56, '#ffe0b4'); }
+    if (A.at('pig', 0.9, dt)) { st.drops(600, 600, 10, 220, '#8c5a3c'); sfx('splash', 0.4, 0.7); }
+    if (A.at('chickens', 1.1, dt)) { this.eggs.push({ x: 200 + rnd(-30, 30), y: 540, vy: 0, t: 0 }); sfx('pop', 0.5, 1.4); st.say('AN EGG!', 230, 470, 40, '#fff6dc'); }
+    for (const e of this.eggs) { e.t += dt; e.vy += 900 * dt; e.y = Math.min(640, e.y + e.vy * dt); }
+    this.eggs = this.eggs.filter(e => e.t < 6);
+    if (A.on('tractor') && Math.floor(A.t('tractor') * 4) !== Math.floor((A.t('tractor') - dt) * 4)) st.puff(-260 + A.t('tractor') * 300 + 30, 470, 10, '#c8c0d2', 0);
+    updateFlies(this.flies, t, dt);
+    this.dino.update(dt);
+  }
+  draw() {
+    const st = this.st, t = st.t, A = this.acts;
+    rect(0, 0, W, 520, grad(0, 0, 0, 520, ['#3c4a8c', '#8c78c0', '#e8a6a6', '#f8c79a']));
+    drawStars(this.stars, t, 0.6);
+    glow(260, 470, 220, '#ffc88c', 0.4);
+    // rolling fields
+    ctx.beginPath(); ctx.moveTo(0, 470); ctx.quadraticCurveTo(300, 420, 640, 460); ctx.quadraticCurveTo(980, 500, W, 440); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); paint('#7aa86a', 0);
+    ctx.globalAlpha = 0.25; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(0, 480 + i * 14); ctx.quadraticCurveTo(640, 470 + i * 16, W, 470 + i * 12); ctx.lineWidth = 3; ctx.strokeStyle = '#4e7a4a'; ctx.stroke(); } ctx.globalAlpha = 1;
+    rect(0, 540, W, H - 540, grad(0, 540, 0, H, ['#8cb874', '#6e9a5a']));
+    this.drawScarecrow(t);
+    this.drawBarn(t);
+    this.drawCow(t);
+    // the lane where the tractor drives
+    rect(0, 600, W, 34, '#c8aa82'); rect(0, 598, W, 3, 'rgba(70,40,47,0.35)');
+    if (A.on('tractor')) this.drawTractor(-260 + A.t('tractor') * 300, 604, t);
+    this.drawFence(t);
+    this.drawPig(t);
+    for (const e of this.eggs) { ell(e.x, e.y - 9, 8, 10, '#fff6dc', 2.5); }
+    // hay bales
+    for (const [x, y] of [[1080, 580], [1150, 586], [1115, 548]]) { rrect(x - 34, y - 26, 68, 46, 10, '#f0cd6e'); line(x - 26, y - 4, x + 26, y - 4, 2, '#c8a046', 0); }
+    st.draw(0); st.draw(1);
+    this.dino.draw();
+    st.draw(2);
+    drawFlies(this.flies, t);
+    st.drawWords();
+  }
+  drawBarn(t) {
+    const A = this.acts, x0 = 700, x1 = 980, base = 560;
+    rrect(1000, 300, 70, 260, 30, '#c8c8d7'); ell(1035, 302, 35, 18, '#a0a0b4');
+    ctx.beginPath(); ctx.moveTo(x0, base); ctx.lineTo(x0, 400); ctx.lineTo(x0 + 40, 330); ctx.lineTo(840, 290); ctx.lineTo(x1 - 40, 330); ctx.lineTo(x1, 400); ctx.lineTo(x1, base); ctx.closePath();
+    paint('#d2505a', 3);
+    ctx.beginPath(); ctx.moveTo(x0 - 10, 404); ctx.lineTo(x0 + 38, 326); ctx.lineTo(840, 284); ctx.lineTo(x1 - 38, 326); ctx.lineTo(x1 + 10, 404); ctx.lineWidth = 12; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = 7; ctx.strokeStyle = '#fff6ea'; ctx.stroke();
+    // loft window, lit
+    glow(840, 360, 60, '#ffd27a', 0.5); rrect(816, 340, 48, 40, 6, '#ffe08a'); line(840, 340, 840, 380, 3, INK, 0);
+    // doors that swing open, with a horse inside
+    const open = A.on('barn') ? ease(A.t('barn') / 0.6) * (1 - ease((A.t('barn') - 3.6) / 0.5)) : 0;
+    rrect(770, 420, 140, 140, 4, '#3a2a30');
+    if (open > 0.1) {
+      glow(840, 490, 80, '#ffd27a', 0.4 * open);
+      const nod = Math.sin(t * 6) * 3, hx = 840, hy = 480 + (1 - open) * 40;
+      ell(hx, hy + 30, 26, 40, '#a0643c');
+      ell(hx + 4, hy + nod, 22, 34, '#b4783c', 3);
+      ell(hx + 6, hy + 26 + nod, 15, 12, '#dcb48c', 2.5);
+      poly([hx - 14, hy - 28 + nod, hx - 6, hy - 46 + nod, hx, hy - 28 + nod], '#b4783c');
+      poly([hx + 8, hy - 28 + nod, hx + 16, hy - 46 + nod, hx + 20, hy - 28 + nod], '#b4783c');
+      for (let i = 0; i < 4; i++) line(hx - 14 + i * 6, hy - 30 + nod, hx - 18 + i * 6, hy - 12 + nod, 4, '#5a3c28', 0);
+      circ(hx - 6, hy - 6 + nod, 3, INK, 0); circ(hx + 16, hy - 6 + nod, 3, INK, 0);
+    }
+    for (const [dx, s] of [[770, 1], [910, -1]]) {
+      push(dx, 0, 0, s * (1 - open * 0.85), 1);
+      rect(0, 420, 70, 140, '#e8606a'); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(0, 420, 70, 140);
+      line(6, 426, 64, 554, 6, '#fff6ea', 0); line(64, 426, 6, 554, 6, '#fff6ea', 0);
+      ctx.strokeStyle = '#fff6ea'; ctx.lineWidth = 6; ctx.strokeRect(5, 425, 60, 130);
+      pop();
+    }
+    // a weathervane rooster turning in the breeze
+    push(840, 284, 0, Math.cos(t * 0.5), 1); line(0, 0, 0, -40, 3, INK, 0); poly([-14, -44, 14, -44, 8, -58, -6, -52], '#3a2a30', 0); pop();
+  }
+  drawCow(t) {
+    const A = this.acts, c = A.on('cow') ? A.t('cow') : -1, x = 380, y = 520;
+    const chew = Math.sin(t * 5) * 2, moo = c >= 0 && c < 1.4 ? Math.sin(Math.PI * c / 1.4) : 0;
+    const sw = Math.sin(t * 2.2) * 14 + (c >= 0 ? Math.sin(c * 12) * 12 : 0);
+    curve(x + 54, y - 34, x + 72, y - 10, x + 66 + sw * 0.4, y + 18, 4, WHITE);
+    circ(x + 66 + sw * 0.4, y + 22, 6, INK, 0);
+    for (const lx of [-34, -16, 26, 44]) line(x + lx, y - 6, x + lx, y + 34, 9, WHITE);
+    ell(x + 6, y - 32, 62, 36, WHITE);
+    for (const [sx, sy, r] of [[-20, -44, 14], [20, -22, 12], [36, -46, 10]]) ell(x + sx, y + sy, r * 1.3, r, '#3a3a46', 0);
+    ell(x + 14, y + 2, 12, 8, '#ffb4c8', 2);
+    push(x - 58, y - 52 - moo * 8, -moo * 15);
+    poly([-14, -22, -24, -34, -6, -28], '#f5ebdc', 2.5); poly([14, -22, 24, -34, 6, -28], '#f5ebdc', 2.5);
+    ell(-26, -14, 12, 6, WHITE); ell(26, -14, 12, 6, WHITE);
+    ell(0, 0, 24, 28, WHITE);
+    ell(0, 18 + chew * 0.3, 20, 13 + moo * 6, '#ffb4c8', 2.5);
+    circ(-7, 18, 3, '#b4647a', 0); circ(7, 18, 3, '#b4647a', 0);
+    if (this.cowBlink < 0) { line(-14, -6, -6, -6, 2.5, INK, 0); line(6, -6, 14, -6, 2.5, INK, 0); }
+    else { circ(-10, -6, 4, INK, 0); circ(10, -6, 4, INK, 0); }
+    // a little bell
+    circ(0, 36, 6, '#ffd250', 2);
+    pop();
+  }
+  drawFence(t) {
+    for (let x = 20; x < W; x += 80) line(x, 600, x, 530, 9, '#b48c64');
+    line(0, 548, W, 548, 7, '#c8a078'); line(0, 576, W, 576, 7, '#c8a078');
+    // chickens on the top rail
+    const A = this.acts, f = A.on('chickens') ? A.t('chickens') : -1;
+    [[150, 0], [205, 1], [260, 2]].forEach(([x, i]) => {
+      const hop = f >= 0 && f < 1.6 ? Math.abs(Math.sin(f * 10 + i)) * 26 : 0, flap = f >= 0 && f < 1.6 ? Math.sin(f * 30 + i) * 10 : 0;
+      const sleepy = f < 0, y = 540 - hop;
+      push(x, y, 0, i === 1 ? -1 : 1, 1);
+      ell(0, -12, 18, 15, WHITE);
+      poly([-4, -16, -20, -26 - flap, -16, -8], '#f0ebe1', 2.5);
+      circ(12, -28, 10, WHITE);
+      poly([8, -38, 12, -46, 16, -38, 20, -42, 18, -34], '#f05050', 2);
+      poly([21, -29, 29, -26, 21, -23], '#ffb43c', 2);
+      if (sleepy && Math.sin(t * 0.7 + i) > -0.6) curve(11, -30, 14, -27, 17, -30, 2, INK, 0); else circ(14, -30, 2, INK, 0);
+      line(-4, 0, -4, 6, 2, '#ffb43c', 0); line(4, 0, 4, 6, 2, '#ffb43c', 0);
+      pop();
+    });
+  }
+  drawPig(t) {
+    const A = this.acts, p = A.on('pig') ? A.t('pig') : -1, x = 600, y = 640;
+    ell(x, y, 80, 18, '#8c5a3c', 2.5); ell(x - 20, y - 4, 30, 6, '#a0704a', 0);
+    const roll = p >= 0 ? Math.sin(Math.PI * clamp((p - 0.5) / 1.2, 0, 1)) : 0;
+    push(x, y - 26, roll * 180);
+    curve(-34, -4, -46, -14, -40, -24, 3, '#ffb4c8');
+    ell(0, 0, 38, 26, '#ffb4c8');
+    if (roll > 0.2) { circ(-10, 6, 6, '#8c5a3c', 0); circ(14, -8, 5, '#8c5a3c', 0); }
+    circ(30, -10, 18, '#ffb4c8');
+    poly([22, -26, 26, -38, 34, -26], '#ffa0b8', 2.5);
+    ell(44, -6, 9, 8, '#ff96b0', 2.5); circ(42, -6, 1.8, INK, 0); circ(47, -6, 1.8, INK, 0);
+    circ(30, -16, 2.6, INK, 0);
+    for (const lx of [-20, 18]) line(lx, 20, lx, 28, 7, '#ffb4c8');
+    pop();
+  }
+  drawScarecrow(t) {
+    const A = this.acts, c = A.on('crows') ? A.t('crows') : -1, x = 1190, y = 520;
+    const wig = c >= 0 && c < 1.2 ? Math.sin(c * 20) * 8 : 0;
+    line(x, y + 40, x, y - 120, 7, '#8c5a3c');
+    push(x, y - 80, wig);
+    line(-70, 0, 70, 0, 6, '#8c5a3c');
+    poly([-30, -10, 30, -10, 36, 60, -36, 60], '#6e8cd2');
+    circ(0, -34, 22, '#f0cd6e');
+    poly([-34, -44, 34, -44, 0, -84], '#a0643c');
+    circ(-8, -36, 3, INK, 0); circ(8, -36, 3, INK, 0);
+    ctx.beginPath(); ctx.arc(0, -28, 8, 0.3, Math.PI - 0.3); ctx.lineWidth = 2.5; ctx.strokeStyle = INK; ctx.stroke();
+    pop();
+    // crows on its arms fly up and come back
+    [[-56, 0], [52, 1]].forEach(([dx, i]) => {
+      let bx = x + dx, by = y - 92, flap = null;
+      if (c >= 0) { const k = clamp(c / 3.2, 0, 1); bx += Math.sin(k * TAU) * 160 * (i ? 1 : -1); by -= Math.sin(k * Math.PI) * 160; flap = k < 1 ? c * 24 + i : null; }
+      drawBird(bx, by, 0.85, flap, '#3c3c4e', i ? -1 : 1);
+    });
+  }
+  drawTractor(x, y, t) {
+    const bob = Math.sin(t * 20) * 1.5;
+    circ(x + 20, y + 44, 30, '#3c3c4a'); circ(x + 20, y + 44, 12, '#ffd250');
+    circ(x + 110, y + 54, 20, '#3c3c4a'); circ(x + 110, y + 54, 8, '#ffd250');
+    rrect(x + 40, y + 4 + bob, 90, 40, 8, '#5ab46e');
+    rrect(x - 4, y - 40 + bob, 56, 64, 8, '#5ab46e'); rrect(x + 4, y - 32 + bob, 40, 30, 5, '#cdeeff');
+    line(x + 100, y + 4 + bob, x + 100, y - 24 + bob, 7, '#3c3c4a');
+    glow(x + 136, y + 20, 60, '#fff3a0', 0.6); circ(x + 132, y + 20 + bob, 7, '#fff6be');
+    // a robot is driving!
+    rrect(x + 14, y - 26 + bob, 20, 18, 5, '#5acdc3', 2); circ(x + 20, y - 18 + bob, 2, INK, 0); circ(x + 28, y - 18 + bob, 2, INK, 0);
+  }
+}
+// ---------- page: into the quiet woods ----------
+class WoodsPage {
+  constructor() {
+    this.name = 'woods';
+    this.text = 'Into the quiet woods. The mushrooms glow softly, and the woodland friends are curling up for the night.';
+    this.tricks = [['mushrooms', 'moonbeam', 'web'], ['hedgehog', 'fox', 'deer']]; this.who = ['Woods', 'Woodland friends', 'Little Dino'];
+    this.st = new Stage(); this.st.floor = 690;
+    this.acts = new Acts({ mushrooms: 3.6, moonbeam: 4.5, web: 4, hedgehog: 4, fox: 3.4, deer: 4.6 });
+    this.flies = makeFlies(18, 40, W - 40, 220, 640);
+    // mushrooms: each one sings a note of the scale when it lights up
+    const notes = [72, 74, 76, 79, 81, 84, 86, 88];
+    this.shrooms = [[190, 650, 1.1], [228, 656, 0.7], [262, 648, 0.9], [300, 658, 0.6], [930, 650, 1], [968, 658, 0.65], [1004, 646, 0.85], [1046, 656, 0.6]]
+      .map(([x, y, s], i) => ({ x, y, s, note: notes[i], col: i % 2 ? '#ff9ad2' : '#8ce6ff', lit: 0 }));
+    this.foxBlink = 0; this.hx = 420; this.hdir = 1;
+    this.dino = new Dino(this.st, {
+      x: 120, ground: () => 668, minX: 80, maxX: W - 110, tricks: ['tiptoe', 'wave', 'jump', 'spin'],
+      host: {
+        waveWord: 'GOODNIGHT, FOX!', waveTo: 1120, waved: () => this.acts.run('fox'),
+        trick: (d, t, dt) => this.tiptoe(d, t, dt), startle: () => this.acts.run('hedgehog'), roarAt: 420,
+      },
+    });
+  }
+  // a quiet trick for a quiet wood: little slow steps, and SHHH!
+  tiptoe(d, t, dt) {
+    if (d.stage === 0) { d.stage = 1; this.st.say('SHHH!', d.x + d.face * 40, d.y - 200, 56, '#c8e6ff'); sfx('shh', 1); }
+    if (d.stepHop(dt) || !d.hopping) {
+      if (t > 3) return true;
+      const x = clamp(d.x + d.face * 34, d.minX, d.maxX);
+      if (x === d.x) d.face = -d.face;
+      d.hop(x, 0, 0.5, 10); sfx('tick', 0.15, 0.6);
+    }
+    return false;
+  }
+  press(k) {
+    const st = this.st;
+    if (k === 2) return this.dino.press();
+    const a = cycle(st, k, this.tricks[k]);
+    this.acts.run(a);
+    if (a === 'moonbeam') sfx('shimmer', 0.6, 0.8);
+    if (a === 'web') sfx('sparkle', 0.8, 1.2);
+    if (a === 'hedgehog') { sfx('squeak', 0.5, 0.8); }
+    if (a === 'fox') { sfx('yawn', 0.6, 1.5); st.say('YAAAWN!', 1120, 520, 42, '#ffb46e'); }
+    if (a === 'deer') sfx('leaves', 0.8);
+  }
+  update(dt) {
+    const st = this.st, A = this.acts;
+    st.update(dt); A.update(dt);
+    const t = st.t;
+    this.shrooms.forEach((m, i) => {
+      m.lit = Math.max(0, m.lit - dt * 0.7);
+      if (A.at('mushrooms', i * 0.32, dt)) { m.lit = 1; INST && AU.ctx && AU.ctx.state === 'running' && INST.box(mtof(m.note), AU.ctx.currentTime + 0.01, 0.4, 2.2, AU.fx); st.sparkles(m.x, m.y - 30 * m.s, 3, 20, m.col); }
+    });
+    if (A.at('hedgehog', 3.2, dt)) st.say('PEEP!', this.hx + this.hdir * 340, 560, 40, '#e6c8a0');
+    if (A.at('hedgehog', 3.95, dt)) { this.hx += this.hdir * 340; this.hdir = -this.hdir; }
+    if (A.at('deer', 1.2, dt)) st.say('HELLO, DEER!', 520, 330, 42, '#ffe0b4');
+    if (A.on('moonbeam') && Math.random() < dt * 20) st.sparkles(rnd(600, 1100), rnd(150, 600), 1, 4, '#fff6c8');
+    updateFlies(this.flies, t, dt);
+    this.dino.update(dt);
+  }
+  draw() {
+    const st = this.st, t = st.t, A = this.acts;
+    rect(0, 0, W, H, grad(0, 0, 0, H, ['#0f2a3a', '#1d4650', '#2a5a58']));
+    // moonbeams through the trees
+    const mb = 0.07 + (A.on('moonbeam') ? 0.18 * Math.sin(Math.PI * clamp(A.t('moonbeam') / 4.5, 0, 1)) : 0) + 0.02 * Math.sin(t * 0.8);
+    ctx.globalAlpha = mb;
+    for (const [x, w] of [[760, 70], [920, 110], [1100, 60]]) poly([x, 0, x + w, 0, x + w - 260, H, x - 200, H], '#fff6c8', 0);
+    ctx.globalAlpha = 1;
+    // three layers of trunks, darker behind
+    const layer = (xs, w, col) => { for (const x of xs) rect(x - w / 2, 0, w, 640, col); };
+    layer([60, 330, 580, 860, 1180], 30, '#183a44');
+    layer([150, 480, 760, 1050], 46, '#1f4a4c');
+    for (const x of [40, 400, 690, 1230]) { rect(x - 34, 0, 68, 660, '#2c5850'); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(x - 34, -5, 68, 665); for (let y = 60; y < 640; y += 90) line(x - 14, y, x - 6, y + 40, 3, '#244a44', 0); }
+    // leafy canopy at the top
+    for (let x = -40, i = 0; x < W + 60; x += 110, i++) circ(x, 40 + (i % 2) * 30, 90, i % 2 ? '#1e4a40' : '#24564a', 0);
+    // the spider web between two trunks
+    this.drawWeb(t);
+    // the forest floor
+    ctx.beginPath(); ctx.moveTo(0, 620); ctx.quadraticCurveTo(640, 600, W, 625); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); paint('#2e5a46', 3);
+    // ferns
+    for (const x of [90, 360, 620, 820, 1150]) for (let i = -2; i <= 2; i++) { const sw = Math.sin(t * 1.2 + x + i) * 4; curve(x, 640, x + i * 18 + sw, 600, x + i * 34 + sw, 590 + Math.abs(i) * 14, 4, '#3f7a54', 0); }
+    this.drawDeer(t);
+    // log with the fox curled on it
+    rrect(1000, 590, 200, 50, 24, '#7a5040'); ell(1000, 615, 14, 25, '#a0704a'); ell(1000, 615, 7, 13, '#7a5040', 0);
+    this.drawFox(t);
+    for (const m of this.shrooms) this.drawShroom(m, t);
+    this.drawHedgehog(t);
+    st.draw(0); st.draw(1);
+    this.dino.draw();
+    st.draw(2);
+    drawFlies(this.flies, t);
+    st.drawWords();
+  }
+  drawShroom(m, t) {
+    const g = 0.35 + 0.15 * Math.sin(t * 1.5 + m.x) + m.lit * 0.6, s = m.s * (1 + m.lit * 0.15);
+    glow(m.x, m.y - 30 * s, 70 * s, m.col, g * 0.6);
+    rrect(m.x - 7 * s, m.y - 30 * s, 14 * s, 32 * s, 6 * s, '#f5ebdc', 2.5);
+    ctx.beginPath(); ctx.ellipse(m.x, m.y - 30 * s, 30 * s, 22 * s, 0, Math.PI, TAU); ctx.closePath(); paint(m.lit > 0.2 ? shade(m.col, 0.3) : m.col, 2.5);
+    for (const [dx, dy] of [[-12, -40], [6, -46], [16, -36]]) circ(m.x + dx * s, m.y + dy * s, 3.5 * s, 'rgba(255,255,255,0.8)', 0);
+  }
+  drawWeb(t) {
+    const cx = 220, cy = 260, r = 90, A = this.acts, dew = A.on('web') ? Math.sin(Math.PI * clamp(A.t('web') / 4, 0, 1)) : 0;
+    ctx.globalAlpha = 0.5 + dew * 0.4; ctx.strokeStyle = '#e6f0ff'; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.stroke(); }
+    for (let k = 1; k <= 5; k++) { ctx.beginPath(); for (let i = 0; i <= 10; i++) { const a = i / 10 * TAU, rr = r * k / 5.5; ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 14; i++) { const a = i * 2.3, rr = r * (0.3 + (i % 5) / 6); const k = 0.3 + dew * (0.5 + 0.5 * Math.sin(t * 6 + i)); glow(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 8 + dew * 8, '#ffffff', k); }
+    // the spider on its thread
+    const sy = cy + 10 + (A.on('web') ? Math.sin(Math.PI * clamp(A.t('web') / 4, 0, 1)) * 90 : 0) + Math.sin(t * 2) * 3;
+    line(cx, cy, cx, sy, 1, '#e6f0ff', 0);
+    for (let i = 0; i < 4; i++) for (const s of [-1, 1]) line(cx, sy, cx + s * 12, sy - 6 + i * 4, 1.5, INK, 0);
+    circ(cx, sy, 7, '#3c3c4e', 2); circ(cx - 2, sy - 1, 1.5, WHITE, 0); circ(cx + 2, sy - 1, 1.5, WHITE, 0);
+  }
+  drawHedgehog(t) {
+    const A = this.acts, h = A.on('hedgehog') ? A.t('hedgehog') : -1;
+    let x = this.hx, rolled = 0, rot = 0;
+    if (h >= 0 && h < 3.95) { const k = clamp((h - 0.4) / 2.4, 0, 1); x = this.hx + ease(k) * 340 * this.hdir; rolled = h > 0.3 && h < 3 ? 1 : 0; rot = ease(k) * 340 / 26 * 57.3 * this.hdir; }
+    const y = 646;
+    if (rolled) {
+      push(x, y - 24, rot);
+      for (let i = 0; i < 14; i++) { const a = i / 14 * TAU; poly([Math.cos(a) * 18, Math.sin(a) * 18, Math.cos(a + 0.22) * 34, Math.sin(a + 0.22) * 34, Math.cos(a + 0.44) * 18, Math.sin(a + 0.44) * 18], '#8c6450', 2); }
+      circ(0, 0, 22, '#a07858');
+      pop();
+      return;
+    }
+    const sniff = Math.sin(t * 8) * 1.5;
+    for (let i = 0; i < 9; i++) { const a = Math.PI + 0.2 + i * 0.32; poly([x - 6 + Math.cos(a) * 20, y - 12 + Math.sin(a) * 14, x - 6 + Math.cos(a + 0.16) * 38, y - 12 + Math.sin(a + 0.16) * 30, x - 6 + Math.cos(a + 0.32) * 20, y - 12 + Math.sin(a + 0.32) * 14], '#8c6450', 2); }
+    ell(x - 4, y - 12, 30, 16, '#a07858');
+    ell(x + 22 + sniff, y - 10, 14, 10, '#e6c8a0'); circ(x + 36 + sniff, y - 10, 3.5, INK, 0); circ(x + 22 + sniff, y - 14, 2.2, INK, 0);
+  }
+  drawFox(t) {
+    const A = this.acts, f = A.on('fox') ? A.t('fox') : -1, x = 1110, y = 588;
+    const awake = f >= 0 ? Math.sin(Math.PI * clamp(f / 3.4, 0, 1)) : 0, br = Math.sin(t * 1.4) * 1.5;
+    // curled body with the bushy tail wrapped round
+    ell(x, y - 18 + br * 0.3, 50, 26 + br, '#e6783c');
+    ctx.beginPath(); ctx.ellipse(x + 14, y - 8, 46, 16, 0.1, 0, Math.PI); paint('#f08c46', 3);
+    ell(x + 50, y - 10, 14, 10, '#fff6ea', 2.5);
+    push(x - 40, y - 26 - awake * 22, -awake * 20);
+    poly([-14, -10, -18, -30, -4, -16], '#e6783c'); poly([6, -14, 12, -32, 16, -12], '#e6783c');
+    circ(0, 0, 18, '#e6783c'); poly([-6, 4, -30, 12, -6, 14], '#fff6ea', 2.5); circ(-30, 11, 3, INK, 0);
+    if (awake > 0.4) { circ(-4, -4, 3, INK, 0); circ(8, -4, 3, INK, 0); if (f < 1.3) ell(-14, 12, 5, 6 * awake, '#8c3246', 2); }
+    else { curve(-8, -3, -4, 0, 0, -3, 2, INK, 0); curve(5, -3, 9, 0, 13, -3, 2, INK, 0); }
+    pop();
+    if (f < 0 && Math.random() < 0.003) this.st.zzz(x - 20, y - 70);
+  }
+  drawDeer(t) {
+    const A = this.acts, d = A.on('deer') ? A.t('deer') : -1;
+    if (d < 0) return;
+    const out = ease(d / 0.8) * (1 - ease((d - 3.8) / 0.8)), x = 680 + out * 90;
+    const ear = Math.sin(t * 7) * (d > 1.5 && d < 2.5 ? 12 : 2), nod = Math.sin(d * 2) * 6;
+    ctx.save(); ctx.beginPath(); ctx.rect(690 + 34, 0, 400, H); ctx.clip();
+    for (const lx of [-30, -10, 30, 48]) line(x + 40 + lx, 560, x + 42 + lx, 636, 9, '#b47850');
+    ell(x + 50, 548, 62, 32, '#c88c5a');
+    ell(x + 50, 562, 40, 14, '#e6c8a0', 0);
+    for (const [sx, sy] of [[34, 534], [58, 528], [76, 540], [46, 546]]) circ(x + sx, sy, 3.5, '#fff6ea', 0);
+    line(x + 2, 540, x - 8, 500, 22, '#c88c5a');
+    push(x - 12, 480 + nod, nod * 2);
+    ell(-24, -18, 18, 8, '#c88c5a', 3, -0.5 - ear * 0.03); ell(20, -20, 18, 8, '#c88c5a', 3, 0.5 + ear * 0.03);
+    ell(0, 0, 24, 26, '#c88c5a');
+    ell(-6, 16, 14, 11, '#e6c8a0', 2.5); circ(-12, 14, 3.5, INK, 0);
+    circ(-8, -4, 4, INK, 0); circ(10, -4, 4, INK, 0); circ(-9, -6, 1.4, WHITE, 0); circ(9, -6, 1.4, WHITE, 0);
+    pop();
+    ctx.restore();
+  }
+}
+// ---------- page: bath time ----------
+const TUB = { x0: 360, x1: 920, rim: 470, water: 492 };
+class BathPage {
+  constructor() {
+    this.name = 'bath';
+    this.text = 'Splish, splash! A warm bath before bed, with lots of bubbles and a little rubber duck.';
+    this.tricks = [['bubbles', 'tap', 'toyboat'], ['duck', 'sponge', 'fishy'], ['splash', 'beard', 'dive']]; this.who = ['Bath', 'Bath toys', 'Little Dino'];
+    this.st = new Stage(); this.st.floor = 700;
+    this.acts = new Acts({ bubbles: 3, tap: 3.5, toyboat: 6, duck: 1.6, sponge: 2, fishy: 2.4, splash: 1.8, beard: 4, dive: 2.6 });
+    this.stars = makeStars(10, 1040, 1180, 120, 250);
+    this.blink = 2; this.bubT = 0; this.foam = 0;
+  }
+  press(k) {
+    const st = this.st, a = cycle(st, k, this.tricks[k]);
+    this.acts.run(a);
+    if (a === 'bubbles') { sfx('blow', 0.4, 1.6); }
+    if (a === 'tap') { sfx('tap', 1); sfx('creak', 0.3, 2.4); }
+    if (a === 'toyboat') { sfx('toot', 1); }
+    if (a === 'duck') { sfx('rubberduck', 1); st.say('SQUEAK!', 770, 380, 50, '#ffe050'); }
+    if (a === 'sponge') { sfx('splash', 0.5, 1.6); }
+    if (a === 'fishy') { sfx('squirt', 1); }
+    if (a === 'splash') { sfx('splash', 1); st.say('SPLASH!', 600, 330, 66, '#8cd2ff'); st.drops(600, TUB.water - 10, 26, 420); }
+    if (a === 'beard') { sfx('giggle', 0.8); st.say('HO HO HO!', 600, 330, 50, WHITE); }
+    if (a === 'dive') { sfx('blub', 0.8, 0.8); }
+  }
+  update(dt) {
+    const st = this.st, A = this.acts;
+    st.update(dt); A.update(dt);
+    const t = st.t;
+    this.blink -= dt; if (this.blink < -0.15) this.blink = rnd(2, 5);
+    this.bubT -= dt * (A.on('bubbles') ? 14 : 1);
+    if (this.bubT <= 0) { this.bubT = rnd(0.5, 1.4); st.bubbles(rnd(TUB.x0 + 60, TUB.x1 - 60), TUB.water - 10, 1); }
+    if (A.on('tap')) { this.foam = Math.min(1, this.foam + dt * 0.4); if (Math.random() < dt * 16) st.drops(TUB.x1 - 46, TUB.water - 6, 1, 140); }
+    else this.foam = Math.max(0, this.foam - dt * 0.03);
+    if (A.at('sponge', 0.5, dt)) { for (let i = 0; i < 24; i++) st.add({ kind: 'drop', layer: 2, x: 480 + rnd(-30, 30), y: 300, vx: rnd(-40, 40), vy: rnd(0, 80), size: rnd(3, 6), col: '#bfe6ff', life: 1, g: 900 }); st.say('DRIP DROP!', 480, 250, 44, '#bfe6ff'); }
+    if (A.at('fishy', 0.4, dt)) st.say('SQUIRT!', 380, 300, 48, '#ff9a6e');
+    if (A.on('fishy') && A.t('fishy') > 0.4 && A.t('fishy') < 1.4 && Math.random() < dt * 40)
+      st.add({ kind: 'drop', layer: 2, x: 440, y: TUB.water - 20, vx: rnd(200, 260), vy: rnd(-420, -360), size: rnd(3, 5), col: '#bfe6ff', life: 1.2, g: 700 });
+    if (A.on('dive')) {
+      const d = A.t('dive');
+      if (d > 0.3 && d < 1.6 && Math.random() < dt * 12) st.bubbles(600 + rnd(-30, 30), TUB.water, 1);
+      if (A.at('dive', 1.7, dt)) { st.drops(600, TUB.water - 20, 20, 360); sfx('splash', 0.7, 1.3); st.say('TA-DA!', 600, 300, 60, '#ffd25a'); }
+    }
+    if (A.on('beard') && Math.random() < dt * 3) st.bubbles(640, 440, 1);
+  }
+  draw() {
+    const st = this.st, t = st.t, A = this.acts;
+    // tiles and floor
+    rect(0, 0, W, 600, '#b4e6dc');
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    for (let y = 0; y < 600; y += 60) ctx.fillRect(0, y, W, 3);
+    for (let x = 0; x < W; x += 60) ctx.fillRect(x, 0, 3, 600);
+    rect(0, 400, W, 10, '#8cc8bc');
+    for (let y = 600, r = 0; y < H; y += 40, r++) for (let x = (r % 2) * 40; x < W; x += 80) rect(x, y, 40, 40, '#f5ebdc');
+    rect(0, 600, W, H - 600, 'rgba(255,220,200,0.35)');
+    // round window with the night outside
+    circ(1110, 190, 84, '#fff6ea');
+    ctx.save(); ctx.beginPath(); ctx.arc(1110, 190, 70, 0, TAU); ctx.clip(); rect(1030, 110, 160, 160, '#1e2456'); drawStars(this.stars, t); drawMoon(1140, 165, 22, t, 0); ctx.restore();
+    line(1040, 190, 1180, 190, 6, '#fff6ea'); line(1110, 120, 1110, 260, 6, '#fff6ea');
+    // shelf with bottles, and a mirror
+    rrect(120, 200, 180, 220, 70, '#dff6ff'); ell(160, 260, 20, 40, 'rgba(255,255,255,0.7)', 0); ctx.lineWidth = 6; ctx.strokeStyle = '#f5d78c'; ctx.beginPath(); ctx.roundRect(120, 200, 180, 220, 70); ctx.stroke();
+    rrect(960, 330, 200, 12, 4, '#c8965a');
+    [['#ff9ab4', 26, 60], ['#8cd2ff', 22, 44], ['#ffe08a', 20, 52], ['#b4e6a0', 24, 38]].forEach(([c, w, h], i) => {
+      const x = 980 + i * 46; rrect(x, 330 - h, w, h, 6, c); rrect(x + w / 2 - 4, 330 - h - 10, 8, 12, 2, WHITE);
+    });
+    // towel on its rail
+    line(30, 470, 30, 600, 8, '#c8c8d7'); rrect(10, 476, 70, 120, 10, '#ffb4d2'); line(16, 560, 74, 560, 6, '#ff8cb4', 0);
+    // the tub
+    this.drawTub(t);
+    st.draw(0); st.draw(1); st.draw(2);
+    st.drawWords();
+  }
+  drawTub(t) {
+    const A = this.acts, { x0, x1, rim, water } = TUB;
+    // feet
+    for (const x of [x0 + 50, x1 - 50]) { ell(x, 630, 22, 14, '#ffd250'); }
+    // tap
+    curve(x1 - 20, 380, x1 - 20, 340, x1 - 60, 350, 12, '#c8c8d7');
+    circ(x1 - 10, 396, 10, '#c8c8d7'); line(x1 - 20, 380, x1 - 20, 470, 12, '#c8c8d7');
+    if (A.on('tap')) { const k = Math.min(1, A.t('tap') * 3) * (1 - ease((A.t('tap') - 3) / 0.4)); ctx.globalAlpha = 0.7; line(x1 - 62, 356, x1 - 62, water, 8 * k, '#bfe6ff', 0); ctx.globalAlpha = 1; }
+    // the back inside wall of the tub
+    ctx.beginPath(); ctx.moveTo(x0, rim); ctx.lineTo(x1, rim); ctx.lineTo(x1 - 20, rim + 20); ctx.lineTo(x0 + 20, rim + 20); ctx.closePath(); paint('#e6f0f5', 0);
+    // Little Dino in the bath
+    this.drawDino(t);
+    // the toys floating
+    this.drawDuck(t); this.drawBoat(t); this.drawFish(t);
+    // water and foam
+    ctx.beginPath(); ctx.moveTo(x0 + 10, water);
+    for (let x = x0 + 10; x <= x1 - 10; x += 20) ctx.lineTo(x, water + Math.sin(t * 3 + x * 0.05) * 3);
+    ctx.lineTo(x1 - 10, water + 20); ctx.lineTo(x0 + 10, water + 20); ctx.closePath(); paint('#9ad8f0', 0);
+    const nf = 18 + Math.floor(this.foam * 10);
+    for (let i = 0; i < nf; i++) { const x = x0 + 30 + (i / (nf - 1)) * (x1 - x0 - 60), r = 18 + (i * 7 % 10) + this.foam * 8; circ(x, water - 2 + Math.sin(t * 2 + i) * 2, r, WHITE, 2); }
+    for (let i = 0; i < nf; i++) { const x = x0 + 30 + (i / (nf - 1)) * (x1 - x0 - 60), r = 18 + (i * 7 % 10) + this.foam * 8; circ(x, water - 2 + Math.sin(t * 2 + i) * 2, r - 2, WHITE, 0); }
+    // the outside of the tub
+    ctx.beginPath(); ctx.moveTo(x0 - 20, rim + 10); ctx.quadraticCurveTo(x0 - 10, 640, x0 + 80, 630); ctx.lineTo(x1 - 80, 630); ctx.quadraticCurveTo(x1 + 10, 640, x1 + 20, rim + 10); ctx.closePath();
+    paint('#ffffff', 3);
+    rrect(x0 - 28, rim, x1 - x0 + 56, 24, 12, '#f5f8fa');
+    ctx.globalAlpha = 0.5; rect(x0 + 20, 540, x1 - x0 - 40, 8, '#b4e6dc'); ctx.globalAlpha = 1;
+  }
+  drawDino(t) {
+    const A = this.acts;
+    const dive = A.on('dive') ? A.t('dive') : -1, under = dive >= 0 ? Math.sin(Math.PI * clamp((dive - 0.2) / 1.5, 0, 1)) : 0;
+    const sp = A.on('splash') ? A.t('splash') : -1, splashing = sp >= 0 && sp < 1.2;
+    const bob = Math.sin(t * 1.6) * 3 + under * 110 - (dive > 1.6 && dive < 2.2 ? Math.sin((dive - 1.6) / 0.6 * Math.PI) * 30 : 0);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, TUB.water + 4); ctx.clip();
+    // arms resting on the rim, or splashing
+    const ay = splashing ? Math.sin(sp * 30) * 16 : 0;
+    if (under < 0.3) { line(540, 470 + bob * 0.3, 500, 456 - ay, 12, DINO_GREEN.body); line(660, 470 + bob * 0.3, 700, 456 + ay, 12, DINO_GREEN.body); }
+    push(600, 410 + bob, -6);
+    const open = splashing ? 0.8 : (A.on('beard') ? 0.4 : A.on('duck') ? 0.5 : 0);
+    drawDinoHead({ t, cols: DINO_GREEN, open, blink: this.blink < 0, lookUp: A.on('sponge') });
+    // a bubble beard, or a bubble crown
+    if (A.on('beard')) { const k = Math.min(1, A.t('beard') * 3) * (1 - ease((A.t('beard') - 3.4) / 0.5)); for (let i = 0; i < 7; i++) circ(20 + Math.cos(i) * 14, 34 + i * 4 * k, 12 * k, WHITE, 2); }
+    circ(-10, -40, 10, WHITE, 2); circ(4, -44, 8, WHITE, 2);
+    pop();
+    ctx.restore();
+  }
+  drawDuck(t) {
+    const A = this.acts, d = A.on('duck') ? A.t('duck') : -1, sq = d >= 0 && d < 0.4 ? Math.sin(d / 0.4 * Math.PI) : 0;
+    const x = 770 + Math.sin(t * 0.6) * 40, y = TUB.water - 6 + Math.sin(t * 2.2) * 3 - (d >= 0 ? Math.abs(Math.sin(d * 8)) * 10 * (1 - d / 1.6) : 0);
+    push(x, y, Math.sin(t * 2) * 6, 1 + sq * 0.15, 1 - sq * 0.2);
+    ell(0, -14, 30, 18, '#ffe050'); poly([-26, -20, -40, -30, -28, -10], '#ffe050');
+    circ(16, -38, 15, '#ffe050'); poly([28, -40, 44, -36, 28, -32], '#ff9a3c', 2.5);
+    circ(20, -42, 3, INK, 0); circ(19, -43, 1, WHITE, 0);
+    pop();
+  }
+  drawBoat(t) {
+    const A = this.acts, b = A.on('toyboat') ? A.t('toyboat') : -1;
+    if (b < 0) return;
+    const x = lerp(420, 880, b / 6), y = TUB.water - 4 + Math.sin(t * 3) * 3;
+    push(x, y, Math.sin(t * 2.4) * 6);
+    poly([-34, -10, 34, -10, 24, 8, -24, 8], '#ff6e6e');
+    rrect(-12, -32, 26, 22, 4, WHITE); rrect(-4, -46, 10, 16, 2, '#5a82d2');
+    if (Math.sin(b * 3) > 0.9) this.st.puff(x + 2, y - 50, 6, '#ffffff', 2);
+    pop();
+  }
+  drawFish(t) {
+    const A = this.acts, f = A.on('fishy') ? A.t('fishy') : -1, x = 440, y = TUB.water - 4 + Math.sin(t * 2.6 + 1) * 3;
+    const up = f >= 0 ? Math.sin(Math.PI * clamp(f / 2.4, 0, 1)) * 16 : 0;
+    push(x, y - up, -20 * (up / 16));
+    poly([-26, -6, -40, -18, -40, 6], '#ff9a6e', 2.5);
+    ell(0, -6, 26, 14, '#ffb47a');
+    circ(12, -10, 4, WHITE, 2); circ(13, -10, 2, INK, 0);
+    ell(24, -4, 4, 3 + up * 0.1, '#ff6e6e', 2);
+    pop();
+  }
+}
 // ---------- start-up, the frame loop and the keys ----------
 (function () {
   const canvas = document.getElementById('page');
@@ -2780,6 +3581,26 @@ function drawTurn(main, A, B, e) {
     if (!b) return;
     b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
   }
+  // the three colour buttons say what they will do next on this page
+  const actBtns = ['space', 'enter', 'ctrl'].map(k => document.querySelector(`[data-key="${k}"]`));
+  const keyNames = ['Space', 'Enter', 'Ctrl'];
+  let lastLabels = '';
+  function updateLabels() {
+    const L = Book.labels(), key = JSON.stringify(L);
+    if (key === lastLabels) return;
+    const old = lastLabels; lastLabels = key;
+    L.forEach((l, i) => {
+      const b = actBtns[i];
+      if (old && b.querySelector('.what').textContent !== l.what) { b.classList.remove('fresh'); void b.offsetWidth; b.classList.add('fresh'); }
+      b.querySelector('.who').textContent = l.who;
+      b.querySelector('.what').textContent = l.what;
+      b.setAttribute('aria-label', `${l.who}: ${l.what} (${keyNames[i]})`);
+    });
+    document.querySelector('[data-key="prev"]').disabled = Book.cur === 0;
+    document.querySelector('[data-key="next"]').disabled = Book.cur === Book.pages.length - 1;
+  }
+  setInterval(updateLabels, 150);
+  updateLabels();
   const mute = document.getElementById('mute');
   mute.addEventListener('click', () => {
     audioStart(); setMuted(!AU.muted);

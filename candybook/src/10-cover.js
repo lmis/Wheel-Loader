@@ -2,6 +2,7 @@
 class CoverPage {
   constructor() {
     this.name = 'cover'; this.text = null;
+    this.tricks = [['letters'], ['rain']]; this.who = ['Title', 'Sky', 'Little Dino'];
     this.st = new Stage(); this.st.floor = 640;
     this.acts = new Acts({ letters: 1.6, rain: 3 });
     this.stars = makeStars(50, 0, W, 20, 300);

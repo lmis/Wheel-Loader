@@ -2,6 +2,7 @@
 class HomePage {
   constructor() {
     this.name = 'home';
+    this.tricks = [['door', 'chimney', 'lantern'], ['mamawave', 'kiss', 'call']]; this.who = ['House', 'Mama', 'Little Dino'];
     this.text = 'And there it is. Home! The windows glow warm and yellow, and Mama is waiting at the door.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ door: 6, chimney: 4, lantern: 4, hug: 2.6 });
@@ -19,7 +20,7 @@ class HomePage {
     const st = this.st;
     if (k === 2) return this.dino.press();
     if (k === 0) {
-      const a = cycle(st, 0, ['door', 'chimney', 'lantern']);
+      const a = cycle(st, 0, this.tricks[0]);
       this.acts.run(a);
       if (a === 'door') { sfx('creak', 1); }
       if (a === 'lantern') { sfx('sparkle', 0.8); }
@@ -27,7 +28,8 @@ class HomePage {
     } else {
       const m = this.mama;
       if (m.trick) { m.pending = true; return; }
-      m.start(cycle(st, 1, ['wave', 'kiss', 'call']));
+      const a = cycle(st, 1, this.tricks[1]);
+      m.start(a === 'mamawave' ? 'wave' : a);
     }
   }
   mamaTrick(d, t, dt) {
@@ -162,6 +164,7 @@ class HomePage {
 class BedPage {
   constructor() {
     this.name = 'bed';
+    this.tricks = [['mobile', 'glowstars', 'lamp'], ['read', 'kiss', 'robot'], ['yawn', 'giggle', 'sleep']]; this.who = ['Bedroom', 'Mama & robot', 'Little Dino'];
     this.text = 'Home, snug and warm. Mama reads a story, and the candy mobile turns round and round. Goodnight, Little Dino.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ mobile: 3.5, glowstars: 5, lamp: 6, read: 3, kiss: 2.4, robot: 2.4, yawn: 2.4, giggle: 2.2, sleep: 5 });
@@ -171,7 +174,7 @@ class BedPage {
   }
   press(k) {
     const st = this.st;
-    const a = k === 0 ? cycle(st, 0, ['mobile', 'glowstars', 'lamp']) : k === 1 ? cycle(st, 1, ['read', 'kiss', 'robot']) : cycle(st, 2, ['yawn', 'giggle', 'sleep']);
+    const a = cycle(st, k, this.tricks[k]);
     this.acts.run(a);
     if (a === 'mobile') sfx('chime', 1);
     if (a === 'glowstars') sfx('shimmer', 0.7);

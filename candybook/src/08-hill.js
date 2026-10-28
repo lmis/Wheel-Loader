@@ -5,6 +5,7 @@ const DINO_LINES = [[8, 7], [7, 6], [6, 5], [5, 4], [4, 3], [3, 2], [2, 1], [1, 
 class HillPage {
   constructor() {
     this.name = 'hill';
+    this.tricks = [['shoot', 'stars', 'moon'], ['owl', 'sheep', 'bunny']]; this.who = ['Night sky', 'Hill friends', 'Little Dino'];
     this.text = 'Up the hill, under the big round moon. The stars come out, one by one, to light the way.';
     this.st = new Stage(); this.st.floor = 720;
     this.acts = new Acts({ shoot: 2.4, stars: 5, moon: 3.5, owl: 2.2, sheep: 4.8, bunny: 3 });
@@ -26,7 +27,7 @@ class HillPage {
   press(k) {
     const st = this.st;
     if (k === 2) return this.dino.press();
-    const a = k === 0 ? cycle(st, 0, ['shoot', 'stars', 'moon']) : cycle(st, 1, ['owl', 'sheep', 'bunny']);
+    const a = cycle(st, k, this.tricks[k]);
     this.acts.run(a);
     if (a === 'shoot') { sfx('shimmer', 1); st.say('MAKE A WISH!', 640, 200, 48, '#fff3a0'); }
     if (a === 'stars') { sfx('chime', 0.8); }
