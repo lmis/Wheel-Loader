@@ -51,6 +51,15 @@ const Book = {
     if (this.turn) return;
     this.page().press(k);
   },
+  // the nine buttons: column picks the list, row picks the trick in it,
+  // so every button always does the same thing on a page
+  pressSlot(slot) {
+    if (this.turn) return;
+    const p = this.page(), col = slot % 3, row = Math.floor(slot / 3);
+    p.st.next[col] = row;
+    if (!p.tricks[col] && p.dino) p.dino.next = row;
+    p.press(col);
+  },
   update(dt) {
     this.nudge = (this.nudge || 0) * Math.pow(0.001, dt);
     const p = this.page();

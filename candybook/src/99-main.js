@@ -83,7 +83,8 @@
     if (first && Book.cur === 0 && k !== 'next') return; // the first press just wakes the sound
     if (k === 'next') Book.go(1);
     else if (k === 'prev') Book.go(-1);
-    else Book.press({ space: 0, enter: 1, ctrl: 2 }[k]);
+    else if (typeof k === 'number') Book.pressSlot(k);
+    else Book.pressSlot({ space: 0, enter: 1, ctrl: 2 }[k]);
   }
   window.addEventListener('keydown', e => {
     let k = null;
@@ -92,6 +93,7 @@
     else if (e.key === ' ' || e.code === 'Space') k = 'space';
     else if (e.key === 'Enter') k = 'enter';
     else if (e.key === 'Control') k = 'ctrl';
+    else if (/^Digit[1-9]$|^Numpad[1-9]$/.test(e.code)) k = +e.code.slice(-1) - 1;
     if (!k) { if (!AU.ctx) audioStart(); return; }
     e.preventDefault();
     if (e.repeat) return;
@@ -101,16 +103,12 @@
   canvas.addEventListener('pointerdown', e => {
     canvas.focus();
     const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
-    const k = x < 0.12 ? 'prev' : x > 0.88 ? 'next' : ['space', 'enter', 'ctrl'][tapN++ % 3];
-    act(k); flash(k);
+    if (x < 0.12) act('prev'); else if (x > 0.88) act('next'); else if (!AU.ctx) audioStart();
   });
   let tapN = 0;
+  document.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => { act(+b.dataset.slot); canvas.focus(); }));
   document.querySelectorAll('[data-key]').forEach(b => b.addEventListener('click', () => { act(b.dataset.key); flash(b.dataset.key); canvas.focus(); }));
-  function flash(k) {
-    const b = document.querySelector(`[data-key="${k}"]`);
-    if (!b) return;
-    b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
-  }
+  function flash() {}
   // the page-turn buttons grey out at the ends of the book
   setInterval(() => {
     document.querySelector('[data-key="prev"]').disabled = Book.cur === 0;

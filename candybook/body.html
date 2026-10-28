@@ -1,38 +1,18 @@
-<div class="book"><canvas id="page" tabindex="0" aria-label="Mama Comes Home, a picture book. Left and right arrows turn the pages; the pink, blue and green buttons (Space, Enter and Ctrl) make things happen."></canvas></div>
+<div class="book"><canvas id="page" tabindex="0" aria-label="Mama Comes Home, a picture book. Left and right arrows turn the pages; the nine colour buttons (or keys 1 to 9) make things happen."></canvas></div>
 <div class="keys">
   <button type="button" class="turn" data-key="prev" title="Back (Left arrow)" aria-label="Previous page" aria-keyshortcuts="ArrowLeft">
     <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M30 10 L14 24 L30 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <div class="acts">
-    <button type="button" class="act pink" data-key="space" title="Make something happen (Space)" aria-label="Make something happen" aria-keyshortcuts="Space">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M32 8 L38.5 23.5 L55 25 L42.5 36 L46.5 52.5 L32 43.5 L17.5 52.5 L21.5 36 L9 25 L25.5 23.5 Z" fill="#fff3a0" stroke="#46282f" stroke-width="3.5" stroke-linejoin="round"/>
-        <circle cx="27" cy="31" r="2.6" fill="#46282f"/><circle cx="37" cy="31" r="2.6" fill="#46282f"/>
-        <path d="M27 37 Q32 41 37 37" fill="none" stroke="#46282f" stroke-width="2.6" stroke-linecap="round"/>
-        <path d="M54 6 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z M10 44 l1.5 3.5 l3.5 1.5 l-3.5 1.5 l-1.5 3.5 l-1.5 -3.5 l-3.5 -1.5 l3.5 -1.5 Z" fill="#fffaf0" stroke="#46282f" stroke-width="2" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <button type="button" class="act blue" data-key="enter" title="The friends (Enter)" aria-label="The friends" aria-keyshortcuts="Enter">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="22" cy="30" r="14" fill="#ffb48c" stroke="#46282f" stroke-width="3.5"/>
-        <circle cx="42" cy="34" r="14" fill="#8ad0ec" stroke="#46282f" stroke-width="3.5"/>
-        <circle cx="17" cy="28" r="2.4" fill="#46282f"/><circle cx="26" cy="28" r="2.4" fill="#46282f"/>
-        <path d="M17 34 Q21.5 38 26 34" fill="none" stroke="#46282f" stroke-width="2.4" stroke-linecap="round"/>
-        <circle cx="38" cy="32" r="2.4" fill="#46282f"/><circle cx="47" cy="32" r="2.4" fill="#46282f"/>
-        <path d="M38 38 Q42.5 42 47 38" fill="none" stroke="#46282f" stroke-width="2.4" stroke-linecap="round"/>
-        <path d="M14 18 Q18 10 24 15 Q28 9 31 17" fill="#ffe07a" stroke="#46282f" stroke-width="2.4" stroke-linejoin="round"/>
-        <path d="M35 22 Q39 14 45 19 Q49 13 52 21" fill="#ffe07a" stroke="#46282f" stroke-width="2.4" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <button type="button" class="act green" data-key="ctrl" title="The dino (Ctrl)" aria-label="The dino does a trick" aria-keyshortcuts="Control">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M14 22 L18 10 L24 20 L28 7 L33 19" fill="#ffa05a" stroke="#46282f" stroke-width="3" stroke-linejoin="round"/>
-        <path d="M10 38 C10 24 20 17 32 17 C44 17 50 24 50 28 L58 30 C61 31 61 44 56 46 L36 50 C20 53 10 50 10 38 Z" fill="#78cd6e" stroke="#46282f" stroke-width="3.5" stroke-linejoin="round"/>
-        <circle cx="30" cy="29" r="6.5" fill="#fffcf6" stroke="#46282f" stroke-width="2.6"/><circle cx="32" cy="29" r="3.2" fill="#46282f"/>
-        <path d="M38 42 Q47 46 56 40" fill="none" stroke="#46282f" stroke-width="2.6" stroke-linecap="round"/>
-        <circle cx="51" cy="33" r="1.8" fill="#46282f"/><circle cx="22" cy="40" r="4" fill="#ff8296" opacity="0.5"/>
-      </svg>
-    </button>
+    <button type="button" class="act" data-slot="0" style="--c:#ff9ab8" title="Button 1" aria-label="Button 1" aria-keyshortcuts="1"></button>
+    <button type="button" class="act" data-slot="1" style="--c:#ffcf6a" title="Button 2" aria-label="Button 2" aria-keyshortcuts="2"></button>
+    <button type="button" class="act" data-slot="2" style="--c:#9ee28c" title="Button 3" aria-label="Button 3" aria-keyshortcuts="3"></button>
+    <button type="button" class="act" data-slot="3" style="--c:#8fd0ff" title="Button 4" aria-label="Button 4" aria-keyshortcuts="4"></button>
+    <button type="button" class="act" data-slot="4" style="--c:#c7a6ff" title="Button 5" aria-label="Button 5" aria-keyshortcuts="5"></button>
+    <button type="button" class="act" data-slot="5" style="--c:#ff9f7a" title="Button 6" aria-label="Button 6" aria-keyshortcuts="6"></button>
+    <button type="button" class="act" data-slot="6" style="--c:#7ee0cf" title="Button 7" aria-label="Button 7" aria-keyshortcuts="7"></button>
+    <button type="button" class="act" data-slot="7" style="--c:#ffb3e6" title="Button 8" aria-label="Button 8" aria-keyshortcuts="8"></button>
+    <button type="button" class="act" data-slot="8" style="--c:#f5e38a" title="Button 9" aria-label="Button 9" aria-keyshortcuts="9"></button>
   </div>
   <button type="button" class="turn" data-key="next" title="Next page (Right arrow)" aria-label="Next page" aria-keyshortcuts="ArrowRight">
     <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 10 L34 24 L18 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
