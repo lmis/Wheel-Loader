@@ -17,7 +17,26 @@ const LABEL = {
   board: 'Departure board', thunder: 'Thunder', downpour: 'Pouring rain', cat: 'Kitty', announce: 'Announcement', frog: 'Puddle frog', sigh: 'Oh dear', umbrella: 'Twirl the umbrella',
   boost: 'Rocket boost', shoot: 'Shooting star', fireworks: 'Fireworks', loop: 'Loop the loop', song: 'Robot song', wavemoon: 'Wave at the moon', wheee: 'Wheee!', hold: 'Hold on tight', point: 'There’s home!',
   door: 'Open the door', byebots: 'Bye, robots', chimney: 'Heart smoke', hug: 'Big hug', shh: 'Shhh',
-  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out', yawn: 'Big yawn', sleep: 'Fall asleep', sing: 'Sing the song', blanket: 'Tuck in',
+  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out / on', yawn: 'Big yawn', sleep: 'Fall asleep', sing: 'Sing the song', blanket: 'Tuck in',
+};
+// the buttons under the book, per page: at most six tricks each, the ones
+// made of small things (characters moving, hearts, steam, a pancake)
+const BUTTONS = {
+  cover: ['letters', 'cheer', 'familywave'],
+  morning: ['pancake', 'toast', 'kettle', 'wave', 'giggle', 'kiss'],
+  station: ['whistle', 'hearts', 'pigeons', 'wave', 'peek', 'kiss'],
+  tower: ['birds', 'hello', 'wow'],
+  office: ['planes', 'copier', 'dance', 'heads', 'boss', 'tidy'],
+  papa: ['puddle', 'ramp', 'faster', 'giggle', 'spin', 'wheelie'],
+  daycare: ['paint', 'music', 'bubbles', 'jump', 'giggle', 'nap'],
+  meeting: ['photo', 'idea', 'thumbs', 'clap', 'burp', 'snooze'],
+  pickup: ['puddle', 'ramp', 'papa', 'faster', 'spin', 'wheelie'],
+  dinner: ['noodles', 'tomato', 'moustache', 'yum', 'airplane', 'laugh'],
+  wantmama: ['want', 'teddy', 'phone', 'cuddle', 'story'],
+  stuck: ['sigh', 'umbrella', 'phone', 'thunder', 'frog', 'cat'],
+  rescue: ['loop', 'shoot', 'fireworks', 'wheee', 'hold', 'point'],
+  home: ['hug', 'jump', 'giggle', 'kiss', 'twirl', 'chimney'],
+  tuck: ['yawn', 'giggle', 'sleep', 'sing', 'kiss', 'lamp'],
 };
 const Book = {
   pages: [], cur: 0, turn: null, queued: 0, started: false,
@@ -51,14 +70,21 @@ const Book = {
     if (this.turn) return;
     this.page().press(k);
   },
-  // the nine buttons: column picks the list, row picks the trick in it,
-  // so every button always does the same thing on a page
-  pressSlot(slot) {
+  buttons() { return BUTTONS[this.page().name] || []; },
+  // button i always does the same trick on a page: find which list holds
+  // it and point that list at it before pressing
+  pressButton(i) {
     if (this.turn) return;
-    const p = this.page(), col = slot % 3, row = Math.floor(slot / 3);
-    p.st.next[col] = row;
-    if (!p.tricks[col] && p.dino) p.dino.next = row;
-    p.press(col);
+    const p = this.page(), name = this.buttons()[i];
+    if (!name) return;
+    for (let k = 0; k < 3; k++) {
+      const list = p.tricks[k] || (k === 2 && p.dino ? p.dino.tricks : []);
+      const row = list.indexOf(name);
+      if (row < 0) continue;
+      if (p.tricks[k]) p.st.next[k] = row; else p.dino.next = row;
+      p.press(k);
+      return;
+    }
   },
   update(dt) {
     this.nudge = (this.nudge || 0) * Math.pow(0.001, dt);

@@ -17,7 +17,7 @@ class TuckPage extends StoryPage {
     const st = this.st;
     if (a === 'mobile') sfx('chime', 1);
     if (a === 'glowstars') sfx('shimmer', 0.7);
-    if (a === 'lamp') sfx('click', 1, 0.6);
+    if (a === 'lamp') { this.lightsOff = !this.lightsOff; sfx('click', 1, this.lightsOff ? 0.6 : 0.8); } // press again to switch them back on
     if (a === 'yawn') { sfx('yawn', 0.8, 1.5); setTimeout(() => sfx('yawn', 0.8, 1.3), 300); st.say('YAWN!', 640, 380, 50, '#cfe0ff'); }
     if (a === 'giggle') { sfx('giggle', 1, 1.2); st.hearts(470, 470, 2); st.hearts(810, 470, 2); }
     if (a === 'sleep') sfx('snore', 0.6);
@@ -55,7 +55,8 @@ class TuckPage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    const dark = A.on('lamp') ? ease(A.t('lamp') / 0.4) * (1 - ease((A.t('lamp') - 5.4) / 0.5)) : 0;
+    this.darkK = clamp((this.darkK || 0) + (this.lightsOff ? 1 : -1) * this.dt / 0.4, 0, 1);
+    const dark = ease(this.darkK);
     const bg = art('bg-14-tuck-in'); if (bg) drawArt(bg);
     if (!bg) {
       drawRoom('#5a5aa0', '#7a74b4', '#b47c5a', '#9a6448');

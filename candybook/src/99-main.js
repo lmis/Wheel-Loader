@@ -83,8 +83,8 @@
     if (first && Book.cur === 0 && k !== 'next') return; // the first press just wakes the sound
     if (k === 'next') Book.go(1);
     else if (k === 'prev') Book.go(-1);
-    else if (typeof k === 'number') Book.pressSlot(k);
-    else Book.pressSlot({ space: 0, enter: 1, ctrl: 2 }[k]);
+    else if (typeof k === 'number') Book.pressButton(k);
+    else Book.pressButton({ space: 0, enter: 1, ctrl: 2 }[k]);
   }
   window.addEventListener('keydown', e => {
     let k = null;
@@ -93,7 +93,7 @@
     else if (e.key === ' ' || e.code === 'Space') k = 'space';
     else if (e.key === 'Enter') k = 'enter';
     else if (e.key === 'Control') k = 'ctrl';
-    else if (/^Digit[1-9]$|^Numpad[1-9]$/.test(e.code)) k = +e.code.slice(-1) - 1;
+    else if (/^Digit[1-6]$|^Numpad[1-6]$/.test(e.code)) k = +e.code.slice(-1) - 1;
     if (!k) { if (!AU.ctx) audioStart(); return; }
     e.preventDefault();
     if (e.repeat) return;
@@ -113,6 +113,9 @@
   setInterval(() => {
     document.querySelector('[data-key="prev"]').disabled = Book.cur === 0;
     document.querySelector('[data-key="next"]').disabled = Book.cur === Book.pages.length - 1;
+    // only as many colour buttons as this page has tricks
+    const n = Book.buttons().length;
+    document.querySelectorAll('[data-slot]').forEach(b => { b.hidden = +b.dataset.slot >= n; });
   }, 200);
   const mute = document.getElementById('mute');
   mute.addEventListener('click', () => {

@@ -67,7 +67,7 @@
   }
   @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } }
 </style>
-<div class="book"><canvas id="page" tabindex="0" aria-label="Mama Comes Home, a picture book. Left and right arrows turn the pages; the nine colour buttons (or keys 1 to 9) make things happen."></canvas></div>
+<div class="book"><canvas id="page" tabindex="0" aria-label="Mama Comes Home, a picture book. Left and right arrows turn the pages; the colour buttons (or keys 1 to 6) make things happen."></canvas></div>
 <div class="keys">
   <button type="button" class="turn" data-key="prev" title="Back (Left arrow)" aria-label="Previous page" aria-keyshortcuts="ArrowLeft">
     <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M30 10 L14 24 L30 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -79,9 +79,6 @@
     <button type="button" class="act" data-slot="3" style="--c:#8fd0ff" title="Button 4" aria-label="Button 4" aria-keyshortcuts="4"></button>
     <button type="button" class="act" data-slot="4" style="--c:#c7a6ff" title="Button 5" aria-label="Button 5" aria-keyshortcuts="5"></button>
     <button type="button" class="act" data-slot="5" style="--c:#ff9f7a" title="Button 6" aria-label="Button 6" aria-keyshortcuts="6"></button>
-    <button type="button" class="act" data-slot="6" style="--c:#7ee0cf" title="Button 7" aria-label="Button 7" aria-keyshortcuts="7"></button>
-    <button type="button" class="act" data-slot="7" style="--c:#ffb3e6" title="Button 8" aria-label="Button 8" aria-keyshortcuts="8"></button>
-    <button type="button" class="act" data-slot="8" style="--c:#f5e38a" title="Button 9" aria-label="Button 9" aria-keyshortcuts="9"></button>
   </div>
   <button type="button" class="turn" data-key="next" title="Next page (Right arrow)" aria-label="Next page" aria-keyshortcuts="ArrowRight">
     <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 10 L34 24 L18 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -2011,7 +2008,26 @@ const LABEL = {
   board: 'Departure board', thunder: 'Thunder', downpour: 'Pouring rain', cat: 'Kitty', announce: 'Announcement', frog: 'Puddle frog', sigh: 'Oh dear', umbrella: 'Twirl the umbrella',
   boost: 'Rocket boost', shoot: 'Shooting star', fireworks: 'Fireworks', loop: 'Loop the loop', song: 'Robot song', wavemoon: 'Wave at the moon', wheee: 'Wheee!', hold: 'Hold on tight', point: 'There’s home!',
   door: 'Open the door', byebots: 'Bye, robots', chimney: 'Heart smoke', hug: 'Big hug', shh: 'Shhh',
-  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out', yawn: 'Big yawn', sleep: 'Fall asleep', sing: 'Sing the song', blanket: 'Tuck in',
+  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out / on', yawn: 'Big yawn', sleep: 'Fall asleep', sing: 'Sing the song', blanket: 'Tuck in',
+};
+// the buttons under the book, per page: at most six tricks each, the ones
+// made of small things (characters moving, hearts, steam, a pancake)
+const BUTTONS = {
+  cover: ['letters', 'cheer', 'familywave'],
+  morning: ['pancake', 'toast', 'kettle', 'wave', 'giggle', 'kiss'],
+  station: ['whistle', 'hearts', 'pigeons', 'wave', 'peek', 'kiss'],
+  tower: ['birds', 'hello', 'wow'],
+  office: ['planes', 'copier', 'dance', 'heads', 'boss', 'tidy'],
+  papa: ['puddle', 'ramp', 'faster', 'giggle', 'spin', 'wheelie'],
+  daycare: ['paint', 'music', 'bubbles', 'jump', 'giggle', 'nap'],
+  meeting: ['photo', 'idea', 'thumbs', 'clap', 'burp', 'snooze'],
+  pickup: ['puddle', 'ramp', 'papa', 'faster', 'spin', 'wheelie'],
+  dinner: ['noodles', 'tomato', 'moustache', 'yum', 'airplane', 'laugh'],
+  wantmama: ['want', 'teddy', 'phone', 'cuddle', 'story'],
+  stuck: ['sigh', 'umbrella', 'phone', 'thunder', 'frog', 'cat'],
+  rescue: ['loop', 'shoot', 'fireworks', 'wheee', 'hold', 'point'],
+  home: ['hug', 'jump', 'giggle', 'kiss', 'twirl', 'chimney'],
+  tuck: ['yawn', 'giggle', 'sleep', 'sing', 'kiss', 'lamp'],
 };
 const Book = {
   pages: [], cur: 0, turn: null, queued: 0, started: false,
@@ -2045,14 +2061,21 @@ const Book = {
     if (this.turn) return;
     this.page().press(k);
   },
-  // the nine buttons: column picks the list, row picks the trick in it,
-  // so every button always does the same thing on a page
-  pressSlot(slot) {
+  buttons() { return BUTTONS[this.page().name] || []; },
+  // button i always does the same trick on a page: find which list holds
+  // it and point that list at it before pressing
+  pressButton(i) {
     if (this.turn) return;
-    const p = this.page(), col = slot % 3, row = Math.floor(slot / 3);
-    p.st.next[col] = row;
-    if (!p.tricks[col] && p.dino) p.dino.next = row;
-    p.press(col);
+    const p = this.page(), name = this.buttons()[i];
+    if (!name) return;
+    for (let k = 0; k < 3; k++) {
+      const list = p.tricks[k] || (k === 2 && p.dino ? p.dino.tricks : []);
+      const row = list.indexOf(name);
+      if (row < 0) continue;
+      if (p.tricks[k]) p.st.next[k] = row; else p.dino.next = row;
+      p.press(k);
+      return;
+    }
   },
   update(dt) {
     this.nudge = (this.nudge || 0) * Math.pow(0.001, dt);
@@ -3369,7 +3392,7 @@ class TuckPage extends StoryPage {
     const st = this.st;
     if (a === 'mobile') sfx('chime', 1);
     if (a === 'glowstars') sfx('shimmer', 0.7);
-    if (a === 'lamp') sfx('click', 1, 0.6);
+    if (a === 'lamp') { this.lightsOff = !this.lightsOff; sfx('click', 1, this.lightsOff ? 0.6 : 0.8); } // press again to switch them back on
     if (a === 'yawn') { sfx('yawn', 0.8, 1.5); setTimeout(() => sfx('yawn', 0.8, 1.3), 300); st.say('YAWN!', 640, 380, 50, '#cfe0ff'); }
     if (a === 'giggle') { sfx('giggle', 1, 1.2); st.hearts(470, 470, 2); st.hearts(810, 470, 2); }
     if (a === 'sleep') sfx('snore', 0.6);
@@ -3407,7 +3430,8 @@ class TuckPage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    const dark = A.on('lamp') ? ease(A.t('lamp') / 0.4) * (1 - ease((A.t('lamp') - 5.4) / 0.5)) : 0;
+    this.darkK = clamp((this.darkK || 0) + (this.lightsOff ? 1 : -1) * this.dt / 0.4, 0, 1);
+    const dark = ease(this.darkK);
     const bg = art('bg-14-tuck-in'); if (bg) drawArt(bg);
     if (!bg) {
       drawRoom('#5a5aa0', '#7a74b4', '#b47c5a', '#9a6448');
@@ -3530,8 +3554,8 @@ class TuckPage extends StoryPage {
     if (first && Book.cur === 0 && k !== 'next') return; // the first press just wakes the sound
     if (k === 'next') Book.go(1);
     else if (k === 'prev') Book.go(-1);
-    else if (typeof k === 'number') Book.pressSlot(k);
-    else Book.pressSlot({ space: 0, enter: 1, ctrl: 2 }[k]);
+    else if (typeof k === 'number') Book.pressButton(k);
+    else Book.pressButton({ space: 0, enter: 1, ctrl: 2 }[k]);
   }
   window.addEventListener('keydown', e => {
     let k = null;
@@ -3540,7 +3564,7 @@ class TuckPage extends StoryPage {
     else if (e.key === ' ' || e.code === 'Space') k = 'space';
     else if (e.key === 'Enter') k = 'enter';
     else if (e.key === 'Control') k = 'ctrl';
-    else if (/^Digit[1-9]$|^Numpad[1-9]$/.test(e.code)) k = +e.code.slice(-1) - 1;
+    else if (/^Digit[1-6]$|^Numpad[1-6]$/.test(e.code)) k = +e.code.slice(-1) - 1;
     if (!k) { if (!AU.ctx) audioStart(); return; }
     e.preventDefault();
     if (e.repeat) return;
@@ -3560,6 +3584,9 @@ class TuckPage extends StoryPage {
   setInterval(() => {
     document.querySelector('[data-key="prev"]').disabled = Book.cur === 0;
     document.querySelector('[data-key="next"]').disabled = Book.cur === Book.pages.length - 1;
+    // only as many colour buttons as this page has tricks
+    const n = Book.buttons().length;
+    document.querySelectorAll('[data-slot]').forEach(b => { b.hidden = +b.dataset.slot >= n; });
   }, 200);
   const mute = document.getElementById('mute');
   mute.addEventListener('click', () => {
