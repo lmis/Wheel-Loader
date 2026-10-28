@@ -35,7 +35,7 @@
   }
   .book {
     position: relative;
-    width: min(100%, calc((100vh - 130px) * 16 / 9));
+    width: min(100%, calc((100vh - 140px) * 16 / 9));
     max-width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: 6px 14px 14px 6px;
@@ -43,39 +43,32 @@
   }
   #page { display: block; width: 100%; height: 100%; border-radius: inherit; outline: none; cursor: pointer; touch-action: manipulation; }
   #page:focus-visible { box-shadow: 0 0 0 4px var(--glow); }
-  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: stretch; max-width: 100%; }
-  .keys button {
-    font-family: var(--display);
-    color: var(--ink);
-    border: 0; border-radius: 14px;
-    padding: 8px 16px 10px;
-    cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    transition: transform 0.08s, box-shadow 0.08s, background-color 0.2s;
-  }
-  .keys .act { min-width: 168px; background: var(--c); box-shadow: 0 5px 0 var(--edge), 0 8px 14px rgba(0,0,0,0.35); }
+  .keys { display: flex; align-items: center; justify-content: center; gap: 28px; max-width: 100%; }
+  .acts { display: flex; gap: 22px; }
+  .keys button { border: 0; cursor: pointer; display: grid; place-items: center; padding: 0; transition: transform 0.08s, box-shadow 0.08s; }
+  .keys .act { width: 104px; height: 78px; border-radius: 22px; background: var(--c); box-shadow: 0 6px 0 var(--edge), 0 10px 16px rgba(0,0,0,0.35); }
+  .keys .act svg { width: 58px; height: 58px; }
   .keys .pink { --c: var(--pink); --edge: var(--pink-edge); }
   .keys .blue { --c: var(--blue); --edge: var(--blue-edge); }
   .keys .green { --c: var(--green); --edge: var(--green-edge); }
-  .keys .turn { flex-direction: row; gap: 8px; background: var(--cap); box-shadow: 0 5px 0 var(--cap-edge), 0 8px 14px rgba(0,0,0,0.35); font: 600 17px/1 var(--display); }
-  .keys .who { font: 500 12px/1.1 var(--body); opacity: 0.75; letter-spacing: 0.02em; }
-  .keys .what { font: 700 19px/1.15 var(--display); }
-  .keys .turn .what { font: 600 17px/1 var(--display); }
-  .keys .arrow { font-size: 14px; }
-  .keys button:active, .keys button.hit { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge, var(--cap-edge)), 0 2px 4px rgba(0,0,0,0.35); }
-  .keys button:disabled { opacity: 0.35; cursor: default; transform: none; }
-  .keys button:focus-visible, #mute:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
-  .keys button.fresh .what { animation: pop 0.35s ease-out; }
-  @keyframes pop { from { transform: scale(0.8); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
-  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font: 500 14px/1 var(--display); }
-  @media (max-width: 600px) {
-    .keys { gap: 6px; }
-    .keys button { padding: 6px 10px 8px; }
-    .keys .act { min-width: 0; flex: 1 1 0; }
-    .keys .turn { flex: 0 0 auto; padding: 6px 10px; }
-    .keys .who { display: none; }
-    .keys .what { font-size: 14px; }
-    .keys .turn .what { display: none; }
+  .keys .turn { width: 64px; height: 64px; border-radius: 50%; background: var(--cap); color: var(--ink); box-shadow: 0 5px 0 var(--cap-edge), 0 8px 14px rgba(0,0,0,0.35); }
+  .keys .turn svg { width: 30px; height: 30px; }
+  .keys button:active, .keys button.hit { transform: translateY(5px); box-shadow: 0 1px 0 var(--edge, var(--cap-edge)), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys button:disabled { opacity: 0.3; cursor: default; transform: none; }
+  .keys button:focus-visible { outline: 3px solid var(--glow); outline-offset: 3px; }
+  #mute { width: 46px; height: 46px; border-radius: 50%; background: transparent; color: var(--paper); border: 2px solid rgba(255,250,240,0.35); box-shadow: none; margin-left: -6px; }
+  #mute svg { width: 24px; height: 24px; }
+  #mute .cross { display: none; }
+  #mute[aria-pressed="true"] .cross { display: inline; }
+  #mute[aria-pressed="true"] .waves { display: none; }
+  @media (max-width: 640px) {
+    .keys { gap: 12px; }
+    .acts { gap: 10px; }
+    .keys .act { width: 68px; height: 56px; border-radius: 16px; }
+    .keys .act svg { width: 40px; height: 40px; }
+    .keys .turn { width: 46px; height: 46px; }
+    .keys .turn svg { width: 22px; height: 22px; }
+    #mute { width: 36px; height: 36px; }
   }
-  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } .keys button.fresh .what { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } }
 </style>

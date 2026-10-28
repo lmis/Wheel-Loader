@@ -35,7 +35,7 @@
   }
   .book {
     position: relative;
-    width: min(100%, calc((100vh - 130px) * 16 / 9));
+    width: min(100%, calc((100vh - 140px) * 16 / 9));
     max-width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: 6px 14px 14px 6px;
@@ -43,50 +43,79 @@
   }
   #page { display: block; width: 100%; height: 100%; border-radius: inherit; outline: none; cursor: pointer; touch-action: manipulation; }
   #page:focus-visible { box-shadow: 0 0 0 4px var(--glow); }
-  .keys { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: stretch; max-width: 100%; }
-  .keys button {
-    font-family: var(--display);
-    color: var(--ink);
-    border: 0; border-radius: 14px;
-    padding: 8px 16px 10px;
-    cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    transition: transform 0.08s, box-shadow 0.08s, background-color 0.2s;
-  }
-  .keys .act { min-width: 168px; background: var(--c); box-shadow: 0 5px 0 var(--edge), 0 8px 14px rgba(0,0,0,0.35); }
+  .keys { display: flex; align-items: center; justify-content: center; gap: 28px; max-width: 100%; }
+  .acts { display: flex; gap: 22px; }
+  .keys button { border: 0; cursor: pointer; display: grid; place-items: center; padding: 0; transition: transform 0.08s, box-shadow 0.08s; }
+  .keys .act { width: 104px; height: 78px; border-radius: 22px; background: var(--c); box-shadow: 0 6px 0 var(--edge), 0 10px 16px rgba(0,0,0,0.35); }
+  .keys .act svg { width: 58px; height: 58px; }
   .keys .pink { --c: var(--pink); --edge: var(--pink-edge); }
   .keys .blue { --c: var(--blue); --edge: var(--blue-edge); }
   .keys .green { --c: var(--green); --edge: var(--green-edge); }
-  .keys .turn { flex-direction: row; gap: 8px; background: var(--cap); box-shadow: 0 5px 0 var(--cap-edge), 0 8px 14px rgba(0,0,0,0.35); font: 600 17px/1 var(--display); }
-  .keys .who { font: 500 12px/1.1 var(--body); opacity: 0.75; letter-spacing: 0.02em; }
-  .keys .what { font: 700 19px/1.15 var(--display); }
-  .keys .turn .what { font: 600 17px/1 var(--display); }
-  .keys .arrow { font-size: 14px; }
-  .keys button:active, .keys button.hit { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge, var(--cap-edge)), 0 2px 4px rgba(0,0,0,0.35); }
-  .keys button:disabled { opacity: 0.35; cursor: default; transform: none; }
-  .keys button:focus-visible, #mute:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
-  .keys button.fresh .what { animation: pop 0.35s ease-out; }
-  @keyframes pop { from { transform: scale(0.8); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
-  #mute { background: transparent; color: var(--paper); box-shadow: none; border: 2px solid rgba(255,250,240,0.35); padding: 8px 12px; font: 500 14px/1 var(--display); }
-  @media (max-width: 600px) {
-    .keys { gap: 6px; }
-    .keys button { padding: 6px 10px 8px; }
-    .keys .act { min-width: 0; flex: 1 1 0; }
-    .keys .turn { flex: 0 0 auto; padding: 6px 10px; }
-    .keys .who { display: none; }
-    .keys .what { font-size: 14px; }
-    .keys .turn .what { display: none; }
+  .keys .turn { width: 64px; height: 64px; border-radius: 50%; background: var(--cap); color: var(--ink); box-shadow: 0 5px 0 var(--cap-edge), 0 8px 14px rgba(0,0,0,0.35); }
+  .keys .turn svg { width: 30px; height: 30px; }
+  .keys button:active, .keys button.hit { transform: translateY(5px); box-shadow: 0 1px 0 var(--edge, var(--cap-edge)), 0 2px 4px rgba(0,0,0,0.35); }
+  .keys button:disabled { opacity: 0.3; cursor: default; transform: none; }
+  .keys button:focus-visible { outline: 3px solid var(--glow); outline-offset: 3px; }
+  #mute { width: 46px; height: 46px; border-radius: 50%; background: transparent; color: var(--paper); border: 2px solid rgba(255,250,240,0.35); box-shadow: none; margin-left: -6px; }
+  #mute svg { width: 24px; height: 24px; }
+  #mute .cross { display: none; }
+  #mute[aria-pressed="true"] .cross { display: inline; }
+  #mute[aria-pressed="true"] .waves { display: none; }
+  @media (max-width: 640px) {
+    .keys { gap: 12px; }
+    .acts { gap: 10px; }
+    .keys .act { width: 68px; height: 56px; border-radius: 16px; }
+    .keys .act svg { width: 40px; height: 40px; }
+    .keys .turn { width: 46px; height: 46px; }
+    .keys .turn svg { width: 22px; height: 22px; }
+    #mute { width: 36px; height: 36px; }
   }
-  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } .keys button.fresh .what { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .keys button { transition: none; } }
 </style>
 <div class="book"><canvas id="page" tabindex="0" aria-label="Mama Comes Home, a picture book. Left and right arrows turn the pages; the pink, blue and green buttons (Space, Enter and Ctrl) make things happen."></canvas></div>
 <div class="keys">
-  <button type="button" class="turn" data-key="prev" title="Left arrow" aria-keyshortcuts="ArrowLeft"><span class="arrow" aria-hidden="true">◀</span><span class="what">Back</span></button>
-  <button type="button" class="act pink" data-key="space" title="Space bar" aria-keyshortcuts="Space"><span class="who">Title</span><span class="what">Bouncy letters</span></button>
-  <button type="button" class="act blue" data-key="enter" title="Enter key" aria-keyshortcuts="Enter"><span class="who">Léo &amp; Louis</span><span class="what">Cheer!</span></button>
-  <button type="button" class="act green" data-key="ctrl" title="Ctrl key" aria-keyshortcuts="Control"><span class="who">Mama &amp; Papa</span><span class="what">Wave hello</span></button>
-  <button type="button" class="turn" data-key="next" title="Right arrow" aria-keyshortcuts="ArrowRight"><span class="what">Next page</span><span class="arrow" aria-hidden="true">▶</span></button>
-  <button type="button" id="mute" aria-pressed="false">Sound on</button>
+  <button type="button" class="turn" data-key="prev" title="Back (Left arrow)" aria-label="Previous page" aria-keyshortcuts="ArrowLeft">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M30 10 L14 24 L30 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="acts">
+    <button type="button" class="act pink" data-key="space" title="Make something happen (Space)" aria-label="Make something happen" aria-keyshortcuts="Space">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 8 L38.5 23.5 L55 25 L42.5 36 L46.5 52.5 L32 43.5 L17.5 52.5 L21.5 36 L9 25 L25.5 23.5 Z" fill="#fff3a0" stroke="#46282f" stroke-width="3.5" stroke-linejoin="round"/>
+        <circle cx="27" cy="31" r="2.6" fill="#46282f"/><circle cx="37" cy="31" r="2.6" fill="#46282f"/>
+        <path d="M27 37 Q32 41 37 37" fill="none" stroke="#46282f" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M54 6 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z M10 44 l1.5 3.5 l3.5 1.5 l-3.5 1.5 l-1.5 3.5 l-1.5 -3.5 l-3.5 -1.5 l3.5 -1.5 Z" fill="#fffaf0" stroke="#46282f" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button type="button" class="act blue" data-key="enter" title="The friends (Enter)" aria-label="The friends" aria-keyshortcuts="Enter">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="22" cy="30" r="14" fill="#ffb48c" stroke="#46282f" stroke-width="3.5"/>
+        <circle cx="42" cy="34" r="14" fill="#8ad0ec" stroke="#46282f" stroke-width="3.5"/>
+        <circle cx="17" cy="28" r="2.4" fill="#46282f"/><circle cx="26" cy="28" r="2.4" fill="#46282f"/>
+        <path d="M17 34 Q21.5 38 26 34" fill="none" stroke="#46282f" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="38" cy="32" r="2.4" fill="#46282f"/><circle cx="47" cy="32" r="2.4" fill="#46282f"/>
+        <path d="M38 38 Q42.5 42 47 38" fill="none" stroke="#46282f" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M14 18 Q18 10 24 15 Q28 9 31 17" fill="#ffe07a" stroke="#46282f" stroke-width="2.4" stroke-linejoin="round"/>
+        <path d="M35 22 Q39 14 45 19 Q49 13 52 21" fill="#ffe07a" stroke="#46282f" stroke-width="2.4" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button type="button" class="act green" data-key="ctrl" title="The dino (Ctrl)" aria-label="The dino does a trick" aria-keyshortcuts="Control">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M14 22 L18 10 L24 20 L28 7 L33 19" fill="#ffa05a" stroke="#46282f" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M10 38 C10 24 20 17 32 17 C44 17 50 24 50 28 L58 30 C61 31 61 44 56 46 L36 50 C20 53 10 50 10 38 Z" fill="#78cd6e" stroke="#46282f" stroke-width="3.5" stroke-linejoin="round"/>
+        <circle cx="30" cy="29" r="6.5" fill="#fffcf6" stroke="#46282f" stroke-width="2.6"/><circle cx="32" cy="29" r="3.2" fill="#46282f"/>
+        <path d="M38 42 Q47 46 56 40" fill="none" stroke="#46282f" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="51" cy="33" r="1.8" fill="#46282f"/><circle cx="22" cy="40" r="4" fill="#ff8296" opacity="0.5"/>
+      </svg>
+    </button>
+  </div>
+  <button type="button" class="turn" data-key="next" title="Next page (Right arrow)" aria-label="Next page" aria-keyshortcuts="ArrowRight">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 10 L34 24 L18 38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button type="button" id="mute" aria-pressed="false" aria-label="Sound on" title="Sound">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 19 H16 L26 10 V38 L16 29 H8 Z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+      <g class="waves" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M32 18 Q36 24 32 30"/><path d="M37 13 Q44 24 37 35"/></g>
+      <g class="cross" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M33 18 L43 30"/><path d="M43 18 L33 30"/></g></svg>
+  </button>
 </div>
 <script>
 'use strict';
@@ -3259,31 +3288,16 @@ class TuckPage extends StoryPage {
     if (!b) return;
     b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
   }
-  // the three colour buttons say what they will do next on this page
-  const actBtns = ['space', 'enter', 'ctrl'].map(k => document.querySelector(`[data-key="${k}"]`));
-  const keyNames = ['Space', 'Enter', 'Ctrl'];
-  let lastLabels = '';
-  function updateLabels() {
-    const L = Book.labels(), key = JSON.stringify(L);
-    if (key === lastLabels) return;
-    const old = lastLabels; lastLabels = key;
-    L.forEach((l, i) => {
-      const b = actBtns[i];
-      if (old && b.querySelector('.what').textContent !== l.what) { b.classList.remove('fresh'); void b.offsetWidth; b.classList.add('fresh'); }
-      b.querySelector('.who').textContent = l.who;
-      b.querySelector('.what').textContent = l.what;
-      b.setAttribute('aria-label', `${l.who}: ${l.what} (${keyNames[i]})`);
-    });
+  // the page-turn buttons grey out at the ends of the book
+  setInterval(() => {
     document.querySelector('[data-key="prev"]').disabled = Book.cur === 0;
     document.querySelector('[data-key="next"]').disabled = Book.cur === Book.pages.length - 1;
-  }
-  setInterval(updateLabels, 150);
-  updateLabels();
+  }, 200);
   const mute = document.getElementById('mute');
   mute.addEventListener('click', () => {
     audioStart(); setMuted(!AU.muted);
     mute.setAttribute('aria-pressed', AU.muted ? 'true' : 'false');
-    mute.textContent = AU.muted ? 'Sound off' : 'Sound on';
+    mute.setAttribute('aria-label', AU.muted ? 'Sound off' : 'Sound on');
   });
   requestAnimationFrame(frame);
 })();
