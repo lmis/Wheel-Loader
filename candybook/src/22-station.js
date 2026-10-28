@@ -3,17 +3,17 @@ class StationPage extends StoryPage {
   constructor() {
     super({ name: 'station', floor: 700,
       text: 'Mama hops on the dino train. Choo choo! Off it rolls, over the bridge and into the busy city.',
-      tricks: [['whistle', 'chug', 'hearts'], ['conductor', 'pigeons', 'clock'], ['wave', 'peek', 'kiss']],
+      tricks: [['whistle', 'chug', 'leave'], ['conductor', 'pigeons', 'clock'], ['wave', 'peek', 'kiss']],
       who: ['Dino train', 'Station', 'Mama'],
-      durs: { whistle: 2, chug: 3, hearts: 3, conductor: 2, pigeons: 3, clock: 2.4, wave: 2.4, peek: 2.4, kiss: 2.4 } });
+      durs: { whistle: 2, chug: 3, leave: 8, conductor: 2, pigeons: 3, clock: 2.4, wave: 2.4, peek: 2.4, kiss: 2.4 } });
     this.trainX = 1120;
     this.railY = () => art('bg-02-station') ? 508 : 598;
   }
   act(a) {
     const st = this.st;
-    if (a === 'whistle') { sfx('choo', 1); st.say('CHOO CHOO!', 1020, 300, 60, WHITE); for (let i = 0; i < 6; i++) st.puff(this.trainX - 210 + rnd(-10, 10), this.railY() - 258, rnd(18, 26), '#ffffff', 2, { vy: rnd(-120, -70) }); }
+    if (a === 'whistle') { sfx('choo', 1); st.say('TOOT TOOT!', 1020, 300, 60, WHITE); }
     if (a === 'chug') sfx('chug', 1);
-    if (a === 'hearts') sfx('sparkle', 0.7);
+    if (a === 'leave') { sfx('choo', 0.8); sfx('chug', 1); st.say('OFF WE GO!', 900, 300, 56, '#ffd25a'); }
     if (a === 'conductor') { sfx('whistle', 0.6, 1.6); st.say('ALL ABOARD!', 220, 360, 48, '#ffd25a'); }
     if (a === 'pigeons') { sfx('flutter', 1); sfx('coo', 0.6); }
     if (a === 'clock') { [0, 0.5, 1].forEach(d => setTimeout(() => sfx('ding', 0.7, 0.6), d * 1000)); st.say('DONG!', 420, 230, 46, '#ffe0b4'); }
@@ -24,9 +24,12 @@ class StationPage extends StoryPage {
   tick(dt, t, A) {
     const st = this.st;
     this.trainX = 1120 + (A.on('chug') ? Math.sin(Math.PI * clamp(A.t('chug') / 3, 0, 1)) * 60 : 0);
-    if (this.every('idle', 1.4)) st.puff(this.trainX - 210, this.railY() - 258, 12, '#f0f0f8', 0);
-    if (A.on('chug') && this.every('c', 0.25)) st.puff(this.trainX - 210, this.railY() - 258, 14, '#ffffff', 0, { vy: -90 });
-    if (A.on('hearts') && this.every('h', 0.3)) st.add({ kind: 'heart', layer: 2, x: this.trainX - 210, y: this.railY() - 268, vx: rnd(-30, 30), vy: -80, rot: 0, size: 14, col: '#ffb4cc', life: 2.4 });
+    if (A.on('leave')) { // pull away slowly, speed up and off to the right; then the next train rolls in
+      const k = A.t('leave');
+      if (k < 4) this.trainX += 30 * k * k * k;
+      else this.trainX = 1120 - 2600 * Math.pow(1 - ease((k - 4.5) / 3.3), 2) * (k < 4.5 ? 1 : 1);
+      this.moving = k < 7.6;
+    } else this.moving = A.on('chug');
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
@@ -49,7 +52,7 @@ class StationPage extends StoryPage {
     // the train, with Mama at a window
     const peek = A.on('peek') ? Math.sin(Math.PI * clamp(A.t('peek') / 2.4, 0, 1)) : 0;
     const waving = A.on('wave'), kissing = A.on('kiss');
-    drawTrainArt(this.trainX + 60, ry, t, { moving: A.on('chug'), cars: 2, window: { car: 0, seat: 1, draw: (x, y) => {
+    drawTrainArt(this.trainX + 60, ry, t, { moving: this.moving, cars: 2, window: { car: 0, seat: 1, draw: (x, y) => {
       const head = rigImg(MAMA_RIG, kissing ? 'head-kiss' : waving ? 'head-talk' : 'head-happy');
       if (head && rigReady(MAMA_RIG)) {
         // painted Mama, facing the way the train will go, leaning out to peek

@@ -37,7 +37,7 @@ class StuckPage extends StoryPage {
       drawCity(t, 520, '#262a52', 0.4, 4);
     }
     // a few twinkles in the sky... could those be robots?
-    if (t > 8) for (let i = 0; i < 3; i++) { const k = clamp((t - 8) / 20, 0, 1); glow(200 + i * 40 + k * 300, 200 - k * 40 + Math.sin(t * 3 + i) * 6, 14, '#a0ffd2', 0.5 * k); }
+    if (false) for (let i = 0; i < 3; i++) { const k = clamp((t - 8) / 20, 0, 1); glow(200 + i * 40 + k * 300, 200 - k * 40 + Math.sin(t * 3 + i) * 6, 14, '#a0ffd2', 0.5 * k); }
     // the shelter roof
     if (!bg) {
       rect(380, 270, 540, 20, '#4a5080'); line(400, 290, 400, 640, 10, '#4a5080'); line(900, 290, 900, 640, 10, '#4a5080');

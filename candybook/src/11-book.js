@@ -5,7 +5,7 @@ const LABEL = {
   letters: 'Bouncy letters', cheer: 'Cheer!', familywave: 'Wave hello',
   pancake: 'Flip a pancake', toast: 'Toast pops', kettle: 'Kettle whistles', wave: 'Wave bye-bye', giggle: 'Giggle', spoons: 'Bang the spoons',
   kiss: 'Kisses', kissLeo: 'Kiss Léo', kissLouis: 'Kiss Louis', kissPapa: 'Kiss Papa', bye: 'See you tonight', twirl: 'Twirl',
-  whistle: 'Choo choo!', chug: 'Chugga chugga', hearts: 'Heart puffs', conductor: 'All aboard!', pigeons: 'Pigeons fly', clock: 'Station clock', peek: 'Peek out',
+  whistle: 'Toot toot!', leave: 'Off it goes!', toot: 'Toot toot!', chug: 'Chugga chugga', hearts: 'Heart puffs', conductor: 'All aboard!', pigeons: 'Pigeons fly', clock: 'Station clock', peek: 'Peek out',
   zoom: 'Zoom!', lights: 'Light the windows', blimp: 'Blimp', washer: 'Window washer', birds: 'Birds fly by', copter: 'Helicopter', press: 'Press the button', hello: 'Hello!', wow: 'Wow!',
   copier: 'Paper blizzard', planes: 'Paper planes', coffee: 'Coffee fountain', dance: 'Robot disco', heads: 'Boing heads', burp: 'Robot burps',
   boss: 'Back to work!', tidy: 'Tidy up', dancetoo: 'Dance too',
@@ -24,7 +24,7 @@ const LABEL = {
 const BUTTONS = {
   cover: ['letters', 'cheer', 'familywave'],
   morning: ['pancake', 'wave', 'giggle', 'kissLeo', 'kissLouis', 'kissPapa'],
-  station: ['whistle', 'hearts', 'pigeons', 'wave', 'peek', 'kiss'],
+  station: ['leave', 'whistle', 'pigeons', 'wave', 'peek', 'kiss'],
   tower: ['birds', 'hello', 'wow'],
   office: ['dance', 'heads', 'burp', 'boss', 'tidy', 'dancetoo'],
   papa: ['puddle', 'hello', 'faster', 'giggle', 'spin', 'wheelie'],
@@ -34,14 +34,14 @@ const BUTTONS = {
   dinner: ['tomato', 'yum', 'laugh'],
   wantmama: ['want', 'phone', 'cuddle'],
   stuck: ['sigh', 'umbrella', 'phone', 'thunder', 'frog', 'cat'],
-  rescue: ['loop', 'shoot', 'fireworks', 'wheee', 'hold', 'point'],
-  home: ['hug', 'jump', 'giggle', 'kiss', 'twirl', 'byebots'],
+  ride: ['faster', 'toot', 'shoot', 'wave', 'kiss', 'point'],
+  home: ['hug', 'jump', 'giggle', 'kiss', 'twirl'],
   tuck: ['yawn', 'giggle', 'sleep', 'sing', 'kiss', 'lamp'],
 };
 const Book = {
   pages: [], cur: 0, turn: null, queued: 0, started: false,
   init() {
-    this.pages = [new CoverPage(), new MorningPage(), new StationPage(), new TowerPage(), new OfficePage(), new PapaPage(), new DaycarePage(), new MeetingPage(), new PickupPage(), new DinnerPage(), new WantMamaPage(), new StuckPage(), new RescuePage(), new HomeAgainPage(), new TuckPage()];
+    this.pages = [new CoverPage(), new MorningPage(), new StationPage(), new TowerPage(), new OfficePage(), new PapaPage(), new DaycarePage(), new MeetingPage(), new PickupPage(), new DinnerPage(), new WantMamaPage(), new StuckPage(), new RidePage(), new HomeAgainPage(), new TuckPage()];
     this.pages.forEach(p => { p.shown = 0; });
     // indoors the rooms are close up, so the family is drawn bigger there
     const INDOOR = { morning: 1.35, office: 1.35, daycare: 1.3, meeting: 1.3, dinner: 1.3, wantmama: 1.35, tuck: 1.3 };

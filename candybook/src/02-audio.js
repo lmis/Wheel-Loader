@@ -136,7 +136,7 @@ const ARRANGE = {
   dinner: { bpm: 90, lead: 'marimba', oct: 0, pad: 0.5, arp: 0, bass: 'pizz' },
   wantmama: { bpm: 60, lead: 'flute', oct: 0, pad: 0.8, arp: 0, bass: 'bass', soft: 0.75 },
   stuck: { bpm: 56, lead: 'flute', oct: 0, pad: 0.9, arp: 'harp', bass: 'bass', soft: 0.7 },
-  rescue: { bpm: 96, lead: 'bell', oct: 0, pad: 1, arp: 'harp', bass: 'bass' },
+  ride: { bpm: 84, lead: 'bell', oct: 0, pad: 1, arp: 'harp', bass: 'bass' },
   tuck: { bpm: 54, lead: 'box', oct: 12, pad: 0.6, arp: 0, bass: 0, soft: 0.7 },
   factory: { bpm: 104, lead: 'marimba', oct: 0, pad: 0, arp: 'pluck', bass: 'pizz', perc: 1 },
   park: { bpm: 94, lead: 'bell', oct: 0, pad: 0, arp: 'harp', bass: 'pizz' },
@@ -221,7 +221,7 @@ const Amb = {
     if (name === 'office' || name === 'meeting') { hum(60, 0.03); bed(0.01, 'lowpass', 400); }
     if (name === 'station' || name === 'tower') bed(0.03, 'lowpass', 300, 0.7, 0.1);
     if (name === 'papa' || name === 'pickup') bed(0.05, 'bandpass', 700, 0.5, 0.5);
-    if (name === 'rescue') bed(0.08, 'lowpass', 600, 0.8, 0.2);
+    if (name === 'ride') bed(0.05, 'lowpass', 300, 0.8, 0.1);
     if (name === 'wantmama') bed(0.03, 'highpass', 3000, 0.7, 0.2);
     if (name === 'stuck') { bed(0.12, 'highpass', 1800, 0.6, 0.15); bed(0.05, 'lowpass', 300, 0.8, 0.1); }
     if (name === 'farm') bed(0.04, 'lowpass', 400, 0.8, 0.1);
@@ -241,6 +241,7 @@ const Amb = {
     if (n === 'office') { every('type', 0.09, 0.2, () => osc('square', rnd(1800, 2600), t, 0.02, 0.01, out, { d: 0.005 })); every('phone', 7, 13, () => { for (let i = 0; i < 2; i++) osc('sine', 1400, t + i * 0.18, 0.12, 0.03, out, { hold: 0.08, d: 0.02, vib: [18, 40] }); }); }
     if (n === 'daycare') every('kids', 3, 7, () => sfx('giggle', 0.15, rnd(1.2, 1.6), undefined, out));
     if (n === 'meeting' || n === 'wantmama' || n === 'tuck') every('tick', 0.5, 0.5, () => { this.clock ^= 1; osc('sine', this.clock ? 2100 : 1600, t, 0.03, n === 'tuck' ? 0.02 : 0.03, out, { d: 0.008 }); });
+    if (n === 'ride') every('clack', 0.42, 0.42, () => { noise(t, 0.06, 0.08, out, { f0: 700, q: 2, d: 0.02 }); noise(t + 0.12, 0.06, 0.06, out, { f0: 600, q: 2, d: 0.02 }); });
     if (n === 'stuck') every('thunder', 9, 16, () => sfx('thunder', 0.25, 1, undefined, out));
     if (n === 'home') every('crk', 0.4, 1.4, cricket);
     if (n === 'town' || n === 'cover') every('bird', 1.5, 4.5, () => sfx('tweet', 0.35, rnd(0.85, 1.2), rnd(-0.9, 0.9), out));
