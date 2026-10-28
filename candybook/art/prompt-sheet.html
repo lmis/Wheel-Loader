@@ -1,0 +1,267 @@
+<title>Mama Comes Home Prompt Sheet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;700&display=swap">
+<style>
+  /* A working sheet that sits beside the book: one column of page cards, each
+     with its prompt ready to copy, in the book's own ink-and-paper colours. */
+  :root {
+    --bg: #fbf5ea;
+    --card: #fffdf8;
+    --ink: #46282f;
+    --muted: #7a5f63;
+    --line: #e8dccb;
+    --pink: #ffa3c4;
+    --blue: #96d4ff;
+    --green: #a4e294;
+    --well: #f4ecdf;
+    --display: "Fredoka", "Baloo 2", system-ui, sans-serif;
+    --body: "Andika", "Trebuchet MS", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #2b1c22; --card: #3a2730; --ink: #fbf1e6; --muted: #cdb3b2; --line: #54393f; --well: #2f1f26;
+      --pink: #e07aa0; --blue: #5fa8d8; --green: #6fb862; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #2b1c22; --card: #3a2730; --ink: #fbf1e6; --muted: #cdb3b2; --line: #54393f; --well: #2f1f26;
+    --pink: #e07aa0; --blue: #5fa8d8; --green: #6fb862; color-scheme: dark;
+  }
+  body {
+    background: var(--bg); color: var(--ink); font: 400 17px/1.55 var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 64px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+  h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; }
+  h2 { font-size: 26px; font-weight: 700; }
+  h3 { font-size: 21px; font-weight: 700; }
+  p { margin: 0; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 62ch; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .step { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .step b { font-family: var(--display); font-size: 18px; }
+  .block { display: flex; flex-direction: column; gap: 12px; }
+  .prompt { background: var(--well); border-radius: 12px; padding: 14px 16px; font-size: 15.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button.copy {
+    font: 600 15px/1 var(--display); color: #46282f; background: var(--pink);
+    border: 0; border-radius: 12px; padding: 10px 16px 11px; cursor: pointer;
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--pink) 60%, #46282f);
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  button.copy:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--pink) 60%, #46282f); }
+  button.copy:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  button.copy.done { background: var(--green); box-shadow: 0 4px 0 color-mix(in srgb, var(--green) 60%, #46282f); }
+  .file { font: 500 14px/1.2 ui-monospace, "SF Mono", Menlo, monospace; color: var(--muted); }
+  .pages { display: flex; flex-direction: column; gap: 18px; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .card header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .num { font: 700 15px/1 var(--display); background: var(--ink); color: var(--bg); border-radius: 999px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+  .tag { font: 600 13px/1 var(--display); border-radius: 999px; padding: 6px 10px; color: #46282f; }
+  .tag.first { background: var(--green); }
+  .tag.wide { background: var(--blue); }
+  .story { font-style: italic; color: var(--muted); }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 20px; font-size: 15.5px; }
+  .notes div { min-width: 0; }
+  .notes strong { font-family: var(--display); font-weight: 600; display: block; font-size: 14px; letter-spacing: 0.03em; color: var(--muted); }
+  .cast { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .cast .card { gap: 10px; }
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); vertical-align: -2px; margin-right: 6px; }
+  hr { border: 0; border-top: 2px dashed var(--line); margin: 8px 0; }
+  @media (prefers-reduced-motion: reduce) { button.copy { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="block">
+    <h1>Mama Comes Home: painted backgrounds</h1>
+    <p class="lede">One prompt per page of the book. Each picture is only the place: no characters and nothing that moves. The book keeps drawing and animating Mama, Papa, Léo, Louis, the robots and every trick on top of your painting.</p>
+  </header>
+
+  <section class="steps" aria-label="How to use this sheet">
+    <div class="step"><b>1. Copy and paste</b><p>Each “Copy prompt” button copies the style line and the page’s scene together. Paste that into your image AI.</p></div>
+    <div class="step"><b>2. Make it 2560 × 1440</b><p>That’s the book’s 16:9 shape. The three street and sky pages are wider strips: 5120 × 1440. JPG is fine and keeps the book small.</p></div>
+    <div class="step"><b>3. Send them back</b><p>Name each file as shown on its card and attach it in the chat, or drop it into <span class="file">candybook/art/</span>. I’ll put it in the book.</p></div>
+  </section>
+
+  <section class="block">
+    <h2>Try these three first</h2>
+    <p>Morning (page 1), the office (page 4) and the rainy station (page 11) cover sunny, indoor and night. Once those look right in the book, do the rest with the same settings so all the pages match.</p>
+  </section>
+
+  <section class="block" aria-labelledby="style-h">
+    <h2 id="style-h">The style line</h2>
+    <p>Already included in every page prompt below. Copy it on its own if your image AI has a separate style or “describe the look” box.</p>
+    <div class="prompt" id="style"></div>
+    <div class="row"><button class="copy" type="button" data-copy="style">Copy style line</button></div>
+    <p><strong>If your image AI has a “leave out” (negative prompt) box</strong>, put this in it:</p>
+    <div class="prompt" id="avoid"></div>
+    <div class="row"><button class="copy" type="button" data-copy="avoid">Copy leave-out line</button></div>
+  </section>
+
+  <hr>
+
+  <section class="block">
+    <h2>The fifteen pages</h2>
+    <p>Positions are given as a share of the picture’s width and height, measured from the top left, so the painting lines up with where the book draws characters and furniture. Anything listed under “The book adds” must stay out of the painting.</p>
+  </section>
+
+  <div class="pages" id="pages"></div>
+
+  <hr>
+
+  <section class="block">
+    <h2>Later: the characters</h2>
+    <p>For the step after backgrounds. Image AI finds it hard to draw the same character twice, so start each character from one reference sheet and reuse that picture as the reference for every later pose. Ask for a plain white background.</p>
+  </section>
+  <div class="cast" id="cast"></div>
+</div>
+
+<script>
+  const STYLE = "Children's picture-book illustration in warm gouache and coloured pencil, soft hand-drawn brown outlines, gentle rounded shapes, cosy and whimsical, soft pastel colours with warm highlights, light paper grain, simple shading, eye-level view, wide 16:9 scene.";
+  const AVOID = "characters, people, animals, dinosaurs, robots, faces, text, letters, numbers, words on signs, logos, watermark, frame, border, busy clutter";
+  const CALM = "Keep the top fifth of the picture calm and simple, because the story text sits there.";
+  const NONE = "Show only the place, with no characters or animals in it.";
+
+  const PAGES = [
+    { n: 0, name: "Cover", file: "bg-00-cover.jpg",
+      story: "Mama Comes Home: a dino family bedtime story.",
+      scene: "Background for a picture-book cover at dusk. The sky fades from deep blue at the top through lilac and pink to warm peach at the horizon, with a few small stars. On the left, a tall office tower with warm lit windows stands among softer city buildings. Gentle green hills roll across the bottom third, and on the right hill sits a little cream house with a red roof and one glowing window. Keep the top half open and calm for the big title, and the centre of the bottom third clear.",
+      adds: "The title, Mama, Papa, Léo and Louis standing in the middle.",
+      clear: "Top half (title) and the middle of the bottom third." },
+    { n: 1, name: "Morning kitchen", file: "bg-01-morning.jpg", first: true,
+      story: "Good morning! Mama has to go to work. “Bye-bye, Léo! Bye-bye, Louis!”",
+      scene: "A cosy family kitchen at sunrise. Warm peach walls with a faint pattern of tiny hearts and wooden floorboards across the bottom sixth. On the far left (5–16% wide, 46–83% high), a rounded green front door with a little round window. Upper centre-left (26–44% wide, 24–50% high), a white-framed window with the sun just rising in a soft blue-to-peach sky. On the right (73–95% wide), a cream kitchen counter and stove against the wall. Leave the middle of the room empty.",
+      adds: "Breakfast table and high chairs, the pan, kettle and toaster, Mama, Papa and the twins.",
+      clear: "The middle of the room (31–67% wide) and the floor." },
+    { n: 2, name: "The dino train station", file: "bg-02-station.jpg",
+      story: "Mama hops on the dino train. Choo choo!",
+      scene: "A sunny morning railway station. Pale blue sky with a few round clouds. In the distance, across a river, a soft blue city skyline and a long bridge. A station canopy roof runs along the top third, held up by slim posts. Railway tracks run straight across the whole picture at about 82% of the height, and a pale stone platform with a yellow safety line fills the bottom, in front of the tracks.",
+      adds: "The train with Mama at the window, the robot conductor, the station clock, pigeons and a bench.",
+      clear: "The tracks and the band just above them (55–85% high), where the train stands." },
+    { n: 3, name: "The tall tower", file: "bg-03-tower.jpg",
+      story: "Mama works at the very top of a big, tall tower. Up, up, up goes the glass lift.",
+      scene: "A bright day in the city. Blue sky with fluffy clouds. A very tall glass office tower stands in the centre (44–69% wide), rising from the bottom edge to near the top, its face a neat grid of soft blue windows. A slim lift track runs up the outside of the tower on its right side (70% wide). Low city rooftops fill the bottom quarter on both sides.",
+      adds: "The glass lift with Mama, the window-washer robot, birds, a blimp and a little helicopter.",
+      clear: "The strip just right of the tower (70–82% wide), where the lift rides." },
+    { n: 4, name: "The silly office", file: "bg-04-office.jpg", first: true,
+      story: "Her office is full of robots, and the robots are very, very silly.",
+      scene: "A bright, friendly open-plan office high up in a tower. Light lavender-blue walls. Three big windows across the upper half show blue sky, clouds and distant rooftops. Blue-grey carpet across the bottom seventh. A potted plant in the far left corner. Tidy and calm.",
+      adds: "Three desks with the robots behind them, a computer, the photocopier, the coffee machine, flying paper and Mama.",
+      clear: "The band from 55% to 85% high across the whole width (desks and robots)." },
+    { n: 5, name: "Papa on rollerblades", file: "bg-05-street-morning.jpg", wide: true,
+      story: "Meanwhile, Papa puts on his helmet and his rollerblades with the glowing red wheels.",
+      scene: "A cheerful morning street seen from the side, painted as one long strip whose left and right edges join up seamlessly so it can scroll forever. A row of colourful little houses with pointed roofs (blue, yellow, green, coral, lilac) with round green trees in front, a strip of grass, then a grey road with pale dashes across the bottom fifth. Soft blue sky with round clouds.",
+      adds: "Papa, the trolley with the twins, the glowing wheel trails, a ramp, a puddle and a dog.",
+      clear: "The road (bottom fifth).", size: "5120 × 1440, left and right edges must match" },
+    { n: 6, name: "Dino daycare", file: "bg-06-daycare.jpg",
+      story: "At dino daycare, Léo and Louis build towers, paint pictures and sing songs.",
+      scene: "A sunny daycare playroom. Soft butter-yellow walls with a string of blank pastel pennants along the top quarter. A white-framed window on the upper right (73–91% wide, 21–44% high) with sunshine and one cloud. Low toy shelves with soft toys along the back wall. A mint-green rug floor across the bottom sixth.",
+      adds: "The easel, the robot teacher, the block tower, the xylophone, the nap mat and the four little dinos.",
+      clear: "The floor and the lower half of the wall in the middle (35–80% wide)." },
+    { n: 7, name: "The afternoon meeting", file: "bg-07-meeting.jpg",
+      story: "Mama looks at the picture of Léo and Louis on her desk, and smiles.",
+      scene: "A meeting room in the afternoon. Lilac walls. A window on the upper left (5–20% wide, 18–43% high) shows a warm orange afternoon sky over the city. Plain wall space across the upper centre. Carpet across the bottom seventh.",
+      adds: "The slide screen (25–58% wide), the cuckoo clock, the long table, Mama’s desk and photo, the robots.",
+      clear: "The plain wall at 25–58% wide and 17–51% high (the screen), and everything below 60% high." },
+    { n: 8, name: "Pick-up at sunset", file: "bg-08-street-sunset.jpg", wide: true,
+      story: "When the sun turns orange, Papa zooms back to daycare. “Papa!”",
+      scene: "The same cheerful street as the morning page, seen from the side and painted as one long seamless strip, now at sunset: an orange and pink sky with warm golden light, house windows glowing yellow, trees a deeper green, long soft shadows. A grey road with pale dashes across the bottom fifth.",
+      adds: "Papa, the trolley with the twins, the daycare sign, the wheel trails, a ramp and a puddle.",
+      clear: "The road (bottom fifth).", size: "5120 × 1440, left and right edges must match" },
+    { n: 9, name: "Dinner", file: "bg-09-dinner.jpg",
+      story: "Tomatoes, fruit and noodles. Slurp, slurp, slurp! But Mama’s chair is still empty.",
+      scene: "A warm family dining room in the evening. Peach walls. A window on the upper left (9–28% wide, 21–46% high) shows a purple dusk sky with the first stars. A lamp hangs from the ceiling over the centre, giving a soft warm glow. Wooden floor across the bottom sixth.",
+      adds: "The table, the chairs (including Mama’s empty one), the food, Papa and the twins.",
+      clear: "Everything from 55% high down, across 28–80% wide." },
+    { n: 10, name: "“We want Mama”", file: "bg-10-want-mama.jpg",
+      story: "Pyjamas on, teeth brushed. But where is Mama? It is getting very, very late.",
+      scene: "A cosy living room at night. Deep blue-purple walls with a faint pattern of tiny stars and a warm brown wooden floor across the bottom sixth. A white-framed window on the left (8–27% wide, 21–53% high) shows a dark night sky with a few stars and no moon. The rest of the wall is plain.",
+      adds: "The moon and rain in the window, the tall clock, the sofa, a teddy, Papa and the twins in pyjamas.",
+      clear: "The right half of the wall (clock and sofa) and the floor." },
+    { n: 11, name: "Stuck in the rain", file: "bg-11-stuck.jpg", first: true,
+      story: "Mama is at the station, but the dino train is late. Drip, drop goes the rain.",
+      scene: "A railway station at night in the rain, moody but gentle and not scary. Dark navy sky. A city skyline with soft, blurry warm windows behind. A simple shelter roof over the middle (30–72% wide) on two posts. Railway tracks across at about 83% of the height, and a wet platform along the bottom with puddles reflecting the lights.",
+      adds: "The departures board, the bench and cat, the puddle frog, Mama with her umbrella, and the falling rain.",
+      clear: "The space under the shelter (35–70% wide)." },
+    { n: 12, name: "The robot rescue", file: "bg-12-night-sky.jpg", wide: true,
+      story: "Here come the robots! “We’ll fly you home, boss!”",
+      scene: "Night sky over a sleeping city, painted as one long seamless strip that can scroll forever. Deep blue sky with soft drifting clouds and few stars, no moon. A skyline of tall buildings with scattered warm windows across the bottom third.",
+      adds: "The moon, twinkling stars, the flying robots carrying Mama, and the little house far away.",
+      clear: "The upper two thirds, where they fly.", size: "5120 × 1440, left and right edges must match" },
+    { n: 13, name: "Home at last", file: "bg-13-home.jpg",
+      story: "Mama tiptoes through the door. Léo and Louis come running. A big, warm family hug.",
+      scene: "A family house at night. A cosy cream house with a red roof and a chimney fills the right part of the picture (60–100% wide), with a warm glowing open doorway (63–72% wide, 47–83% high) and one lit window. Dark blue sky with stars and no moon. Green lawn across the bottom quarter with a stone path leading to the door.",
+      adds: "The moon, Mama, Papa, the twins, the robots flying away and the chimney smoke.",
+      clear: "The lawn in front of the house (left two thirds)." },
+    { n: 14, name: "Tucked in", file: "bg-14-tuck-in.jpg",
+      story: "She sings their song and kisses them goodnight. Goodnight, Léo. Goodnight, Louis.",
+      scene: "The twins’ bedroom at night. Lavender walls with tiny stars and a warm wooden floor across the bottom sixth. A white-framed window on the upper left (9–26% wide, 21–50% high) shows a night sky with no moon. On the right (86–97% wide), an open doorway with warm light from the hallway.",
+      adds: "The moon, the two little beds, the candy mobile, the robot nightlight, Mama and Papa.",
+      clear: "The middle of the room (25–75% wide) from 40% high down." },
+  ];
+
+  const CAST = [
+    { name: "Mama", col: "#b48ce6", text: "Character reference sheet of Mama: a friendly, round purple dinosaur mum with a pink bow on her head, a pale pink belly, soft pink back spikes, a short tail and a red work bag. Front view and side view, standing, smiling, on a plain white background." },
+    { name: "Papa", col: "#78cd6e", text: "Character reference sheet of Papa: a friendly, round green dinosaur dad with orange back spikes and a pale yellow belly, wearing a red bike helmet and black rollerblades with glowing red wheels. Front view and side view, on a plain white background." },
+    { name: "Léo", col: "#8ad0ec", text: "Character reference sheet of Léo: a small, round light-blue baby dinosaur with a fluffy blonde tuft of hair, orange back spikes and a white belly. Front view and side view, on a plain white background." },
+    { name: "Louis", col: "#ffb48c", text: "Character reference sheet of Louis: a small, round peach baby dinosaur with a fluffy blonde tuft of hair, light-blue back spikes and a cream belly; Léo’s twin. Front view and side view, on a plain white background." },
+    { name: "The robots", col: "#5acdc3", text: "Character reference sheet of three silly office robots: Bolt, tall and teal with a square head, two big round eyes and an antenna with a red light; Gumdrop, round and orange with one big eye and a little propeller on top; Tinny, small and lilac with a TV-screen face showing green pixel eyes and a spring neck. Front views side by side, on a plain white background." },
+  ];
+
+  document.getElementById('style').textContent = STYLE;
+  document.getElementById('avoid').textContent = AVOID;
+  const full = p => `${STYLE} ${p.scene} ${NONE} ${CALM}`;
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const texts = { style: STYLE, avoid: AVOID };
+
+  const pages = document.getElementById('pages');
+  for (const p of PAGES) {
+    const id = 'p' + p.n;
+    texts[id] = full(p);
+    const c = el('article', 'card');
+    c.innerHTML = `
+      <header><span class="num">${String(p.n).padStart(2, '0')}</span><h3>${esc(p.name)}</h3>
+        ${p.first ? '<span class="tag first">Try first</span>' : ''}${p.wide ? '<span class="tag wide">Wide strip</span>' : ''}</header>
+      <p class="story">${esc(p.story)}</p>
+      <div class="prompt">${esc(texts[id])}</div>
+      <div class="notes">
+        <div><strong>THE BOOK ADDS</strong>${esc(p.adds)}</div>
+        <div><strong>KEEP CLEAR</strong>${esc(p.clear)}</div>
+      </div>
+      <div class="row"><button class="copy" type="button" data-copy="${id}">Copy prompt</button>
+        <span class="file">${p.file} · ${p.size || '2560 × 1440'}</span></div>`;
+    pages.appendChild(c);
+  }
+  const cast = document.getElementById('cast');
+  CAST.forEach((ch, i) => {
+    const id = 'c' + i;
+    texts[id] = `${STYLE.replace(', wide 16:9 scene.', '.')} ${ch.text}`;
+    const c = el('article', 'card');
+    c.innerHTML = `<h3><span class="swatch" style="background:${ch.col}"></span>${esc(ch.name)}</h3>
+      <div class="prompt">${esc(texts[id])}</div>
+      <div class="row"><button class="copy" type="button" data-copy="${id}">Copy prompt</button></div>`;
+    cast.appendChild(c);
+  });
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button.copy');
+    if (!b) return;
+    const text = texts[b.dataset.copy];
+    const label = b.textContent;
+    const done = () => { b.classList.add('done'); b.textContent = 'Copied'; setTimeout(() => { b.classList.remove('done'); b.textContent = label; }, 1600); };
+    const fallback = () => {
+      const box = b.closest('.card, .block').querySelector('.prompt');
+      const r = document.createRange(); r.selectNodeContents(box);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      b.textContent = 'Selected: press Ctrl+C';
+      setTimeout(() => { b.textContent = label; }, 2200);
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+  });
+</script>
