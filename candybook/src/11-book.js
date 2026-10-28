@@ -1,24 +1,26 @@
 // ---------- the book: pages, the story text, and turning pages ----------
 const LABEL = {
-  letters: 'Bouncy letters', rain: 'Candy rain',
-  fountain: 'Candy fountain', lollipop: 'Giant lollipop', bubble: 'Bubblegum bubble',
-  dance: 'Robot disco', heads: 'Boing heads', burp: 'Robot burps',
-  jump: 'Big jump', roar: 'Rawr!', catch: 'Catch a candy', ride: 'Ride the belt', wave: 'Wave', spin: 'Spin', yawn: 'Big yawn', hug: 'Hug Mama',
-  geyser: 'Big fountain', leaves: 'Gust of wind', icecream: 'Ice cream!', squirrel: 'Squirrel', pigeons: 'Pigeons fly', kite: 'Fly a kite', slide: 'Down the slide', swing: 'On the swing',
-  lamps: 'Light the lamps', bus: 'Here comes the bus', bakery: 'Pie at the bakery', birds: 'Birds fly', cat: 'Cat says meow', dog: 'Dog says woof',
-  fish: 'Fish jumps', flies: 'Firefly heart', boat: 'Paper boat', ducks: 'Ducks quack', frog: 'Frog hops', turtle: 'Turtle pops up',
-  barn: 'Open the barn', tractor: 'Tractor', crows: 'Scarecrow', cow: 'Cow says moo', pig: 'Pig says oink', chickens: 'Chickens cluck',
-  mushrooms: 'Mushroom music', moonbeam: 'Moonbeams', web: 'Dewy web', hedgehog: 'Hedgehog rolls', fox: 'Sleepy fox', deer: 'Deer peeks', tiptoe: 'Tiptoe',
-  shoot: 'Shooting star', stars: 'Dino stars', moon: 'Wake the moon', owl: 'Owl hoots', sheep: 'Count the sheep', bunny: 'Bunny peeks',
-  door: 'Open the door', chimney: 'Heart smoke', lantern: 'Lantern glow', mamawave: 'Mama waves', kiss: 'Blow a kiss', call: 'Mama says hi',
-  bubbles: 'Lots of bubbles', tap: 'Turn on the tap', toyboat: 'Toy boat', duck: 'Squeaky duck', sponge: 'Squeeze the sponge', fishy: 'Squirty fish',
-  splash: 'Splash!', beard: 'Bubble beard', dive: 'Dive under',
-  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out', read: 'Turn the page', robot: 'Robot nightlight', giggle: 'Giggle', sleep: 'Fall asleep',
+  letters: 'Bouncy letters', cheer: 'Cheer!', familywave: 'Wave hello',
+  pancake: 'Flip a pancake', toast: 'Toast pops', kettle: 'Kettle whistles', wave: 'Wave bye-bye', giggle: 'Giggle', spoons: 'Bang the spoons',
+  kiss: 'Kisses', bye: 'See you tonight', twirl: 'Twirl',
+  whistle: 'Choo choo!', chug: 'Chugga chugga', hearts: 'Heart puffs', conductor: 'All aboard!', pigeons: 'Pigeons fly', clock: 'Station clock', peek: 'Peek out',
+  zoom: 'Zoom!', lights: 'Light the windows', blimp: 'Blimp', washer: 'Window washer', birds: 'Birds fly by', copter: 'Helicopter', press: 'Press the button', hello: 'Hello!', wow: 'Wow!',
+  copier: 'Paper blizzard', planes: 'Paper planes', coffee: 'Coffee fountain', dance: 'Robot disco', heads: 'Boing heads', burp: 'Robot burps',
+  boss: 'Back to work!', tidy: 'Tidy up', dancetoo: 'Dance too',
+  ramp: 'Jump the ramp', puddle: 'Splash!', faster: 'Faster, Papa!', spin: 'Spin', wheelie: 'Wheelie', helmet: 'Safety first', papa: '“Papa!”',
+  blocks: 'Block tower', paint: 'Paint splat', music: 'Xylophone', friends: 'Dance, friends', teacher: 'Story time', bubbles: 'Bubbles', jump: 'Jump', nap: 'Nap time',
+  slides: 'Next slide', chart: 'Chart goes up', cuckoo: 'Cuckoo clock', snooze: 'Bolt snoozes', clap: 'Hooray!', photo: 'Look at the photo', idea: 'Good idea!', thumbs: 'Great job!',
+  noodles: 'Noodles', tomato: 'Tomato squirt', fruit: 'Bouncy fruit', slurp: 'Slurp', moustache: 'Noodle moustache', yum: 'Yum yum', juggle: 'Juggle fruit', airplane: 'Spoon airplane', laugh: 'Laugh',
+  moon: 'Peeking moon', rain: 'Rain on the window', want: 'We want Mama', window: 'Look outside', teddy: 'Hug teddy', phone: 'Call Mama', cuddle: 'Cuddle', story: 'Read a story',
+  board: 'Departure board', thunder: 'Thunder', downpour: 'Pouring rain', cat: 'Kitty', announce: 'Announcement', frog: 'Puddle frog', sigh: 'Oh dear', umbrella: 'Twirl the umbrella',
+  boost: 'Rocket boost', shoot: 'Shooting star', fireworks: 'Fireworks', loop: 'Loop the loop', song: 'Robot song', wavemoon: 'Wave at the moon', wheee: 'Wheee!', hold: 'Hold on tight', point: 'There’s home!',
+  door: 'Open the door', byebots: 'Bye, robots', chimney: 'Heart smoke', hug: 'Big hug', shh: 'Shhh',
+  mobile: 'Spin the mobile', glowstars: 'Starry nightlight', lamp: 'Lights out', yawn: 'Big yawn', sleep: 'Fall asleep', sing: 'Sing the song', blanket: 'Tuck in',
 };
 const Book = {
   pages: [], cur: 0, turn: null, queued: 0, started: false,
   init() {
-    this.pages = [new CoverPage(), new FactoryPage(), new ParkPage(), new TownPage(), new RiverPage(), new FarmPage(), new WoodsPage(), new HillPage(), new HomePage(), new BathPage(), new BedPage()];
+    this.pages = [new CoverPage(), new MorningPage(), new StationPage(), new TowerPage(), new OfficePage(), new PapaPage(), new DaycarePage(), new MeetingPage(), new PickupPage(), new DinnerPage(), new WantMamaPage(), new StuckPage(), new RescuePage(), new HomeAgainPage(), new TuckPage()];
     this.pages.forEach(p => { p.shown = 0; });
   },
   page() { return this.pages[this.cur]; },

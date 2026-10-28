@@ -64,7 +64,7 @@
     if (Book.cur === 0) {
       const a = 0.75 + 0.25 * Math.sin(t * 3);
       ctx.globalAlpha = a;
-      word(AU.ctx ? 'Press  →  to open the book' : 'Press any key to start', 640, 430, 34, 0, '#fff3a0');
+      word(AU.ctx ? 'Press  →  to open the book' : 'Press any key to start', 640, 398, 30, 0, '#fff3a0');
       ctx.globalAlpha = 1;
     }
   }

@@ -125,6 +125,19 @@ const CHORD = { C: [48, 52, 55], Em: [52, 55, 59], F: [53, 57, 60], Dm: [50, 53,
 // Each page plays the theme its own way.
 const ARRANGE = {
   cover: { bpm: 76, lead: 'box', oct: 12, pad: 0.8, arp: 'harp', bass: 0 },
+  morning: { bpm: 88, lead: 'epiano', oct: 0, pad: 0.6, arp: 'harp', bass: 'bass' },
+  station: { bpm: 100, lead: 'marimba', oct: 0, pad: 0, arp: 'pluck', bass: 'pizz', perc: 1 },
+  tower: { bpm: 92, lead: 'bell', oct: 0, pad: 0.6, arp: 'pluck', bass: 'bass' },
+  office: { bpm: 112, lead: 'marimba', oct: 0, pad: 0, arp: 'pluck', bass: 'pizz', perc: 1 },
+  papa: { bpm: 124, lead: 'marimba', oct: 12, pad: 0, arp: 'pluck', bass: 'pizz', perc: 1 },
+  daycare: { bpm: 100, lead: 'box', oct: 12, pad: 0, arp: 'harp', bass: 'pizz' },
+  meeting: { bpm: 96, lead: 'epiano', oct: 0, pad: 0.4, arp: 0, bass: 'pizz', perc: 1 },
+  pickup: { bpm: 104, lead: 'epiano', oct: 0, pad: 0.5, arp: 'harp', bass: 'pizz', perc: 1 },
+  dinner: { bpm: 90, lead: 'marimba', oct: 0, pad: 0.5, arp: 0, bass: 'pizz' },
+  wantmama: { bpm: 60, lead: 'flute', oct: 0, pad: 0.8, arp: 0, bass: 'bass', soft: 0.75 },
+  stuck: { bpm: 56, lead: 'flute', oct: 0, pad: 0.9, arp: 'harp', bass: 'bass', soft: 0.7 },
+  rescue: { bpm: 96, lead: 'bell', oct: 0, pad: 1, arp: 'harp', bass: 'bass' },
+  tuck: { bpm: 54, lead: 'box', oct: 12, pad: 0.6, arp: 0, bass: 0, soft: 0.7 },
   factory: { bpm: 104, lead: 'marimba', oct: 0, pad: 0, arp: 'pluck', bass: 'pizz', perc: 1 },
   park: { bpm: 94, lead: 'bell', oct: 0, pad: 0, arp: 'harp', bass: 'pizz' },
   town: { bpm: 86, lead: 'epiano', oct: 0, pad: 0.8, arp: 0, bass: 'bass' },
@@ -205,6 +218,12 @@ const Amb = {
     if (name === 'hill') bed(0.1, 'lowpass', 420, 0.8, 0.09);
     if (name === 'home') bed(0.05, 'lowpass', 380, 0.8, 0.08);
     if (name === 'park') bed(0.03, 'highpass', 2500, 0.7, 0.15);
+    if (name === 'office' || name === 'meeting') { hum(60, 0.03); bed(0.01, 'lowpass', 400); }
+    if (name === 'station' || name === 'tower') bed(0.03, 'lowpass', 300, 0.7, 0.1);
+    if (name === 'papa' || name === 'pickup') bed(0.05, 'bandpass', 700, 0.5, 0.5);
+    if (name === 'rescue') bed(0.08, 'lowpass', 600, 0.8, 0.2);
+    if (name === 'wantmama') bed(0.03, 'highpass', 3000, 0.7, 0.2);
+    if (name === 'stuck') { bed(0.12, 'highpass', 1800, 0.6, 0.15); bed(0.05, 'lowpass', 300, 0.8, 0.1); }
     if (name === 'farm') bed(0.04, 'lowpass', 400, 0.8, 0.1);
     if (name === 'woods') { bed(0.06, 'lowpass', 350, 0.8, 0.07); bed(0.008, 'highpass', 5000, 0.7, 0.3); }
     if (name === 'bath') bed(0.02, 'bandpass', 900, 0.8, 0.2);
@@ -218,6 +237,12 @@ const Amb = {
     if (n === 'factory') {
       every('chuff', 0.8, 0.8, () => { noise(t, 0.16, 0.08, out, { f0: 320, q: 1.2, d: 0.05 }); osc('square', 1700, t + 0.4, 0.03, 0.012, out, { d: 0.01 }); });
     }
+    if (n === 'morning' || n === 'station' || n === 'pickup') every('bird', 1.4, 4, () => sfx('tweet', 0.3, rnd(0.85, 1.2), rnd(-0.9, 0.9), out));
+    if (n === 'office') { every('type', 0.09, 0.2, () => osc('square', rnd(1800, 2600), t, 0.02, 0.01, out, { d: 0.005 })); every('phone', 7, 13, () => { for (let i = 0; i < 2; i++) osc('sine', 1400, t + i * 0.18, 0.12, 0.03, out, { hold: 0.08, d: 0.02, vib: [18, 40] }); }); }
+    if (n === 'daycare') every('kids', 3, 7, () => sfx('giggle', 0.15, rnd(1.2, 1.6), undefined, out));
+    if (n === 'meeting' || n === 'wantmama' || n === 'tuck') every('tick', 0.5, 0.5, () => { this.clock ^= 1; osc('sine', this.clock ? 2100 : 1600, t, 0.03, n === 'tuck' ? 0.02 : 0.03, out, { d: 0.008 }); });
+    if (n === 'stuck') every('thunder', 9, 16, () => sfx('thunder', 0.25, 1, undefined, out));
+    if (n === 'home') every('crk', 0.4, 1.4, cricket);
     if (n === 'town' || n === 'cover') every('bird', 1.5, 4.5, () => sfx('tweet', 0.35, rnd(0.85, 1.2), rnd(-0.9, 0.9), out));
     if (n === 'river') { every('drip', 0.6, 2.4, () => osc('sine', rnd(500, 900), t, 0.08, 0.04, out, { f1: rnd(1000, 1600), sweep: 0.06, d: 0.02 })); every('frog', 6, 12, () => sfx('ribbit', 0.25, rnd(0.9, 1.1), 0.6, out)); every('crk', 0.5, 1.6, cricket); }
     if (n === 'hill') { every('crk', 0.3, 1.1, cricket); every('owl', 9, 16, () => sfx('hoo', 0.18, 1, -0.7, out)); }
@@ -288,6 +313,22 @@ const SFX = {
   toot: (t, v, p, o) => { for (let i = 0; i < 2; i++) osc('triangle', 440 * p, t + i * 0.3, 0.22, 0.25 * v, o, { a: 0.02, hold: 0.15, d: 0.04, vib: [6, 6] }); },
   rubberduck: (t, v, p, o) => osc('square', 1100 * p, t, 0.3, 0.12 * v, o, { path: [[0.08, 1500 * p], [0.28, 900 * p]], a: 0.01, hold: 0.18, d: 0.04, bp: 1600, q: 1.5 }),
   squirt: (t, v, p, o) => noise(t, 0.8, 0.22 * v, o, { f0: 2500, f1: 1200, q: 1, a: 0.02, hold: 0.5, d: 0.1 }),
+  choo: (t, v, p, o) => { for (let i = 0; i < 2; i++) { osc('sawtooth', 520 * p, t + i * 0.5, 0.4, 0.14 * v, o, { a: 0.03, hold: 0.3, d: 0.06, bp: 1100, q: 3 }); osc('sawtooth', 660 * p, t + i * 0.5, 0.4, 0.12 * v, o, { a: 0.03, hold: 0.3, d: 0.06, bp: 1300, q: 3 }); } },
+  chug: (t, v, p, o) => { for (let i = 0; i < 12; i++) noise(t + i * 0.22, 0.12, 0.14 * v * (i % 2 ? 0.6 : 1), o, { f0: 400, q: 1, d: 0.04 }); },
+  copier: (t, v, p, o) => { for (let i = 0; i < 10; i++) { noise(t + i * 0.28, 0.2, 0.08 * v, o, { f0: 1200, f1: 2400, q: 1, d: 0.06 }); osc('square', 90, t + i * 0.28, 0.06, 0.04 * v, o, { d: 0.02, lp: 500 }); } },
+  glug: (t, v, p, o) => { for (let i = 0; i < 5; i++) osc('sine', 220 * p, t + i * 0.22, 0.12, 0.3 * v, o, { f1: 480 * p, sweep: 0.1, d: 0.03 }); },
+  zoom: (t, v, p, o) => { osc('sawtooth', 200 * p, t, 1.2, 0.12 * v, o, { path: [[0.5, 600 * p], [1.1, 300 * p]], a: 0.05, hold: 0.8, d: 0.1, lp: 1600, pan: -0.8, pan1: 0.8 }); noise(t, 1.1, 0.12 * v, o, { f0: 800, f1: 3000, q: 0.6, a: 0.3, d: 0.2 }); },
+  copter: (t, v, p, o) => { for (let i = 0; i < 50; i++) noise(t + i * 0.1, 0.05, 0.1 * v * Math.sin(Math.PI * i / 50), o, { f0: 300, q: 1, d: 0.02 }); },
+  cuckoo: (t, v, p, o) => { for (let i = 0; i < 2; i++) { osc('sine', 740 * p, t + i * 0.6, 0.2, 0.25 * v, o, { a: 0.01, hold: 0.12, d: 0.04 }); osc('sine', 587 * p, t + i * 0.6 + 0.22, 0.25, 0.25 * v, o, { a: 0.01, hold: 0.15, d: 0.05 }); } },
+  slurp: (t, v, p, o) => noise(t, 0.8, 0.22 * v, o, { f0: 600, f1: 2400, q: 3, a: 0.05, hold: 0.5, d: 0.1 }),
+  splat: (t, v, p, o) => { noise(t, 0.25, 0.4 * v, o, { type: 'lowpass', f0: 1800, f1: 300, d: 0.06 }); osc('sine', 180, t, 0.15, 0.3 * v, o, { f1: 70, d: 0.05 }); },
+  sniffle: (t, v, p, o) => { for (let i = 0; i < 3; i++) noise(t + i * 0.25, 0.12, 0.12 * v, o, { type: 'highpass', f0: 2500, a: 0.03, d: 0.04 }); osc('sine', 500, t + 0.9, 0.6, 0.1 * v, o, { f1: 380, a: 0.1, d: 0.15, vib: [6, 10] }); },
+  ring: (t, v, p, o) => { for (let i = 0; i < 2; i++) for (let j = 0; j < 8; j++) osc('sine', j % 2 ? 1300 : 1050, t + i * 0.7 + j * 0.05, 0.05, 0.08 * v, o, { d: 0.02 }); },
+  raindrops: (t, v, p, o) => { for (let i = 0; i < 40; i++) osc('sine', rnd(1200, 2600), t + rnd(0, 3), 0.04, 0.04 * v, o, { f1: rnd(600, 900), sweep: 0.03, d: 0.01 }); },
+  flip: (t, v, p, o) => { for (let i = 0; i < 14; i++) noise(t + i * 0.06, 0.03, 0.12 * v, o, { f0: 3000, q: 1.5, d: 0.008 }); },
+  thunder: (t, v, p, pan, o) => { o = o || AU.fx; noise(t, 2.6, 0.5 * v, o, { type: 'lowpass', f0: 500, f1: 80, a: 0.05, hold: 0.3, d: 0.7 }); osc('sine', 60, t, 2, 0.3 * v, o, { f1: 30, a: 0.1, d: 0.5 }); },
+  beeps: (t, v, p, o) => [76, 79, 84, 79, 81, 88, 84].forEach((m, i) => osc('square', mtof(m) * p, t + i * 0.14, 0.1, 0.05 * v, o, { d: 0.03, lp: 3000 })),
+  lullaby: (t, v, p, o) => { let b = 0; for (const [m, d] of THEME.melody.slice(0, 7)) { INST.box(mtof(m + 12) * p, t + b * 0.42, d * 0.42, v * 1.4, o); b += d; } },
   hug: (t, v, p, o) => [60, 64, 67, 72].forEach((m, i) => INST.epiano(mtof(m + 12) * p, t + i * 0.09, 0.6, v * 1.2, o)),
 };
 function sfx(name, v = 1, p = 1, pan, out) {

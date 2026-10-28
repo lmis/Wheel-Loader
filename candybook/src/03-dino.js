@@ -217,6 +217,9 @@ class Dino {
 function drawDino(o) {
   const { t, cols } = o;
   const wag = Math.sin(t * 5) * 8, walk = o.walk || 0;
+  if (o.skates) { drawSkates(t, o.skateSpin ?? t * 12); ctx.save(); ctx.translate(0, -14); }
+  // the far arm, raised when cheering
+  if (o.cheer) line(-8, -70, -14, -112 + Math.sin(t * 14) * 6, 7, shade(cols.body, -0.12));
   // tail
   ctx.beginPath(); ctx.moveTo(-26, -28); ctx.quadraticCurveTo(-70, -30 + wag * 0.3, -100, -62 + wag);
   ctx.quadraticCurveTo(-74, -46 + wag * 0.4, -30, -62); ctx.closePath(); paint(cols.body, 3);
@@ -230,7 +233,13 @@ function drawDino(o) {
     poly([bx - px, by - py, bx + px, by + py, tx, ty], cols.spike, 3);
   }
   ell(0, -52, 48, 42, cols.body);
-  ell(14, -44, 26, 28, cols.belly, 2.5);
+  if (o.pj) { // striped pyjamas
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, -52, 48, 42, 0, 0, TAU); ctx.clip();
+    rect(-50, -96, 100, 90, o.pj);
+    for (let y = -92; y < 0; y += 14) rect(-50, y, 100, 6, shade(o.pj, 0.45));
+    ctx.restore(); ell(0, -52, 48, 42, null, 3);
+  }
+  ell(14, -44, 26, 28, o.pj ? shade(o.pj, 0.6) : cols.belly, 2.5);
   ctx.globalAlpha = 0.4;
   for (let i = 0; i < 3; i++) line(4, -58 + i * 12, 26, -58 + i * 12, 2, shade(cols.belly, -0.3), 0);
   ctx.globalAlpha = 1;
@@ -242,15 +251,35 @@ function drawDino(o) {
   push(40, -98 + bob, o.noseUp || 0);
   drawDinoHead(o);
   pop();
-  // little arm, or waving
-  if (o.wave !== null && o.wave !== undefined) line(26, -66, 46, -104 + o.wave * 8, 7, cols.body);
-  else line(26, -66, 42, -60 + o.arm, 7, cols.body);
+  if (o.bag) { // Mama's red work bag
+    line(-6, -86, 18, -40, 3, '#8c3246', 0);
+    rrect(6, -44, 30, 24, 6, '#e6505a'); line(12, -44, 30, -44, 3, '#b43c46', 0);
+  }
+  // little arm, or waving, or both up
+  if (o.cheer) line(26, -66, 44, -110 + Math.cos(t * 14) * 6, 7, cols.body);
+  else if (o.wave !== null && o.wave !== undefined) line(26, -66, 46, -104 + o.wave * 8, 7, cols.body);
+  else if (o.reach) line(26, -66, 62, -60, 7, cols.body);
+  else line(26, -66, 42, -60 + (o.arm || 0), 7, cols.body);
+  if (o.skates) ctx.restore();
+}
+
+// drawSkates: Papa's rollerblades, with red wheels that glow
+function drawSkates(t, spin) {
+  for (const fx of [-16, 20]) {
+    glow(fx, 8, 34, '#ff3c3c', 0.35 + 0.15 * Math.sin(t * 20 + fx));
+    rrect(fx - 18, -14, 34, 16, 6, '#3c3c50');
+    rrect(fx - 4, -26, 18, 16, 5, '#3c3c50');
+    for (const wx of [-12, -1, 10]) {
+      circ(fx + wx, 7, 5.5, '#ff4646', 2);
+      line(fx + wx, 7, fx + wx + Math.cos(spin) * 4, 7 + Math.sin(spin) * 4, 1.5, '#ffd0d0', 0);
+    }
+  }
 }
 
 // drawDinoHead draws the head in its own frame (centre of the head at 0,0).
 function drawDinoHead(o) {
   const cols = o.cols;
-  poly([-22, -24, -8, -33, -32, -42], cols.spike, 3);
+  if (!o.hair && !o.helmet) poly([-22, -24, -8, -33, -32, -42], cols.spike, 3);
   circ(0, 0, 36, cols.body);
   ell(26, 8, 30, 22, cols.body);
   circ(0, 0, 33.5, cols.body, 0); // one outline round head and snout
@@ -278,7 +307,80 @@ function drawDinoHead(o) {
     if (o.bow) { line(-2, -24, -8, -30, 2, INK, 0); line(4, -24, 4, -31, 2, INK, 0); line(10, -22, 14, -28, 2, INK, 0); }
   }
   circ(-6, 12, 7, 'rgba(255,130,150,0.5)', 0);
+  if (o.hair) { // a fluffy blonde tuft
+    for (const [hx, hy, r] of [[-14, -30, 10], [-2, -37, 11], [11, -33, 10], [20, -26, 7]]) circ(hx, hy, r, '#ffe07a', 2.5);
+    for (const [hx, hy, r] of [[-14, -30, 8], [-2, -37, 9], [11, -33, 8]]) circ(hx, hy, r, '#ffe07a', 0);
+    curve(-4, -44, 2, -54, 10, -48, 3, '#ffe07a', 2);
+  }
+  if (o.helmet) { // a red helmet, safety first
+    ctx.beginPath(); ctx.arc(2, -4, 41, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); paint('#e63c46', 3);
+    line(-26, -18, 30, -18, 4, '#ffffff', 0); circ(2, -36, 5, '#ffd250', 2);
+    line(-30, -4, -12, 26, 3, INK, 0);
+  }
   if (o.bow) { // Mama's bow
     poly([-6, -36, -30, -50, -28, -24], '#ff6f9f'); poly([-6, -36, 16, -54, 16, -26], '#ff6f9f'); circ(-6, -36, 7, '#ffa0c0');
+  }
+}
+
+// ---------- puppets: Mama, Papa, Leo and Louis ----------
+// A puppet stands where a page puts it, breathes, blinks, and plays little
+// actions (wave, talk, cheer, kiss, spin, yawn, sleep, hop) when asked.
+const PAPA_COLS = { body: '#78cd6e', belly: '#f5eeaa', spike: '#ffa05a' };
+const LEO_COLS = { body: '#8ad0ec', belly: '#f2f8ff', spike: '#ffb45a' };
+const LOUIS_COLS = { body: '#ffb48c', belly: '#fff3e2', spike: '#8ad0ec' };
+class Puppet {
+  constructor(st, o) {
+    Object.assign(this, { x: 0, y: 0, face: 1, scale: 1, cols: PAPA_COLS, look: {}, name: '' }, o);
+    this.st = st; this.a = null; this.at = 0; this.dur = 0; this.blinkT = rnd(1, 4); this.squash = 0;
+    this.jy = 0; this.vy = 0; this.tx = null; this.walkPh = 0; this.rot = 0;
+  }
+  do(a, dur = 1.6) { this.a = a; this.at = 0; this.dur = dur; if (a === 'hop') this.jump(); return this; }
+  is(a) { return this.a === a; }
+  jump(v = 480) { if (this.jy === 0) { this.vy = -v; } }
+  walkTo(x, speed = 170) { this.tx = x; this.speed = speed; }
+  mouth() { return [this.x + this.face * 62 * this.scale, this.y + this.jy - 98 * this.scale]; }
+  head() { return [this.x + this.face * 40 * this.scale, this.y + this.jy - 110 * this.scale]; }
+  update(dt) {
+    this.blinkT -= dt; if (this.blinkT < -0.13) this.blinkT = rnd(2, 5);
+    if (this.a) { this.at += dt; if (this.at > this.dur) this.a = null; }
+    this.squash = Math.max(0, this.squash - dt * 3);
+    if (this.vy || this.jy) {
+      this.vy += 1500 * dt; this.jy += this.vy * dt;
+      if (this.jy >= 0) { this.jy = 0; if (this.vy > 250) this.squash = 0.6; this.vy = 0; }
+    }
+    if (this.tx !== null) {
+      const d = this.tx - this.x;
+      if (Math.abs(d) < 3) { this.x = this.tx; this.tx = null; }
+      else { this.face = Math.sign(d); this.x += Math.sign(d) * Math.min(Math.abs(d), this.speed * dt); this.walkPh += dt * 9; }
+    }
+  }
+  draw(extra = {}) {
+    const t = this.st.t, a = this.a, k = this.dur ? this.at / this.dur : 0;
+    let sx = 1 + this.squash * 0.25, sy = 1 - this.squash * 0.25, rot = this.rot, bob = 0;
+    const o = { t, cols: this.cols, ...this.look, ...extra, blink: this.blinkT < 0, arm: Math.sin(t * 4) * 4 };
+    if (this.tx !== null && !this.look.skates) bob = -Math.abs(Math.sin(this.walkPh)) * 12 * this.scale;
+    switch (a) {
+      case 'wave': o.wave = Math.sin(this.at * 14); o.open = this.at < 1 ? 0.4 : 0; break;
+      case 'talk': o.open = 0.3 + 0.3 * Math.sin(this.at * 20); break;
+      case 'cheer': o.cheer = true; o.open = 0.6; bob -= Math.abs(Math.sin(this.at * 10)) * 14 * this.scale; break;
+      case 'kiss': o.open = 0.25; rot += Math.sin(Math.PI * k) * 10; break;
+      case 'spin': sx *= Math.cos(k * TAU * 2) || 0.01; break;
+      case 'yawn': o.open = Math.sin(Math.PI * k) * 1.1; o.blink = k > 0.2 && k < 0.8; break;
+      case 'sleep': o.blink = true; break;
+      case 'sad': o.sleepy = 0.45; rot -= 4; break;
+      case 'laugh': o.open = 0.5 + 0.3 * Math.sin(this.at * 25); bob -= Math.abs(Math.sin(this.at * 16)) * 5; break;
+      case 'shake': rot += Math.sin(this.at * 22) * 6; break;
+      case 'surprise': sy *= 1.1; sx *= 0.94; o.open = 1; break;
+      case 'reach': o.reach = true; o.open = 0.3; break;
+      case 'eat': o.open = 0.5 + 0.5 * Math.cos(this.at * 18); break;
+      case 'hop': o.open = 0.4; break;
+    }
+    if (this.sleeping) o.blink = true;
+    const gy = this.y;
+    if (!this.noShadow) ell(this.x, gy + 4, 50 * this.scale, 9 * this.scale, 'rgba(70,40,47,0.2)', 0);
+    push(this.x, gy + this.jy + bob, 0, this.face * sx * this.scale, sy * this.scale);
+    if (rot) { ctx.translate(0, -55); ctx.rotate(rot * Math.PI / 180); ctx.translate(0, 55); }
+    drawDino(o);
+    pop();
   }
 }

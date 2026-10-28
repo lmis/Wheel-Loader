@@ -72,6 +72,7 @@ class Stage {
     for (let i = 0; i < n; i++)
       this.add({ kind: 'drop', layer: 2, x, y, vx: rnd(-1, 1) * speed * 0.6, vy: -rnd(0.4, 1) * speed, size: rnd(3, 6), col, life: rnd(0.6, 1), g: 800 });
   }
+  trail(x, y) { this.add({ kind: 'trail', layer: 0, x, y, vx: 0, vy: 0, size: rnd(5, 8), col: '#ff4646', life: 0.5 }); }
   say(text, x, y, size, col) { this.words.push({ text, x, y, size, col, life: 1.6, max: 1.6, rot: rnd(-10, 10) }); }
 
   update(dt) {
@@ -143,6 +144,7 @@ class Stage {
           ctx.globalAlpha = a * 0.55; circ(b.x, b.y, b.size, b.col, 2);
           ctx.globalAlpha = a; ell(b.x - b.size * 0.35, b.y - b.size * 0.4, b.size * 0.3, b.size * 0.18, WHITE, 0); break;
         case 'crumb': circ(b.x, b.y, b.size, b.col, 0); break;
+        case 'trail': glow(b.x, b.y, b.size * 3, b.col, a * 0.7); circ(b.x, b.y, b.size * 0.6 * a, '#ffb4b4', 0); break;
         case 'drop': ell(b.x, b.y, b.size * 0.7, b.size, b.col, 1.5); break;
         case 'leaf':
           push(b.x, b.y, b.rot * 57, Math.cos(b.life * 3 + b.ph), 1);
