@@ -4,6 +4,7 @@
 # It installs what is missing (the OpenGL/X11 headers raylib needs, and Go
 # itself if yours is too old), rebuilds the game when the code has changed,
 # and starts it. Any arguments are passed to the game, e.g. ./run.sh -studio shots
+# ./run.sh candy starts the other game instead: Candy Factory (in candy/).
 # On NixOS it uses the project's Nix shell (shell.nix) and installs nothing;
 # inside nix-shell, nix develop or the FHS env (fhs.nix) it just builds.
 set -euo pipefail
@@ -81,12 +82,19 @@ else
 	GO="$CACHE/go/bin/go"
 fi
 
+PKG=.
+NAME="Wheel Loader"
+if [ "${1:-}" = candy ]; then
+	shift
+	BIN=bin/candy-factory PKG=./candy NAME="Candy Factory"
+fi
+
 # --- build (only when something changed) -------------------------------------
 if [ ! -x "$BIN" ] || [ -n "$(find . -path ./bin -prune -o \( -name '*.go' -o -name go.mod -o -name go.sum -o -path './assets/*' \) -newer "$BIN" -print -quit)" ]; then
 	say "Building (the first build compiles raylib and takes a minute)"
 	mkdir -p bin
-	"$GO" build -o "$BIN" .
+	"$GO" build -o "$BIN" "$PKG"
 fi
 
-say "Starting Wheel Loader"
+say "Starting $NAME"
 exec "./$BIN" "$@"
