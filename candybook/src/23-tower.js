@@ -31,21 +31,25 @@ class TowerPage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    rect(0, 0, W, H, grad(0, 0, 0, H, ['#6cb8f5', '#bfe3ff', '#fff3dc']));
-    for (let i = 0; i < 5; i++) cloud((i * 290 + t * 10) % (W + 200) - 100, 160 + (i % 3) * 70, 1 + (i % 2) * 0.4);
-    if (A.on('blimp')) { const x = -200 + A.t('blimp') * 190, y = 230 + Math.sin(t) * 8; ell(x, y, 110, 40, '#ff9ac8'); rrect(x - 30, y + 34, 60, 22, 6, '#fff6ea'); poly([x - 110, y, x - 140, y - 30, x - 140, y + 30], '#ff78b4'); word('HELLO!', x, y, 30, 0, WHITE); }
-    drawCity(t, 720, '#9aa8d0', 0.15, 2);
-    // the tower: glass from top to bottom
-    const tx = 560, tw = 320;
-    rect(tx, 70, tw, 650, '#6e86c8'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.strokeRect(tx, 70, tw, 660);
-    const lit = A.on('lights') ? A.t('lights') : -1;
-    for (let r = 0; r < 16; r++) for (let c = 0; c < 6; c++) {
-      const x = tx + 14 + c * 51, y = 90 + r * 40;
-      const on = lit >= 0 && Math.abs((16 - r) * 0.12 - lit) < 0.25 + (c === 2 || c === 3 ? 0.2 : 0);
-      rect(x, y, 40, 30, on ? '#ffe08a' : 'rgba(200,230,255,0.55)');
-      if (!on) rect(x + 4, y + 3, 8, 20, 'rgba(255,255,255,0.4)');
+    const bg = art('bg-03-tower'), tx = 560, tw = 320;
+    if (bg) drawArt(bg);
+    else {
+      rect(0, 0, W, H, grad(0, 0, 0, H, ['#6cb8f5', '#bfe3ff', '#fff3dc']));
+      for (let i = 0; i < 5; i++) cloud((i * 290 + t * 10) % (W + 200) - 100, 160 + (i % 3) * 70, 1 + (i % 2) * 0.4);
+      drawCity(t, 720, '#9aa8d0', 0.15, 2);
+      // the tower: glass from top to bottom
+
+      rect(tx, 70, tw, 650, '#6e86c8'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.strokeRect(tx, 70, tw, 660);
+      const lit = A.on('lights') ? A.t('lights') : -1;
+      for (let r = 0; r < 16; r++) for (let c = 0; c < 6; c++) {
+        const x = tx + 14 + c * 51, y = 90 + r * 40;
+        const on = lit >= 0 && Math.abs((16 - r) * 0.12 - lit) < 0.25 + (c === 2 || c === 3 ? 0.2 : 0);
+        rect(x, y, 40, 30, on ? '#ffe08a' : 'rgba(200,230,255,0.55)');
+        if (!on) rect(x + 4, y + 3, 8, 20, 'rgba(255,255,255,0.4)');
+      }
+      rect(tx - 10, 60, tw + 20, 16, '#4a5a90');
     }
-    rect(tx - 10, 60, tw + 20, 16, '#4a5a90');
+    if (A.on('blimp')) { const x = -200 + A.t('blimp') * 190, y = 230 + Math.sin(t) * 8; ell(x, y, 110, 40, '#ff9ac8'); rrect(x - 30, y + 34, 60, 22, 6, '#fff6ea'); poly([x - 110, y, x - 140, y - 30, x - 140, y + 30], '#ff78b4'); word('HELLO!', x, y, 30, 0, WHITE); }
     // the window washer robot on its little platform
     const wy = 330 + Math.sin(t * 0.5) * 30, ws = A.on('washer') ? Math.sin(t * 12) * 16 : Math.sin(t * 2) * 6;
     line(tx + 40, 70, tx + 40, wy, 2, INK, 0); line(tx + 140, 70, tx + 140, wy, 2, INK, 0);
