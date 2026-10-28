@@ -418,7 +418,7 @@ function drawRig(rig, o) {
   const t = o.t, k = rig.k;
   ctx.save();
   ctx.scale(k, k);
-  const lift = o.skates ? 56 : 0;
+  const lift = o.skates ? 52 : 0;
   ctx.translate(0, -lift);
   const walk = (o.walk || 0) * 2.2, wag = Math.sin(t * 5) * 5;
   // arms: resting sway, waving, reaching forward, or both up to cheer
@@ -448,10 +448,11 @@ function drawRig(rig, o) {
 // a painted rollerblade under one foot, with three spinning, glowing wheels
 function drawRigSkate(rig, legKey, t, spin = t * 12, dark = 0) {
   const boot = rigImg(rig, 'boot'), wheel = rigImg(rig, 'wheel');
-  const [lx] = rig.at[legKey], bw = boot.naturalWidth * 0.95, bh = boot.naturalHeight * 0.95;
-  const bx = lx - 8, by = -bh + 22;
+  // big enough to swallow the whole foot, toes and all
+  const [lx] = rig.at[legKey], bw = boot.naturalWidth * 1.22, bh = boot.naturalHeight * 1.22;
+  const bx = lx - 10, by = -bh + 26;
   for (let i = 0; i < 3; i++) {
-    const wx = bx + 20 + i * (bw - 40) / 2, wy = 30, r = 19;
+    const wx = bx + 26 + i * (bw - 52) / 2, wy = by + bh + 6, r = 20;
     ctx.save(); ctx.translate(wx, wy);
     glow(0, 0, 70, '#ff3c3c', 0.3 + 0.15 * Math.sin(t * 20 + i));
     ctx.rotate(spin + i); if (dark) ctx.filter = `brightness(${1 - dark})`;

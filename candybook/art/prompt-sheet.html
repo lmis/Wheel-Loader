@@ -79,11 +79,11 @@
 <div class="wrap">
   <header class="block">
     <h1>Mama Comes Home: art prompts</h1>
-    <p class="lede">Prompts for painting Papa as puppet pieces, and one background per page of the book. The book keeps all the animation: hearts, toast, steam and every trick are still drawn on top.</p>
+    <p class="lede">Prompts for painting the family as puppet pieces (Papa, Mama, Léo and Louis), and one background per page of the book. The book keeps all the animation: hearts, toast, steam and every trick are still drawn on top.</p>
   </header>
 
   <section class="block" aria-labelledby="papa-h">
-    <h2 id="papa-h">Papa in parts</h2>
+    <h2 id="papa-h">Papa in parts <span class="tag first">In the book</span></h2>
     <p>The book moves each character as a puppet: a body, a head, a tail, two legs and two arms, each turning on its own joint. If Papa’s pieces are painted in the same style as the backgrounds, the book can keep every bounce, wave, spin and squash, and only the drawing changes. Faces change by swapping the whole head, so there is one head per expression.</p>
     <div class="steps">
       <div class="step"><b>1. Make the reference</b><p>One full picture of Papa. Keep trying until he looks right: every later picture copies him.</p></div>
@@ -97,6 +97,20 @@
     <p>Some image AIs mix the pieces together. Then make each piece on its own, always with the reference picture attached. Same names, numbered: <span class="file">papa-part-body.png</span>, <span class="file">papa-head-blink.png</span> and so on.</p>
   </section>
   <div class="cast" id="papa-single"></div>
+  <hr>
+
+  <section class="block" aria-labelledby="mama-h">
+    <h2 id="mama-h">Mama in parts</h2>
+    <p>The same three steps as Papa. Attach Papa’s reference picture when you make Mama’s reference, so she comes out in the same style and shape, then attach Mama’s own reference for her two sheets. She has seven heads, because she has a worried face for the rainy station and a kissing face for goodnight.</p>
+  </section>
+  <div class="pages" id="mama"></div>
+  <hr>
+
+  <section class="block" aria-labelledby="twins-h">
+    <h2 id="twins-h">Léo and Louis in parts</h2>
+    <p>Make one reference with both twins side by side (attach Papa’s reference for the style), then three sheets for each twin: parts, pyjamas and heads, each with the twins’ reference attached. They wear pyjamas in the evening pages, so their body, arm and leg come in a pyjama version too. The twins look the same apart from their colours: Léo is light blue, Louis is peach.</p>
+  </section>
+  <div class="pages" id="twins"></div>
   <hr>
 
   <section class="steps" aria-label="How to use this sheet">
@@ -129,13 +143,7 @@
 
   <div class="pages" id="pages"></div>
 
-  <hr>
 
-  <section class="block">
-    <h2>The rest of the family, later</h2>
-    <p>Once Papa works, the others follow the same three steps. Image AI finds it hard to draw the same character twice, so start each character from one reference sheet and reuse that picture as the reference for every later pose. Ask for a plain white background.</p>
-  </section>
-  <div class="cast" id="cast"></div>
 </div>
 
 <script>
@@ -236,6 +244,41 @@
       text: `${CHAR_STYLE} Expression sheet: Papa’s head only, with no neck and no body. ${PAPA_LOOK.replace('Papa, a', 'He is a')} Five copies of exactly the same head in a row, all the same size and angle, each with a different face: 1) happy, eye open, gentle closed smile; 2) blinking, eye closed in a soft curve, same smile; 3) talking, mouth a little open; 4) mouth wide open, laughing or roaring, with a pink tongue and two tiny teeth; 5) sleepy, eye half closed. ${CUT}`,
       adds: 'Blinking, talking, chewing, roaring and yawning are made by switching between these five heads.', clear: 'Same size and position of the head in all five.' },
   ];
+  const SHEET = 'Every piece is drawn on its own and laid out in a loose grid with lots of white space around each one, nothing touching or overlapping, all at the same scale and with the same light.';
+  const BODYPARTS = (belly, spikes) => `1) the body alone, with the ${belly} on the right side and the ${spikes} along the back, but no head, no arms, no legs and no tail; 2) the tail alone, thick at the left end where it joins the body, tapering to a rounded tip on the right; 3) one short stubby leg with a rounded foot; 4) one small stubby arm with a round shoulder end and a little hand`;
+  const FACES5 = '1) happy, eye open, gentle closed smile; 2) blinking, eye closed in a soft curve, same smile; 3) talking, mouth a little open; 4) mouth wide open, laughing or cheering, with a pink tongue; 5) sleepy, eye half closed';
+  const MAMA_LOOK = "Mama, a friendly grown-up dinosaur mum: a round, soft purple body, a big round head with a short rounded snout, one big kind eye with a few long eyelashes and a white highlight, a gentle smile, a rosy cheek, a pink bow on top of her head, a pale pink belly, a row of soft pink spikes down her back, a thick tapering tail, short stubby legs and small stubby arms.";
+  const LEO_LOOK = "Léo, a small baby dinosaur: a round, chubby light-blue body, a big round head (big compared with his little body) with a short rounded snout, one big bright eye with a white highlight, a rosy cheek, a fluffy tuft of blonde hair on top of his head, a white belly, small orange spikes down his back, a short tail, short stubby legs and tiny arms.";
+  const LOUIS_LOOK = "Louis, Léo’s twin brother, a small baby dinosaur with exactly the same shape as Léo: a round, chubby soft peach body, a big round head with a short rounded snout, one big bright eye with a white highlight, a rosy cheek, a fluffy tuft of blonde hair on top of his head, a cream belly, small light-blue spikes down his back, a short tail, short stubby legs and tiny arms.";
+  const MAMA = [
+    { n: 'A', name: 'Mama’s reference', file: 'mama-reference.png', size: '2048 × 2048', first: true,
+      text: `${CHAR_STYLE} Character model sheet of ${MAMA_LOOK} She has the same body shape, proportions and drawing style as the dinosaur dad in the attached picture, and is a little smaller than him. She stands on both legs with her arms relaxed and her tail resting behind her. ${CUT}`,
+      adds: 'Nothing yet: every later picture of Mama copies this one.', clear: 'Attach Papa’s reference. She faces right, seen from the side.' },
+    { n: 'B', name: 'Mama’s parts sheet', file: 'mama-parts.png', size: '2048 × 2048',
+      text: `${CHAR_STYLE} Cut-out puppet parts sheet for ${MAMA_LOOK} ${SHEET} The pieces: ${BODYPARTS('pale pink belly', 'pink spikes')}; 5) her red work bag with a shoulder strap, seen from the side; 6) a pink umbrella, open, seen from the side, with its handle. ${CUT}`,
+      adds: 'Her body, tail, legs and arms move like Papa’s. The bag hangs at her side; the umbrella is for the rainy station.', clear: 'Attach Mama’s reference. No head on the body.' },
+    { n: 'C', name: 'Mama’s heads sheet', file: 'mama-heads.png', size: '2560 × 1024 or wider',
+      text: `${CHAR_STYLE} Expression sheet: Mama’s head only, with her pink bow, and no neck and no body. ${MAMA_LOOK.replace('Mama, a', 'She is a')} Seven copies of exactly the same head in a row, all the same size and angle, each with a different face: ${FACES5}; 6) worried, eyebrows tilted up, small sad mouth; 7) blowing a kiss, lips puckered, eye closed. ${CUT}`,
+      adds: 'Blinking, talking, kisses, “oh dear” and laughing are made by swapping between these seven heads.', clear: 'Attach Mama’s reference. The bow on every head.' },
+  ];
+  const TWIN_SHEETS = (who, look, belly, spikes, pj) => [
+    { name: `${who}’s parts sheet`, file: `${who === 'Léo' ? 'leo' : 'louis'}-parts.png`, size: '2048 × 2048',
+      text: `${CHAR_STYLE} Cut-out puppet parts sheet for ${look} ${SHEET} The pieces: ${BODYPARTS(belly, spikes)}. ${CUT}`,
+      adds: 'His daytime body, tail, legs and arms.', clear: 'Attach the twins’ reference. No head on the body.' },
+    { name: `${who}’s pyjamas sheet`, file: `${who === 'Léo' ? 'leo' : 'louis'}-pyjamas.png`, size: '2048 × 2048',
+      text: `${CHAR_STYLE} Cut-out puppet parts sheet for ${look} Now he is wearing ${pj} pyjamas. ${SHEET} The pieces: 1) his body in the pyjama top and bottoms, with no head, no arms, no legs and no tail; 2) one leg in a pyjama leg with the foot showing; 3) one arm in a pyjama sleeve with the hand showing. ${CUT}`,
+      adds: 'Used on the evening pages: “We want Mama”, home at last and tucked in.', clear: 'Same size and shape as his daytime pieces.' },
+    { name: `${who}’s heads sheet`, file: `${who === 'Léo' ? 'leo' : 'louis'}-heads.png`, size: '2560 × 1024 or wider',
+      text: `${CHAR_STYLE} Expression sheet: ${who}’s head only, with his blonde tuft of hair, and no neck and no body. ${look.replace(/^[^:]+: /, 'He is ')} Six copies of exactly the same head in a row, all the same size and angle, each with a different face: ${FACES5}; 6) sad, a wobbly little mouth and a small tear. ${CUT}`,
+      adds: 'Giggles, cheering, slurping noodles, yawns and “we want Mama” are made from these six heads.', clear: 'The blonde tuft on every head.' },
+  ];
+  const TWINS = [
+    { name: 'The twins’ reference', file: 'twins-reference.png', size: '2560 × 1440', first: true,
+      text: `${CHAR_STYLE} Character model sheet of two baby dinosaur twins standing side by side, both seen from the side facing right, in the same body shape and drawing style as the grown-up dinosaur in the attached picture but much smaller and rounder, with bigger heads. On the left, ${LEO_LOOK} On the right, ${LOUIS_LOOK} ${CUT}`,
+      adds: 'Nothing yet: every later picture of the twins copies this one.', clear: 'Attach Papa’s reference. Same shape for both, only the colours differ.' },
+    ...TWIN_SHEETS('Léo', LEO_LOOK, 'white belly', 'orange spikes', 'blue-and-white striped'),
+    ...TWIN_SHEETS('Louis', LOUIS_LOOK, 'cream belly', 'light-blue spikes', 'pink-and-white striped'),
+  ].map((c, i) => Object.assign({ n: 'ABCDEFG'[i] }, c));
   const PAPA_SINGLE = [
     ['Body', 'papa-part-body.png', 'only his body, with the pale yellow belly on the right side and the orange back spikes, with no head, no arms, no legs and no tail'],
     ['Tail', 'papa-part-tail.png', 'only his tail, thick at the left end where it joins the body and tapering to a rounded tip on the right'],
@@ -244,13 +287,6 @@
     ['Helmet', 'papa-part-helmet.png', 'only his red bike helmet, seen from the side, sized to fit his head'],
     ['Rollerblade', 'papa-part-skate.png', 'only one black rollerblade boot, without wheels, plus one separate red wheel next to it'],
     ['Heads', 'papa-head-happy.png … papa-head-sleepy.png', 'only his head with no neck, one expression per picture: happy, blinking, talking, mouth wide open, sleepy'],
-  ];
-  const CAST = [
-    { name: "Mama", col: "#b48ce6", text: "Character reference sheet of Mama: a friendly, round purple dinosaur mum with a pink bow on her head, a pale pink belly, soft pink back spikes, a short tail and a red work bag. Front view and side view, standing, smiling, on a plain white background." },
-    { name: "Papa", col: "#78cd6e", text: "Character reference sheet of Papa: a friendly, round green dinosaur dad with orange back spikes and a pale yellow belly, wearing a red bike helmet and black rollerblades with glowing red wheels. Front view and side view, on a plain white background." },
-    { name: "Léo", col: "#8ad0ec", text: "Character reference sheet of Léo: a small, round light-blue baby dinosaur with a fluffy blonde tuft of hair, orange back spikes and a white belly. Front view and side view, on a plain white background." },
-    { name: "Louis", col: "#ffb48c", text: "Character reference sheet of Louis: a small, round peach baby dinosaur with a fluffy blonde tuft of hair, light-blue back spikes and a cream belly; Léo’s twin. Front view and side view, on a plain white background." },
-    { name: "The robots", col: "#5acdc3", text: "Character reference sheet of three silly office robots: Bolt, tall and teal with a square head, two big round eyes and an antenna with a red light; Gumdrop, round and orange with one big eye and a little propeller on top; Tinny, small and lilac with a TV-screen face showing green pixel eyes and a spring neck. Front views side by side, on a plain white background." },
   ];
 
   document.getElementById('style').textContent = STYLE;
@@ -278,22 +314,27 @@
         <span class="file">${p.file} · ${p.size || '2560 × 1440'}</span></div>`;
     pages.appendChild(c);
   }
-  const papaBox = document.getElementById('papa');
-  for (const p of PAPA) {
-    const id = 'papa' + p.n;
-    texts[id] = p.text;
-    const c = el('article', 'card');
-    c.innerHTML = `
-      <header><span class="num">${p.n}</span><h3>${esc(p.name)}</h3>${p.n === 'A' ? '<span class="tag first">Start here</span>' : ''}</header>
-      <div class="prompt">${esc(p.text)}</div>
-      <div class="notes">
-        <div><strong>HOW THE BOOK USES IT</strong>${esc(p.adds)}</div>
-        <div><strong>CHECK</strong>${esc(p.clear)}</div>
-      </div>
-      <div class="row"><button class="copy" type="button" data-copy="${id}">Copy prompt</button>
-        <span class="file">${p.file} · ${p.size}</span></div>`;
-    papaBox.appendChild(c);
+  function charCards(boxId, list, key) {
+    const box = document.getElementById(boxId);
+    for (const p of list) {
+      const id = key + p.n;
+      texts[id] = p.text;
+      const c = el('article', 'card');
+      c.innerHTML = `
+        <header><span class="num">${p.n}</span><h3>${esc(p.name)}</h3>${p.first ? '<span class="tag first">Start here</span>' : ''}</header>
+        <div class="prompt">${esc(p.text)}</div>
+        <div class="notes">
+          <div><strong>HOW THE BOOK USES IT</strong>${esc(p.adds)}</div>
+          <div><strong>CHECK</strong>${esc(p.clear)}</div>
+        </div>
+        <div class="row"><button class="copy" type="button" data-copy="${id}">Copy prompt</button>
+          <span class="file">${p.file} · ${p.size}</span></div>`;
+      box.appendChild(c);
+    }
   }
+  charCards('papa', PAPA, 'papa');
+  charCards('mama', MAMA, 'mama');
+  charCards('twins', TWINS, 'twins');
   const single = document.getElementById('papa-single');
   PAPA_SINGLE.forEach(([name, file, what], i) => {
     const id = 'ps' + i;
@@ -303,17 +344,6 @@
       <div class="row"><button class="copy" type="button" data-copy="${id}">Copy prompt</button><span class="file">${esc(file)}</span></div>`;
     single.appendChild(c);
   });
-  const cast = document.getElementById('cast');
-  CAST.forEach((ch, i) => {
-    const id = 'c' + i;
-    texts[id] = `${STYLE.replace(', wide 16:9 scene.', '.')} ${ch.text}`;
-    const c = el('article', 'card');
-    c.innerHTML = `<h3><span class="swatch" style="background:${ch.col}"></span>${esc(ch.name)}</h3>
-      <div class="prompt">${esc(texts[id])}</div>
-      <div class="row"><button class="copy" type="button" data-copy="${id}">Copy prompt</button></div>`;
-    cast.appendChild(c);
-  });
-
   document.addEventListener('click', e => {
     const b = e.target.closest('button.copy');
     if (!b) return;
