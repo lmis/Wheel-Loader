@@ -53,6 +53,8 @@ class OfficePage extends StoryPage {
     pop();
   }
   drawBack(t) {
+    const bg = this.name === 'office' && art('bg-04-office');
+    if (bg) { drawArt(bg); return; }
     drawRoom('#dfe6f5', '#c8d2ec', '#9aa4c8', '#8690b8', 620);
     // windows onto the city, high up
     for (const x of [120, 470, 820]) drawWindow(x, 120, 300, 200, grad(0, 120, 0, 320, ['#8ccdff', '#e0f2ff']), () => { cloud(x + 80 + (t * 6) % 200, 170, 0.8); drawCity(t, 330, '#a8b8e0', 0.1, (x / 100) | 0); });
