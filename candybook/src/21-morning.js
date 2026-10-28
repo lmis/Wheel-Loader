@@ -12,11 +12,12 @@ class MorningPage extends StoryPage {
     this.louis = louis(this.st, { x: 700, y: 540, face: -1 });
     this.cast = [this.mama, this.papa, this.leo, this.louis];
     this.toast = [];
+    this.K = () => art('bg-01-morning') ? { toastX: 968, toastY: 371, kettleX: 1214, kettleY: 372 } : { toastX: 1152, toastY: 474, kettleX: 1050, kettleY: 477 };
   }
   act(a) {
     const st = this.st;
     if (a === 'pancake') { this.papa.do('reach', 2); sfx('whee', 0.4, 1.4); }
-    if (a === 'toast') { sfx('pop', 1, 0.8); this.toast = [{ x: 1150, y: 470, vx: -60, vy: -520 }, { x: 1170, y: 470, vx: -20, vy: -600 }]; }
+    if (a === 'toast') { sfx('pop', 1, 0.8); const K = this.K(); this.toast = [{ x: K.toastX - 10, y: K.toastY, vx: -60, vy: -520, floor: K.toastY }, { x: K.toastX + 10, y: K.toastY, vx: -20, vy: -600, floor: K.toastY }]; }
     if (a === 'kettle') sfx('whistle', 0.8, 1.3);
     if (a === 'wave') { this.leo.do('wave', 2); this.louis.do('wave', 2); st.say('BYE, MAMA!', 615, 380, 50, '#8cd2ff'); sfx('giggle', 0.8, 1.2); }
     if (a === 'giggle') { this.leo.do('laugh'); this.louis.do('laugh'); this.leo.jump(300); this.louis.jump(300); sfx('giggle', 1); }
@@ -32,12 +33,15 @@ class MorningPage extends StoryPage {
     if (A.on('kiss') && this.mama.tx === null && A.t('kiss') > 3.2) this.mama.face = 1;
     if (this.at('pancake', 1.6)) { sfx('tick', 0.6, 0.5); st.say('FLIP!', 1010, 380, 52, '#ffd25a'); }
     if (this.at('kettle', 0.3)) st.say('WHEEEE!', 1100, 360, 44, WHITE);
-    if (A.on('kettle') && this.every('k', 0.1)) st.puff(1150 + rnd(-6, 6), 500, 8, '#ffffff', 2, { vy: -90 });
+    if (A.on('kettle') && this.every('k', 0.1)) st.puff(this.K().kettleX + 44 + rnd(-6, 6), this.K().kettleY - 40, 8, '#ffffff', 2, { vy: -90 });
     if (this.every('steam', 0.9)) st.puff(570 + rnd(-30, 30), 500, 6, '#ffffff', 0, { vy: -30 });
-    for (const b of this.toast) { b.vy += 1400 * dt; b.x += b.vx * dt; b.y = Math.min(b.y + b.vy * dt, 470); if (b.y >= 470 && b.vy > 0) { b.vx = 0; b.vy = 0; } }
+    for (const b of this.toast) { b.vy += 1400 * dt; b.x += b.vx * dt; b.y = Math.min(b.y + b.vy * dt, b.floor); if (b.y >= b.floor && b.vy > 0) { b.vx = 0; b.vy = 0; } }
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
+    const bg = art('bg-01-morning'), K = this.K();
+    if (bg) drawArt(bg);
+    else {
     drawRoom('#ffe9c8', '#ffd8b0', '#d69664', '#ba7850');
     // wallpaper hearts
     ctx.globalAlpha = 0.25; for (let x = 40; x < W; x += 110) for (let y = 160; y < 560; y += 110) heart(x + (y % 220 ? 55 : 0), y, 8, '#ff9ab4', 0); ctx.globalAlpha = 1;
@@ -51,10 +55,9 @@ class MorningPage extends StoryPage {
     rrect(70, 330, 130, 270, 16, '#5aa06e'); circ(180, 470, 7, '#ffd250'); rrect(100, 360, 70, 60, 30, '#cdeeff');
     // stove, pan and kettle; toaster on the counter
     rrect(940, 470, 280, 130, 8, '#f0ebe1'); rect(940, 470, 280, 14, '#c8c8d7');
-    rrect(1120, 430, 64, 44, 10, '#e6505a'); rect(1132, 426, 14, 6, INK); rect(1156, 426, 14, 6, INK);
-    rrect(1110, 478 - 0, 60, 0.1, 0, INK, 0);
-    // the kettle
-    ell(1150, 500 - 40, 0, 0, null, 0);
+    }
+    // the toaster
+    rrect(K.toastX - 32, K.toastY - 44, 64, 44, 10, '#e6505a'); rect(K.toastX - 20, K.toastY - 48, 14, 6, INK); rect(K.toastX + 4, K.toastY - 48, 14, 6, INK);
     for (const b of this.toast) rrect(b.x - 12, b.y - 30, 24, 28, 6, '#e6b46e');
     // Papa at the stove, and the pancake going up
     this.papa.draw({ reach: this.papa.is('reach') });
@@ -64,7 +67,7 @@ class MorningPage extends StoryPage {
     const ph = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * 230 : 0;
     push(px, py - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ell(0, 0, 24, 7, '#f0c070'); pop();
     // kettle on the back of the stove
-    ell(1050, 455, 30, 22, '#8ad0ec'); line(1072, 450, 1094, 436, 6, '#8ad0ec'); rrect(1040, 428, 20, 8, 4, INK, 0);
+    ell(K.kettleX, K.kettleY - 22, 30, 22, '#8ad0ec'); line(K.kettleX + 22, K.kettleY - 27, K.kettleX + 44, K.kettleY - 41, 6, '#8ad0ec'); rrect(K.kettleX - 10, K.kettleY - 49, 20, 8, 4, INK, 0);
     // the twins in their chairs behind the table
     for (const k of [this.leo, this.louis]) { line(k.x - 40, 600, k.x - 40, 470, 8, '#c8965a'); line(k.x + 40, 600, k.x + 40, 470, 8, '#c8965a'); }
     this.leo.draw(); this.louis.draw();

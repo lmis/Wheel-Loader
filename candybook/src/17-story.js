@@ -25,7 +25,7 @@ class StoryPage {
   every(key, period) { const t = this.st.t; return Math.floor(t / period) !== Math.floor((t - this.dt) / period); }
   finish() { this.st.draw(0); this.st.draw(1); this.st.draw(2); this.st.drawWords(); }
 }
-const mama = (st, o) => new Puppet(st, Object.assign({ cols: MAMA_COLS, scale: 1.25, look: { bow: true }, name: 'Mama' }, o));
+const mama = (st, o) => new Puppet(st, Object.assign({ cols: MAMA_COLS, scale: 1.25, look: { bow: true }, name: 'Mama', rig: MAMA_RIG }, o));
 const papa = (st, o) => new Puppet(st, Object.assign({ cols: PAPA_COLS, scale: 1.3, name: 'Papa', rig: PAPA_RIG }, o));
 const leo = (st, o) => new Puppet(st, Object.assign({ cols: LEO_COLS, scale: 0.62, look: { hair: true }, name: 'Léo', rig: LEO_RIG }, o));
 const louis = (st, o) => new Puppet(st, Object.assign({ cols: LOUIS_COLS, scale: 0.62, look: { hair: true }, name: 'Louis', rig: LOUIS_RIG }, o));
