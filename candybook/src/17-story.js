@@ -27,8 +27,8 @@ class StoryPage {
 }
 const mama = (st, o) => new Puppet(st, Object.assign({ cols: MAMA_COLS, scale: 1.25, look: { bow: true }, name: 'Mama' }, o));
 const papa = (st, o) => new Puppet(st, Object.assign({ cols: PAPA_COLS, scale: 1.3, name: 'Papa', rig: PAPA_RIG }, o));
-const leo = (st, o) => new Puppet(st, Object.assign({ cols: LEO_COLS, scale: 0.62, look: { hair: true }, name: 'Leo' }, o));
-const louis = (st, o) => new Puppet(st, Object.assign({ cols: LOUIS_COLS, scale: 0.62, look: { hair: true }, name: 'Louis' }, o));
+const leo = (st, o) => new Puppet(st, Object.assign({ cols: LEO_COLS, scale: 0.62, look: { hair: true }, name: 'Léo', rig: LEO_RIG }, o));
+const louis = (st, o) => new Puppet(st, Object.assign({ cols: LOUIS_COLS, scale: 0.62, look: { hair: true }, name: 'Louis', rig: LOUIS_RIG }, o));
 
 // the dino train: a smiling engine and two carriages
 function drawTrain(x, y, t, o = {}) {

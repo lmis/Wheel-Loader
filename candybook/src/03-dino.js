@@ -367,7 +367,7 @@ class Puppet {
       case 'spin': sx *= Math.cos(k * TAU * 2) || 0.01; break;
       case 'yawn': o.open = Math.sin(Math.PI * k) * 1.1; o.blink = k > 0.2 && k < 0.8; break;
       case 'sleep': o.blink = true; break;
-      case 'sad': o.sleepy = 0.45; rot -= 4; break;
+      case 'sad': o.sleepy = 0.45; o.sad = true; rot -= 4; break;
       case 'laugh': o.open = 0.5 + 0.3 * Math.sin(this.at * 25); bob -= Math.abs(Math.sin(this.at * 16)) * 5; break;
       case 'shake': rot += Math.sin(this.at * 22) * 6; break;
       case 'surprise': sy *= 1.1; sx *= 0.94; o.open = 1; break;
@@ -397,10 +397,21 @@ const PAPA_RIG = {
   // joints, as fractions of each piece's size
   pivot: { tail: [0.95, 0.3], leg: [0.42, 0.12], arm: [0.25, 0.2], head: [0.42, 0.92] },
   heads: ['happy', 'blink', 'talk', 'wide', 'sleepy'],
+  pieces: ['body', 'tail', 'leg', 'arm', 'helmet', 'boot', 'wheel'],
 };
+// the twins share one layout; their evening pyjamas swap in body, legs and arms
+const twinRig = prefix => ({
+  prefix, k: 0.42, dark: 0.12,
+  at: { body: [-105, -205, 0.56], pjBody: [-112, -214, 0.56], tail: [-225, -112, 0.56], backLeg: [10, -108, 0.74], frontLeg: [-30, -110, 0.74],
+    arm: [18, -150, 0.74], farArm: [50, -158, 0.74], head: [-56, -360, 1.42] },
+  pivot: PAPA_RIG.pivot,
+  heads: ['happy', 'blink', 'talk', 'wide', 'sleepy', 'sad'],
+  pieces: ['body', 'tail', 'leg', 'arm', 'pj-body', 'pj-leg', 'pj-arm'],
+});
+const LEO_RIG = twinRig('leo'), LOUIS_RIG = twinRig('louis');
 function rigImg(rig, name) { return art(`${rig.prefix}-${name}`); }
 function rigReady(rig) {
-  return ['body', 'tail', 'leg', 'arm', 'helmet', 'boot', 'wheel'].every(n => rigImg(rig, n)) && rig.heads.every(h => rigImg(rig, 'head-' + h));
+  return rig.pieces.every(n => rigImg(rig, n)) && rig.heads.every(h => rigImg(rig, 'head-' + h));
 }
 // rigPiece draws one piece at its place, turned by rot degrees about its joint
 function rigPiece(rig, img, key, pivotKey, rot = 0, dx = 0, dy = 0, alpha = 1, dark = 0) {
@@ -427,16 +438,18 @@ function drawRig(rig, o) {
   else if (o.wave !== null && o.wave !== undefined) armRot = -115 + o.wave * 22;
   else if (o.reach) armRot = -55;
   let face = 'happy';
-  if (o.roaring || (o.open || 0) > 0.55) face = 'wide';
+  if (o.sad && rig.heads.includes('sad')) face = 'sad';
+  else if (o.roaring || (o.open || 0) > 0.55) face = 'wide';
   else if ((o.open || 0) > 0.12) face = 'talk';
   else if (o.blink || o.sleepy > 0.9) face = 'blink';
   else if (o.sleepy > 0.3) face = 'sleepy';
   const bob = o.roaring ? -18 : Math.sin(t * 3) * 6;
-  const leg = rigImg(rig, 'leg'), arm = rigImg(rig, 'arm');
-  rigPiece(rig, arm, 'farArm', 'arm', farRot, 0, 0, 1, 0.22);
-  rigPiece(rig, leg, 'backLeg', 'leg', -walk, 0, 0, 1, 0.22);
+  const pj = o.pj && rig.pieces.includes('pj-body') ? 'pj-' : '', dk = rig.dark ?? 0.22;
+  const leg = rigImg(rig, pj + 'leg'), arm = rigImg(rig, pj + 'arm');
+  rigPiece(rig, arm, 'farArm', 'arm', farRot, 0, 0, 1, dk);
+  rigPiece(rig, leg, 'backLeg', 'leg', -walk, 0, 0, 1, dk);
   rigPiece(rig, rigImg(rig, 'tail'), 'tail', 'tail', wag);
-  rigPiece(rig, rigImg(rig, 'body'), 'body', null);
+  rigPiece(rig, rigImg(rig, pj + 'body'), pj ? 'pjBody' : 'body', null);
   if (o.skates) drawRigSkate(rig, 'backLeg', t, o.skateSpin, 0.22);
   rigPiece(rig, leg, 'frontLeg', 'leg', walk);
   if (o.skates) drawRigSkate(rig, 'frontLeg', t, o.skateSpin, 0);

@@ -79,76 +79,51 @@
 <div class="wrap">
   <header class="block">
     <h1>Mama Comes Home: art prompts</h1>
-    <p class="lede">Prompts for painting the family as puppet pieces (Papa, Mama, Léo and Louis), and one background per page of the book. The book keeps all the animation: hearts, toast, steam and every trick are still drawn on top.</p>
+    <p class="lede">What’s still missing comes first: the backgrounds for pages 1 to 14, then Mama. Everything already in the book is at the bottom. Each “Copy prompt” button copies one complete prompt, ready to paste into your image AI.</p>
   </header>
 
-  <section class="block" aria-labelledby="papa-h">
-    <h2 id="papa-h">Papa in parts <span class="tag first">In the book</span></h2>
-    <p>The book moves each character as a puppet: a body, a head, a tail, two legs and two arms, each turning on its own joint. If Papa’s pieces are painted in the same style as the backgrounds, the book can keep every bounce, wave, spin and squash, and only the drawing changes. Faces change by swapping the whole head, so there is one head per expression.</p>
+  <section class="block" aria-labelledby="bg-h">
+    <h2 id="bg-h">Backgrounds, pages 1 to 14</h2>
     <div class="steps">
-      <div class="step"><b>1. Make the reference</b><p>One full picture of Papa. Keep trying until he looks right: every later picture copies him.</p></div>
-      <div class="step"><b>2. Make the two sheets</b><p>Attach the reference picture as the image to copy, then make the parts sheet and the heads sheet. Doing all the pieces in one picture keeps them matching.</p></div>
-      <div class="step"><b>3. Send them to me</b><p>Plain white background and gaps between pieces, so I can cut them out cleanly. PNG, about 2048 × 2048 or bigger.</p></div>
+      <div class="step"><b>1. Copy and paste</b><p>Each prompt has the style and the scene in one. Make each picture 2560 × 1440; the three street and sky pages are wider strips, 5120 × 1440.</p></div>
+      <div class="step"><b>2. Only the place</b><p>The book adds the characters and everything that moves. Positions are a share of the picture’s width and height, from the top left.</p></div>
+      <div class="step"><b>3. Send them back</b><p>Name each file as shown on its card and attach it here. JPG is fine and keeps the book small.</p></div>
     </div>
   </section>
-  <div class="pages" id="papa"></div>
-  <section class="block">
-    <h3>If a sheet keeps coming out wrong</h3>
-    <p>Some image AIs mix the pieces together. Then make each piece on its own, always with the reference picture attached. Same names, numbered: <span class="file">papa-part-body.png</span>, <span class="file">papa-head-blink.png</span> and so on.</p>
-  </section>
-  <div class="cast" id="papa-single"></div>
+  <div class="pages" id="pages"></div>
   <hr>
 
   <section class="block" aria-labelledby="mama-h">
     <h2 id="mama-h">Mama in parts</h2>
-    <p>The same three steps as Papa. Attach Papa’s reference picture when you make Mama’s reference, so she comes out in the same style and shape, then attach Mama’s own reference for her two sheets. She has seven heads, because she has a worried face for the rainy station and a kissing face for goodnight.</p>
+    <p>The same three steps as Papa and the twins. Attach Papa’s reference picture when you make Mama’s reference, so she comes out in the same style and shape, then attach Mama’s own reference for her two sheets. She has seven heads, because she has a worried face for the rainy station and a kissing face for goodnight.</p>
   </section>
   <div class="pages" id="mama"></div>
   <hr>
 
+  <section class="block" aria-labelledby="done-h">
+    <h2 id="done-h">Already in the book</h2>
+    <p>Kept here in case a piece needs redoing. The book moves each character as a puppet: a body, a head, a tail, two legs and two arms, each turning on its own joint, with one head per expression.</p>
+  </section>
+  <div class="pages" id="done-bg"></div>
+
+  <section class="block" aria-labelledby="papa-h">
+    <h3 id="papa-h">Papa in parts <span class="tag first">In the book</span></h3>
+  </section>
+  <div class="pages" id="papa"></div>
+  <section class="block">
+    <h3>If a sheet keeps coming out wrong</h3>
+    <p>Some image AIs mix the pieces together. Then make each piece on its own, always with the reference picture attached: <span class="file">papa-part-body.png</span>, <span class="file">papa-head-blink.png</span> and so on. The same works for any character.</p>
+  </section>
+  <div class="cast" id="papa-single"></div>
+
   <section class="block" aria-labelledby="twins-h">
-    <h2 id="twins-h">Léo and Louis in parts</h2>
-    <p>Make one reference with both twins side by side (attach Papa’s reference for the style), then three sheets for each twin: parts, pyjamas and heads, each with the twins’ reference attached. They wear pyjamas in the evening pages, so their body, arm and leg come in a pyjama version too. The twins look the same apart from their colours: Léo is light blue, Louis is peach.</p>
+    <h3 id="twins-h">Léo and Louis in parts <span class="tag first">In the book</span></h3>
   </section>
   <div class="pages" id="twins"></div>
-  <hr>
-
-  <section class="steps" aria-label="How to use this sheet">
-    <div class="step"><b>1. Copy and paste</b><p>Each “Copy prompt” button copies the style line and the page’s scene together. Paste that into your image AI.</p></div>
-    <div class="step"><b>2. Make it 2560 × 1440</b><p>That’s the book’s 16:9 shape. The three street and sky pages are wider strips: 5120 × 1440. JPG is fine and keeps the book small.</p></div>
-    <div class="step"><b>3. Send them back</b><p>Name each file as shown on its card and attach it in the chat, or drop it into <span class="file">candybook/art/</span>. I’ll put it in the book.</p></div>
-  </section>
-
-  <section class="block">
-    <h2>Try these three first</h2>
-    <p>Morning (page 1), the office (page 4) and the rainy station (page 11) cover sunny, indoor and night. Once those look right in the book, do the rest with the same settings so all the pages match.</p>
-  </section>
-
-  <section class="block" aria-labelledby="style-h">
-    <h2 id="style-h">The style line</h2>
-    <p>Already included in every page prompt below. Copy it on its own if your image AI has a separate style or “describe the look” box.</p>
-    <div class="prompt" id="style"></div>
-    <div class="row"><button class="copy" type="button" data-copy="style">Copy style line</button></div>
-    <p><strong>If your image AI has a “leave out” (negative prompt) box</strong>, put this in it:</p>
-    <div class="prompt" id="avoid"></div>
-    <div class="row"><button class="copy" type="button" data-copy="avoid">Copy leave-out line</button></div>
-  </section>
-
-  <hr>
-
-  <section class="block">
-    <h2>The fifteen pages</h2>
-    <p>Positions are given as a share of the picture’s width and height, measured from the top left, so the painting lines up with where the book draws characters and furniture. Anything listed under “The book adds” must stay out of the painting.</p>
-  </section>
-
-  <div class="pages" id="pages"></div>
-
-
 </div>
 
 <script>
   const STYLE = "Children's picture-book illustration in warm gouache and coloured pencil, soft hand-drawn brown outlines, gentle rounded shapes, cosy and whimsical, soft pastel colours with warm highlights, light paper grain, simple shading, eye-level view, wide 16:9 scene.";
-  const AVOID = "characters, people, animals, dinosaurs, robots, faces, text, letters, numbers, words on signs, logos, watermark, frame, border, busy clutter";
   const CALM = "Keep the top fifth of the picture calm and simple, because the story text sits there.";
   const NONE = "Show only the place, with no characters or animals in it.";
 
@@ -289,21 +264,19 @@
     ['Heads', 'papa-head-happy.png … papa-head-sleepy.png', 'only his head with no neck, one expression per picture: happy, blinking, talking, mouth wide open, sleepy'],
   ];
 
-  document.getElementById('style').textContent = STYLE;
-  document.getElementById('avoid').textContent = AVOID;
   const full = p => `${STYLE} ${p.scene} ${NONE} ${CALM}`;
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  const texts = { style: STYLE, avoid: AVOID };
+  const texts = {};
 
-  const pages = document.getElementById('pages');
   for (const p of PAGES) {
+    const pages = document.getElementById(p.n === 0 ? 'done-bg' : 'pages');
     const id = 'p' + p.n;
     texts[id] = full(p);
     const c = el('article', 'card');
     c.innerHTML = `
       <header><span class="num">${String(p.n).padStart(2, '0')}</span><h3>${esc(p.name)}</h3>
-        ${p.first ? '<span class="tag first">Try first</span>' : ''}${p.wide ? '<span class="tag wide">Wide strip</span>' : ''}</header>
+        ${p.n === 0 ? '<span class="tag first">In the book</span>' : ''}${p.wide ? '<span class="tag wide">Wide strip</span>' : ''}</header>
       <p class="story">${esc(p.story)}</p>
       <div class="prompt">${esc(texts[id])}</div>
       <div class="notes">
@@ -321,7 +294,7 @@
       texts[id] = p.text;
       const c = el('article', 'card');
       c.innerHTML = `
-        <header><span class="num">${p.n}</span><h3>${esc(p.name)}</h3>${p.first ? '<span class="tag first">Start here</span>' : ''}</header>
+        <header><span class="num">${p.n}</span><h3>${esc(p.name)}</h3>${p.first && key === 'mama' ? '<span class="tag first">Start here</span>' : ''}</header>
         <div class="prompt">${esc(p.text)}</div>
         <div class="notes">
           <div><strong>HOW THE BOOK USES IT</strong>${esc(p.adds)}</div>

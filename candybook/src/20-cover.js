@@ -5,8 +5,8 @@ class CoverPage extends StoryPage {
       who: ['Title', 'Léo & Louis', 'Mama & Papa'], durs: { letters: 1.6, cheer: 1.6, familywave: 2 } });
     this.mama = mama(this.st, { x: 500, y: 690, face: 1 });
     this.papa = papa(this.st, { x: 800, y: 694, face: -1, look: { helmet: true, skates: true } });
-    this.leo = leo(this.st, { x: 600, y: 698, face: 1 });
-    this.louis = louis(this.st, { x: 680, y: 698, face: -1 });
+    this.leo = leo(this.st, { x: 600, y: 698, face: 1, scale: 0.78 });
+    this.louis = louis(this.st, { x: 690, y: 698, face: -1, scale: 0.78 });
     this.cast = [this.mama, this.papa, this.leo, this.louis];
     this.stars = makeStars(40, 0, W, 20, 300);
     this.flies = makeFlies(12, 40, W - 40, 470, 690);
