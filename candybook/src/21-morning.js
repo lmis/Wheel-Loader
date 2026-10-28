@@ -63,11 +63,19 @@ class MorningPage extends StoryPage {
     const pk = A.on('pancake') ? A.t('pancake') : -1;
     const [hx, hy] = this.papa.hand || [this.papa.x - 60, 548], dir = this.papa.face;
     const tip = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * -0.25 : 0; // a little toss
-    push(hx, hy, tip * 57.3 * dir);
-    line(dir * 6, 0, dir * 62, -4, 7, '#5a5a6e'); ell(dir * 100, -6, 40, 10, '#3c3c50');
-    pop();
-    const px = hx + dir * 100, ph = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * 230 : 0;
-    push(px, hy - 14 - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ell(0, 0, 28, 7, '#f0c070'); pop();
+    const pan = art('prop-pan'), cake = art('prop-pancake-side');
+    const px = hx + dir * 112, ph = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * 230 : 0;
+    if (pan && cake) { // the painted pan, handle in Papa's hand, and the pancake flying up
+      push(hx, hy, tip * 57.3 * dir, -dir, 1);
+      ctx.drawImage(pan, -14, -28, 190, 190 * pan.naturalHeight / pan.naturalWidth);
+      pop();
+      push(px, hy - 22 - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ctx.drawImage(cake, -34, -13, 68, 26); pop();
+    } else {
+      push(hx, hy, tip * 57.3 * dir);
+      line(dir * 6, 0, dir * 62, -4, 7, '#5a5a6e'); ell(dir * 100, -6, 40, 10, '#3c3c50');
+      pop();
+      push(px, hy - 14 - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ell(0, 0, 28, 7, '#f0c070'); pop();
+    }
     // the twins in their high chairs behind the breakfast table
     const P = n => art('prop-' + n), img = (im, x, y, w) => ctx.drawImage(im, x, y, w, w * im.naturalHeight / im.naturalWidth);
     if (['table', 'chair-blue', 'chair-green', 'plate', 'juice'].every(P)) {

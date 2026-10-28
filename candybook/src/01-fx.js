@@ -114,6 +114,7 @@ class Stage {
       if (b.layer !== layer) continue;
       const a = clamp(b.life / 0.5, 0, 1);
       ctx.globalAlpha = a;
+      if (this.drawPainted(b, a)) { ctx.globalAlpha = 1; continue; }
       switch (b.kind) {
         case 'candy': drawCandy(b.x, b.y, b.rot, b.size, b.col, b.candy); break;
         case 'confetti':
@@ -155,6 +156,29 @@ class Stage {
       }
       ctx.globalAlpha = 1;
     }
+  }
+  // the painted effects (art/fx-*.webp), sized to match the drawn ones
+  drawPainted(b, a) {
+    const name = { heart: 'heart', sparkle: 'star', note: 'note', z: 'z', puff: 'puff', bubble: 'bubble', drop: 'drop', confetti: 'confetti' }[b.kind];
+    const im = name && art('fx-' + name);
+    if (!im) return false;
+    let w, rot = 0, sx = 1, alphaK = 1;
+    switch (b.kind) {
+      case 'heart': w = b.size * 2.4 * Math.min(1, (b.max - b.life) * 6); rot = Math.sin(b.life * 6) * 0.2; break;
+      case 'sparkle': w = b.size * 2.2 * Math.sin(Math.PI * b.life / b.max); rot = b.rot; break;
+      case 'note': w = b.size * 2.6; rot = Math.sin(b.life * 6) * 0.25; break;
+      case 'z': w = b.size * (1.3 - b.life / b.max * 0.5); alphaK = Math.min(1, b.life); break;
+      case 'puff': w = b.size * 2.3; alphaK = (b.life / b.max) * 0.9; break;
+      case 'bubble': w = b.size * 2.1; break;
+      case 'drop': w = b.size * 1.5; rot = Math.atan2(b.vy, b.vx) - Math.PI / 2; break;
+      case 'confetti': w = b.size * 1.6; rot = b.rot; sx = Math.cos(b.life * 9); break;
+    }
+    if (!(w > 0.5)) return true;
+    const h = w * im.naturalHeight / im.naturalWidth;
+    ctx.save(); ctx.globalAlpha = a * alphaK; ctx.translate(b.x, b.y); ctx.rotate(rot); ctx.scale(sx || 0.01, 1);
+    if (b.kind === 'confetti') ctx.filter = `hue-rotate(${(b.col.charCodeAt(2) * 47) % 360}deg)`;
+    ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore();
+    return true;
   }
   drawWords() {
     for (const w of this.words) {
