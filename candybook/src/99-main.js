@@ -51,7 +51,7 @@
   function drawOverlay() {
     const p = Book.page(), t = p.st.t, n = Book.pages.length;
     for (let i = 0; i < n; i++) circ(640 - (n - 1) * 11 + i * 22, 700, i === Book.cur ? 6 : 4, i === Book.cur ? '#fffaf0' : 'rgba(255,250,240,0.5)', i === Book.cur ? 2 : 0);
-    const ready = !p.text || p.shown > 1 + p.text.split(' ').length / 2.4;
+    const ready = !p.text || p.shown > TEXT_DELAY + 0.5 + p.text.split(' ').length / TEXT_WPS;
     if (Book.cur < n - 1) {
       // a folded-up corner bottom right that wiggles once the text has been read
       const k = ready ? 1 + Math.sin(t * 4) * 0.25 : 0.6, s = 46 * k;

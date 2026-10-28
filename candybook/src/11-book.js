@@ -1,4 +1,6 @@
 // ---------- the book: pages, the story text, and turning pages ----------
+// the story text appears word by word, quickly, just after the page turns
+const TEXT_DELAY = 0.25, TEXT_WPS = 9;
 const LABEL = {
   letters: 'Bouncy letters', cheer: 'Cheer!', familywave: 'Wave hello',
   pancake: 'Flip a pancake', toast: 'Toast pops', kettle: 'Kettle whistles', wave: 'Wave bye-bye', giggle: 'Giggle', spoons: 'Bang the spoons',
@@ -87,7 +89,7 @@ function drawStoryText(p) {
   ctx.restore();
   rrect(110, 12, W - 220, h, 18, null, 2);
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  const shown = (p.shown - 0.9) * 2.4; // words per second
+  const shown = (p.shown - TEXT_DELAY) * TEXT_WPS;
   let n = 0;
   lines.forEach((ln, i) => {
     let x = 640 - ctx.measureText(ln).width / 2;
