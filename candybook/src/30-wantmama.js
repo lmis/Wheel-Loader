@@ -60,7 +60,7 @@ class WantMamaPage extends StoryPage {
     if (ck >= 0) drawBird(0, -70 - Math.sin(Math.PI * clamp(ck / 2.4, 0, 1)) * 30, 0.7, null, '#ffd25a', -1);
     pop();
     // the sofa
-    rrect(660, 520, 380, 110, 30, '#8c9ce0'); rrect(640, 470, 60, 160, 26, '#7a8ad2'); rrect(1000, 470, 60, 160, 26, '#7a8ad2');
+    if (!bg) rrect(660, 520, 380, 110, 30, '#8c9ce0'); if (!bg) { rrect(640, 470, 60, 160, 26, '#7a8ad2'); rrect(1000, 470, 60, 160, 26, '#7a8ad2'); }
     // teddies
     const teddy = (x, y) => { circ(x, y - 30, 16, '#c88c5a'); circ(x - 12, y - 44, 6, '#c88c5a'); circ(x + 12, y - 44, 6, '#c88c5a'); ell(x, y, 18, 20, '#c88c5a'); circ(x - 5, y - 32, 2, INK, 0); circ(x + 5, y - 32, 2, INK, 0); };
     teddy(300, 660);

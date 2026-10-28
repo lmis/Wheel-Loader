@@ -69,13 +69,14 @@ class OfficePage extends StoryPage {
     if (this.disco > 0) for (let i = 0; i < 8; i++) { ctx.globalAlpha = 0.22; circ(640 + Math.cos(t * 1.5 + i) * 500, 300 + Math.sin(t * 2 + i * 2) * 160, 40, CANDY[i % 7], 0); ctx.globalAlpha = 1; }
     this.robots.forEach(r => r.drawBody());
     // desks, a computer, and the copier
-    for (const x of [300, 640, 980]) {
+    const painted = this.name === 'office' && art('bg-04-office'); // the painting has its own desks
+    if (!painted) for (const x of [300, 640, 980]) {
       rrect(x - 130, 500, 260, 26, 8, '#c8965a'); line(x - 110, 526, x - 110, 620, 10, '#a0703c'); line(x + 110, 526, x + 110, 620, 10, '#a0703c');
     }
-    rrect(380, 440, 80, 60, 8, '#3c3c50'); rrect(388, 448, 64, 42, 4, '#8cd2ff'); for (let i = 0; i < 4; i++) rect(394, 454 + i * 9, 20 + ((t * 30 + i * 13) % 30), 4, '#ffffff');
+    if (!painted) rrect(380, 440, 80, 60, 8, '#3c3c50'); if (!painted) { rrect(388, 448, 64, 42, 4, '#8cd2ff'); for (let i = 0; i < 4; i++) rect(394, 454 + i * 9, 20 + ((t * 30 + i * 13) % 30), 4, '#ffffff'); }
     rrect(1010, 420, 110, 80, 10, '#e6e6f0'); rect(1020, 412, 90, 10, '#c8c8d7');
     if (A.on('copier')) glow(1060, 430, 60, '#a0ffd2', 0.4 + 0.3 * Math.sin(t * 20));
-    for (let i = 0; i < 6; i++) rrect(520 + (i % 3) * 30, 480 - Math.floor(i / 3) * 6, 26, 18, 2, WHITE, 1.5);
+    if (!painted) for (let i = 0; i < 6; i++) rrect(520 + (i % 3) * 30, 480 - Math.floor(i / 3) * 6, 26, 18, 2, WHITE, 1.5);
     this.robots.forEach(r => r.drawArms());
     for (const p of this.planes) if (p.t >= 0) this.drawPlane(p);
     st.draw(0); st.draw(1);

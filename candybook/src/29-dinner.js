@@ -38,10 +38,10 @@ class DinnerPage extends StoryPage {
       line(640, 0, 640, 120, 3, INK, 0); poly([590, 160, 690, 160, 660, 120, 620, 120], '#ff8c6e'); glow(640, 200, 300, '#ffd27a', 0.35);
     }
     // Mama's empty chair, with her place set
-    line(820, 600, 820, 430, 10, '#a0703c'); rrect(790, 400, 60, 50, 10, '#b48ce6');
-    heart(820, 425, 9, '#ffb4d2', 2);
+    if (!bg) { line(820, 600, 820, 430, 10, '#a0703c'); rrect(790, 400, 60, 50, 10, '#b48ce6');
+    heart(820, 425, 9, '#ffb4d2', 2); }
     // the twins in their chairs, Papa across
-    for (const k of [this.leo, this.louis]) { line(k.x - 40, 620, k.x - 40, 440, 8, '#c8965a'); line(k.x + 40, 620, k.x + 40, 440, 8, '#c8965a'); }
+    if (!bg) for (const k of [this.leo, this.louis]) { line(k.x - 40, 620, k.x - 40, 440, 8, '#c8965a'); line(k.x + 40, 620, k.x + 40, 440, 8, '#c8965a'); }
     this.leo.draw(); this.louis.draw();
     // noodle strands going up into the twins' mouths
     const nd = A.on('noodles') || A.on('slurp') ? (A.t('noodles') ?? A.t('slurp')) : -1;
@@ -53,8 +53,8 @@ class DinnerPage extends StoryPage {
     this.papa.draw();
     if (A.on('tomato') && A.t('tomato') > 0.5) for (let i = 0; i < 4; i++) circ(this.papa.x - 20 + i * 12, 470 + (i % 2) * 10, 5, '#ff5050', 0);
     // the table and dinner
-    rrect(360, 520, 640, 30, 10, '#e6b46e');
-    line(400, 550, 400, 650, 12, '#c8965a'); line(960, 550, 960, 650, 12, '#c8965a');
+    if (!bg) { rrect(360, 520, 640, 30, 10, '#e6b46e');
+    line(400, 550, 400, 650, 12, '#c8965a'); line(960, 550, 960, 650, 12, '#c8965a'); }
     for (const x of [500, 670]) { ell(x, 518, 44, 12, WHITE); ell(x, 510, 34, 8, '#ffe08a', 0); for (let i = 0; i < 4; i++) curve(x - 20 + i * 12, 508, x - 14 + i * 12, 500, x - 8 + i * 12, 508, 2, '#f0c860', 0); }
     // a bowl of cherry tomatoes
     ell(800, 516, 40, 12, '#8ad0ec');

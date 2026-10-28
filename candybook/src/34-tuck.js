@@ -38,12 +38,13 @@ class TuckPage extends StoryPage {
     const A = this.acts, t = this.st.t;
     const g = A.on('giggle') ? A.t('giggle') : -1, wig = g >= 0 ? Math.sin(g * 24 + x) * 5 : 0;
     const yawn = A.on('yawn') ? A.t('yawn') : -1, open = yawn > 0.1 && yawn < 1.6 ? Math.sin((yawn - 0.1) / 1.5 * Math.PI) : g >= 0 ? 0.5 : 0;
-    const sleepy = A.on('sleep') ? 1 : this.sleepy();
-    rrect(x - 130, 420, 26, 200, 12, '#c8965a');
-    ell(x - 70, 470, 60, 26, '#fffaf0');
+    const sleepy = A.on('sleep') ? 1 : this.sleepy(), painted = art('bg-14-tuck-in'); // the painting has the beds
+    if (!painted) { rrect(x - 130, 420, 26, 200, 12, '#c8965a');
+    ell(x - 70, 470, 60, 26, '#fffaf0'); }
     push(x - 66 + wig * 0.3, 446, -10 + wig, 0.75, 0.75);
     drawDinoHead({ t, cols, hair: true, open, blink, sleepy: open > 0.3 ? 0 : sleepy });
     pop();
+    if (painted) return;
     const tuck = A.on('blanket') ? Math.sin(Math.PI * clamp(A.t('blanket') / 2, 0, 1)) * 10 : 0;
     push(0, Math.sin(t * 1.4 + x) * 1.5 - tuck);
     ctx.beginPath(); ctx.moveTo(x - 90, 600); ctx.lineTo(x - 90, 490); ctx.quadraticCurveTo(x, 470, x + 120, 486); ctx.lineTo(x + 120, 600); ctx.closePath(); paint(pj, 3);

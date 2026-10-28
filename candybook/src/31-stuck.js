@@ -78,7 +78,7 @@ class StuckPage extends StoryPage {
     paint('#ff8cb4', 3);
     for (let i = 1; i < 6; i++) line(0, -110 + 0, -110 + i * 220 / 6, 0, 2, '#e66a96', 0);
     pop();
-    drawRain(t, A.on('downpour') ? 2.2 : 1.1);
+    if (!bg || A.on('downpour')) drawRain(t, bg ? 1.2 : A.on('downpour') ? 2.2 : 1.1); // the painting already rains
     if (flash) { ctx.globalAlpha = flash * 0.5; rect(0, 0, W, H, '#ffffff'); ctx.globalAlpha = 1; }
     st.draw(2); st.drawWords();
   }
