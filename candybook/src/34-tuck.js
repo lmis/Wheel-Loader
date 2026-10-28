@@ -65,11 +65,11 @@ class TuckPage extends StoryPage {
     }
     // the mobile over the beds
     const spin = A.on('mobile') ? t * 2.4 : t * 0.35;
-    line(640, 0, 640, 150, 2, INK, 0); rrect(530, 148, 220, 8, 4, '#c8965a', 2.5);
-    for (let i = 0; i < 5; i++) { const a = spin + i / 5 * TAU, px = 640 + Math.cos(a) * 100, len = 60 + (i % 2) * 30; line(px, 152, px, 152 + len, 1.5, INK, 0); push(px, 160 + len, 0, 0.8 + Math.sin(a) * 0.2, 0.8 + Math.sin(a) * 0.2); drawCandy(0, 0, Math.sin(t + i) * 0.3, 18, CANDY[i], i % 4); pop(); }
+    if (!bg) line(640, 0, 640, 150, 2, INK, 0); if (!bg) rrect(530, 148, 220, 8, 4, '#c8965a', 2.5);
+    if (!bg) for (let i = 0; i < 5; i++) { const a = spin + i / 5 * TAU, px = 640 + Math.cos(a) * 100, len = 60 + (i % 2) * 30; line(px, 152, px, 152 + len, 1.5, INK, 0); push(px, 160 + len, 0, 0.8 + Math.sin(a) * 0.2, 0.8 + Math.sin(a) * 0.2); drawCandy(0, 0, Math.sin(t + i) * 0.3, 18, CANDY[i], i % 4); pop(); }
     // the robot nightlight, a little Bolt
-    rrect(1000, 480, 90, 16, 5, '#c8965a'); glow(1045, 450, 80, '#8cffc8', 0.3 + dark * 0.3);
-    rrect(1030, 440, 30, 40, 6, '#5acdc3', 2.5); circ(1039, 455, 3, WHITE, 0); circ(1051, 455, 3, WHITE, 0);
+    if (!bg) { rrect(1000, 480, 90, 16, 5, '#c8965a'); glow(1045, 450, 80, '#8cffc8', 0.3 + dark * 0.3); }
+    if (!bg) { rrect(1030, 440, 30, 40, 6, '#5acdc3', 2.5); circ(1039, 455, 3, WHITE, 0); circ(1051, 455, 3, WHITE, 0); }
     // two little beds, Léo on the left, Louis on the right
     this.drawBed(470, LEO_COLS, '#7c8cf0', this.blinkA < 0, false);
     this.drawBed(810, LOUIS_COLS, '#ff8cb4', this.blinkB < 0, true);

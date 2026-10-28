@@ -50,28 +50,30 @@ class WantMamaPage extends StoryPage {
         if (A.on('window')) { ctx.globalAlpha = 0.35; circ(300, 330, 22, WHITE, 0); circ(250, 334, 20, WHITE, 0); ctx.globalAlpha = 1; }
       });
     }
-    // the big clock, ticking late
-    const sw = Math.sin(t * 2.2) * 10, ck = A.on('clock') ? A.t('clock') : -1;
-    push(1100, 260, ck >= 0 ? Math.sin(ck * 14) * 4 : 0);
-    rrect(-60, -80, 120, 300, 20, '#8c5a3c'); circ(0, -10, 44, WHITE, 3);
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; circ(Math.cos(a) * 34, -10 + Math.sin(a) * 34, 2.5, INK, 0); }
-    line(0, -10, Math.sin(-0.4) * 24, -10 - Math.cos(-0.4) * 24, 5, INK, 0); line(0, -10, 0, 22, 3, INK, 0);
-    push(0, 50, sw); line(0, 0, 0, 110, 3, '#ffd250', 0); circ(0, 112, 16, '#ffd250', 3); pop();
-    if (ck >= 0) drawBird(0, -70 - Math.sin(Math.PI * clamp(ck / 2.4, 0, 1)) * 30, 0.7, null, '#ffd25a', -1);
-    pop();
+    if (!bg) {
+      // the big clock, ticking late
+      const sw = Math.sin(t * 2.2) * 10, ck = A.on('clock') ? A.t('clock') : -1;
+      push(1100, 260, ck >= 0 ? Math.sin(ck * 14) * 4 : 0);
+      rrect(-60, -80, 120, 300, 20, '#8c5a3c'); circ(0, -10, 44, WHITE, 3);
+      for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; circ(Math.cos(a) * 34, -10 + Math.sin(a) * 34, 2.5, INK, 0); }
+      line(0, -10, Math.sin(-0.4) * 24, -10 - Math.cos(-0.4) * 24, 5, INK, 0); line(0, -10, 0, 22, 3, INK, 0);
+      push(0, 50, sw); line(0, 0, 0, 110, 3, '#ffd250', 0); circ(0, 112, 16, '#ffd250', 3); pop();
+      if (ck >= 0) drawBird(0, -70 - Math.sin(Math.PI * clamp(ck / 2.4, 0, 1)) * 30, 0.7, null, '#ffd25a', -1);
+      pop();
+    }
     // the sofa
     if (!bg) rrect(660, 520, 380, 110, 30, '#8c9ce0'); if (!bg) { rrect(640, 470, 60, 160, 26, '#7a8ad2'); rrect(1000, 470, 60, 160, 26, '#7a8ad2'); }
     // teddies
     const teddy = (x, y) => { circ(x, y - 30, 16, '#c88c5a'); circ(x - 12, y - 44, 6, '#c88c5a'); circ(x + 12, y - 44, 6, '#c88c5a'); ell(x, y, 18, 20, '#c88c5a'); circ(x - 5, y - 32, 2, INK, 0); circ(x + 5, y - 32, 2, INK, 0); };
-    teddy(300, 660);
+    if (!bg) teddy(300, 660);
     this.leo.draw(); this.louis.draw(); this.papa.draw();
     if (A.on('phone')) { // Papa's phone, with Mama on the screen
       const [hx, hy] = this.papa.head();
-      rrect(hx - 64, hy + 10, 30, 50, 6, '#3c3c50');
+      if (!bg) rrect(hx - 64, hy + 10, 30, 50, 6, '#3c3c50');
       const k = clamp((A.t('phone') - 0.8) * 3, 0, 1) * clamp((4 - A.t('phone')) * 3, 0, 1);
       if (k > 0) { push(hx - 120, hy - 120, 0, k, k); rrect(-70, -60, 140, 110, 20, '#fff6ea'); push(0, 10, 0, 0.7, 0.7); drawFace(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, open: 0.3 + 0.3 * Math.sin(t * 20) }); pop(); poly([30, 50, 60, 50, 60, 80], '#fff6ea', 0); pop(); }
     }
-    if (A.on('story')) { const [hx, hy] = this.papa.head(); poly([hx - 90, hy + 50, hx - 40, hy + 40, hx - 40, hy + 80, hx - 90, hy + 86], '#fffaf0'); poly([hx - 40, hy + 40, hx + 10, hy + 50, hx + 10, hy + 86, hx - 40, hy + 80], '#fffaf0'); }
+    if (A.on('story') && !bg) { const [hx, hy] = this.papa.head(); poly([hx - 90, hy + 50, hx - 40, hy + 40, hx - 40, hy + 80, hx - 90, hy + 86], '#fffaf0'); poly([hx - 40, hy + 40, hx + 10, hy + 50, hx + 10, hy + 86, hx - 40, hy + 80], '#fffaf0'); }
     this.finish();
   }
 }

@@ -23,7 +23,7 @@ class PickupPage extends PapaPage {
     const sx = 900 - Math.min(this.scroll * 0.5, 1400);
     if (sx > -300 && !painted) { rrect(sx, 300, 220, 220, 10, '#ffd2e6'); word('DAYCARE', sx + 110, 330, 30, 0, '#ff6e9a'); rrect(sx + 80, 420, 60, 100, 20, '#5aa06e'); }
     const A = this.acts;
-    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
+    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; if (!painted) poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
     if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; if (!paintedPuddle(x, 660, 220)) ell(x, 660, 90, 14, '#e6a07a', 2.5); }
     st.draw(0);
     this.drawGang(t);

@@ -79,11 +79,11 @@
 <div class="wrap">
   <header class="block">
     <h1>Mama Comes Home: art prompts</h1>
-    <p class="lede">Everything on this sheet is now in the book; it’s kept in case a piece needs redoing. Everything already in the book is at the bottom. Each “Copy prompt” button copies one complete prompt, ready to paste into your image AI.</p>
+    <p class="lede">One sheet is still missing: the last one, with Papa’s trolley, the frying pan and the little effects. The others are in the book and kept in case a piece needs redoing. Everything already in the book is at the bottom. Each “Copy prompt” button copies one complete prompt, ready to paste into your image AI.</p>
   </header>
 
   <section class="block" aria-labelledby="props-h">
-    <h2 id="props-h">Props and animals <span class="tag first">In the book</span></h2>
+    <h2 id="props-h">Props and animals</h2>
     <div class="steps">
       <div class="step"><b>1. Three sheets</b><p>Each card is one big picture with many pieces on it, apart from each other, on plain white. About 2560 × 2560, PNG. If one comes out crowded, ask for it again at a bigger size.</p></div>
       <div class="step"><b>2. Attach a background</b><p>Attach the background of the page it belongs on (named on the card), so it comes out in the same style and light.</p></div>
@@ -315,6 +315,9 @@
     { name: 'Animals sheet', file: 'sheet-animals.png', page: 'Page 2, station',
       what: 'small friendly animals, each seen from the side facing right: A) a plump grey pigeon: its body with legs but no wings, its head, one wing spread open, one wing folded; B) a small round blue songbird: the same four pieces; C) a small round green frog three times: sitting, mid-jump with legs stretched out, croaking with a puffed-up throat; D) a wet puddle on the ground seen from slightly above; E) a small fluffy orange cat: its body curled up lying down with no head and no tail, its tail, and three copies of its head: sleepy with eyes closed, awake, meowing; F) a happy little brown dog: its body with four legs and no head or tail, its wagging tail, and two copies of its head with floppy ears: mouth closed, barking',
       use: 'Pigeons and birds peck and flap away, the frog hops between puddles, the kitty wakes and meows under the bench, the dog trots past Papa and barks.' },
+    { name: 'Last sheet: trolley, pan and little effects', file: 'sheet-last.png', page: 'Page 5, Papa’s street', todo: true,
+      what: 'A) a shopping trolley with a wire basket, seen exactly from the side facing right, with no wheels; B) one small trolley wheel seen from the side; C) a frying pan seen from the side, handle to the left; D) a golden pancake seen from the side, and the same pancake seen from above; E) little effects, each on its own: a soft red heart, a sparkly yellow star, a music note, a sleepy letter Z, a puff of white steam, a soap bubble, a raindrop, a few paper confetti pieces',
+      use: 'Papa pushes the twins in the trolley and flips the pancake; the effects replace the hearts, sparkles, notes, Zs, puffs, bubbles and drops the book still draws.' },
   ];
   PROPS.forEach((c, i) => { c.n = String(i + 1); c.size = '2560 × 2560'; c.text = `${PROP} This is a character and prop sheet: keep every piece clearly separate, label nothing. The pieces: ${c.what}. Match the colours and light of the attached background. Plain flat white background, no shadow on the ground, nothing cropped at the edges.`; c.adds = c.use; c.clear = 'Attach: ' + c.page + '. Gaps between all pieces.'; });
   charCards('props', PROPS, 'props');

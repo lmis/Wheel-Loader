@@ -2208,16 +2208,16 @@ const BUTTONS = {
   morning: ['pancake', 'wave', 'giggle', 'kissLeo', 'kissLouis', 'kissPapa'],
   station: ['whistle', 'hearts', 'pigeons', 'wave', 'peek', 'kiss'],
   tower: ['birds', 'hello', 'wow'],
-  office: ['planes', 'copier', 'dance', 'heads', 'boss', 'tidy'],
-  papa: ['puddle', 'ramp', 'faster', 'giggle', 'spin', 'wheelie'],
+  office: ['dance', 'heads', 'burp', 'boss', 'tidy', 'dancetoo'],
+  papa: ['puddle', 'hello', 'faster', 'giggle', 'spin', 'wheelie'],
   daycare: ['chase', 'ring', 'bubbles', 'jump', 'giggle', 'nap'],
-  meeting: ['photo', 'idea', 'thumbs', 'clap', 'burp', 'snooze'],
-  pickup: ['puddle', 'ramp', 'papa', 'faster', 'spin', 'wheelie'],
-  dinner: ['noodles', 'tomato', 'moustache', 'yum', 'airplane', 'laugh'],
-  wantmama: ['want', 'teddy', 'phone', 'cuddle', 'story'],
+  meeting: ['idea', 'thumbs', 'clap', 'burp', 'snooze'],
+  pickup: ['puddle', 'papa', 'faster', 'giggle', 'spin', 'wheelie'],
+  dinner: ['tomato', 'yum', 'laugh'],
+  wantmama: ['want', 'phone', 'cuddle'],
   stuck: ['sigh', 'umbrella', 'phone', 'thunder', 'frog', 'cat'],
   rescue: ['loop', 'shoot', 'fireworks', 'wheee', 'hold', 'point'],
-  home: ['hug', 'jump', 'giggle', 'kiss', 'twirl', 'chimney'],
+  home: ['hug', 'jump', 'giggle', 'kiss', 'twirl', 'byebots'],
   tuck: ['yawn', 'giggle', 'sleep', 'sing', 'kiss', 'lamp'],
 };
 const Book = {
@@ -2725,8 +2725,6 @@ class StationPage extends StoryPage {
       ctx.save(); ctx.filter = ROBOT_TINT[0];
       pic(robotArt('body'), 200, 668, 104); pic(robotArt(c >= 0 ? 'head-talk' : 'head-happy'), 196, 590, 92);
       ctx.restore();
-      rrect(166, 498, 64, 14, 4, '#3c3c50'); rrect(176, 482, 44, 20, 6, '#3c3c50');
-      if (c >= 0) rrect(236, 560, 18, 8, 3, '#ffd250');
     } else {
     push(200, 660, 0);
     rrect(-24, -80, 48, 70, 10, '#5acdc3'); rrect(-26, -126, 52, 44, 10, '#78dcd2');
@@ -2800,28 +2798,29 @@ class TowerPage extends StoryPage {
       }
       rect(tx - 10, 60, tw + 20, 16, '#4a5a90');
     }
-    if (A.on('blimp')) { const x = -200 + A.t('blimp') * 190, y = 230 + Math.sin(t) * 8; ell(x, y, 110, 40, '#ff9ac8'); rrect(x - 30, y + 34, 60, 22, 6, '#fff6ea'); poly([x - 110, y, x - 140, y - 30, x - 140, y + 30], '#ff78b4'); word('HELLO!', x, y, 30, 0, WHITE); }
-    // the window washer robot on its little platform
-    const wy = 330 + Math.sin(t * 0.5) * 30, ws = A.on('washer') ? Math.sin(t * 12) * 16 : Math.sin(t * 2) * 6;
-    line(tx + 40, 70, tx + 40, wy, 2, INK, 0); line(tx + 140, 70, tx + 140, wy, 2, INK, 0);
-    rrect(tx + 30, wy, 120, 12, 4, '#ffd250');
-    rrect(tx + 72, wy - 50, 34, 46, 8, '#ffa555'); circ(tx + 89, wy - 66, 16, '#ffa555'); circ(tx + 89, wy - 68, 6, WHITE, 2); circ(tx + 89, wy - 68, 2.5, INK, 0);
-    line(tx + 104, wy - 36, tx + 124 + ws, wy - 70, 5, '#aaaabe'); rect(tx + 116 + ws, wy - 84, 24, 6, '#5a5a6e');
-    // the lift shaft and the glass lift with Mama inside
-    const lx = 900, ly = this.liftY();
-    rect(lx - 6, 70, 12, 650, '#4a5a90'); line(lx + 70, 70, lx + 70, ly - 80, 2, INK, 0);
-    rrect(lx + 10, ly - 80, 120, 110, 12, 'rgba(220,240,255,0.6)'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.beginPath(); ctx.roundRect(lx + 10, ly - 80, 120, 110, 12); ctx.stroke();
-    push(lx + 70, ly + 26, 0, -0.55, 0.55);
-    drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, reach: A.on('press'), cheer: A.on('wow'), blink: false, arm: 0 });
-    pop();
-    rect(lx + 10, ly + 30, 120, 10, '#4a5a90');
+    if (!bg) {
+      if (A.on('blimp')) { const x = -200 + A.t('blimp') * 190, y = 230 + Math.sin(t) * 8; ell(x, y, 110, 40, '#ff9ac8'); rrect(x - 30, y + 34, 60, 22, 6, '#fff6ea'); poly([x - 110, y, x - 140, y - 30, x - 140, y + 30], '#ff78b4'); word('HELLO!', x, y, 30, 0, WHITE); }
+      // the window washer robot on its little platform
+      const wy = 330 + Math.sin(t * 0.5) * 30, ws = A.on('washer') ? Math.sin(t * 12) * 16 : Math.sin(t * 2) * 6;
+      line(tx + 40, 70, tx + 40, wy, 2, INK, 0); line(tx + 140, 70, tx + 140, wy, 2, INK, 0);
+      rrect(tx + 30, wy, 120, 12, 4, '#ffd250');
+      rrect(tx + 72, wy - 50, 34, 46, 8, '#ffa555'); circ(tx + 89, wy - 66, 16, '#ffa555'); circ(tx + 89, wy - 68, 6, WHITE, 2); circ(tx + 89, wy - 68, 2.5, INK, 0);
+      line(tx + 104, wy - 36, tx + 124 + ws, wy - 70, 5, '#aaaabe'); rect(tx + 116 + ws, wy - 84, 24, 6, '#5a5a6e');
+      // the lift shaft and the glass lift with Mama inside
+      const lx = 900, ly = this.liftY();
+      rect(lx - 6, 70, 12, 650, '#4a5a90'); line(lx + 70, 70, lx + 70, ly - 80, 2, INK, 0);
+      rrect(lx + 10, ly - 80, 120, 110, 12, 'rgba(220,240,255,0.6)'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.beginPath(); ctx.roundRect(lx + 10, ly - 80, 120, 110, 12); ctx.stroke();
+      push(lx + 70, ly + 26, 0, -0.55, 0.55);
+      drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, reach: A.on('press'), cheer: A.on('wow'), blink: false, arm: 0 });
+      pop();
+      rect(lx + 10, ly + 30, 120, 10, '#4a5a90');
+    } else { // Mama, tiny, riding the lift painted on the tower
+      push(902, 214, 0, -0.16, 0.16);
+      drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, cheer: A.on('wow'), blink: false, arm: 0 });
+      pop();
+    }
     // birds and the little helicopter
     if (A.on('birds')) { const k = A.t('birds') / 3; for (let i = 0; i < 4; i++) drawBird(W + 40 - k * (W + 200) + i * 50, 200 + i * 20 + Math.sin(t * 4 + i) * 10, 0.8, t * 24 + i, '#6482d2', -1); }
-    if (A.on('copter')) {
-      const k = A.t('copter') / 6, x = lerp(-100, W + 100, k), y = 300 + Math.sin(k * TAU) * 80;
-      ell(x, y, 46, 26, '#e6505a'); rrect(x - 90, y - 6, 60, 10, 4, '#e6505a'); ell(x + 18, y - 4, 16, 12, '#cdeeff', 2);
-      push(x, y - 30, 0, Math.cos(t * 40), 1); line(-60, 0, 60, 0, 5, INK, 0); pop(); line(x, y - 26, x, y - 30, 4, INK, 0);
-    }
     this.finish();
   }
 }
@@ -2891,21 +2890,21 @@ class OfficePage extends StoryPage {
   draw() {
     const st = this.st, t = st.t, A = this.acts;
     this.drawBack(t);
+    const painted = art(this.name === 'office' ? 'bg-04-office' : 'bg-07-meeting');
     // the coffee machine
-    rrect(1120, 380, 90, 140, 10, '#5a5a6e'); rrect(1140, 400, 50, 30, 6, '#8ce6b4'); ell(1165, 500, 18, 6, '#8c5a3c');
-    if (this.disco > 0) for (let i = 0; i < 8; i++) { ctx.globalAlpha = 0.22; circ(640 + Math.cos(t * 1.5 + i) * 500, 300 + Math.sin(t * 2 + i * 2) * 160, 40, CANDY[i % 7], 0); ctx.globalAlpha = 1; }
+    if (!painted) rrect(1120, 380, 90, 140, 10, '#5a5a6e'); if (!painted) { rrect(1140, 400, 50, 30, 6, '#8ce6b4'); ell(1165, 500, 18, 6, '#8c5a3c'); }
+    if (this.disco > 0 && !painted) for (let i = 0; i < 8; i++) { ctx.globalAlpha = 0.22; circ(640 + Math.cos(t * 1.5 + i) * 500, 300 + Math.sin(t * 2 + i * 2) * 160, 40, CANDY[i % 7], 0); ctx.globalAlpha = 1; }
     this.robots.forEach(r => r.drawBody());
     // desks, a computer, and the copier
-    const painted = this.name === 'office' && art('bg-04-office'); // the painting has its own desks
     if (!painted) for (const x of [300, 640, 980]) {
       rrect(x - 130, 500, 260, 26, 8, '#c8965a'); line(x - 110, 526, x - 110, 620, 10, '#a0703c'); line(x + 110, 526, x + 110, 620, 10, '#a0703c');
     }
     if (!painted) rrect(380, 440, 80, 60, 8, '#3c3c50'); if (!painted) { rrect(388, 448, 64, 42, 4, '#8cd2ff'); for (let i = 0; i < 4; i++) rect(394, 454 + i * 9, 20 + ((t * 30 + i * 13) % 30), 4, '#ffffff'); }
-    rrect(1010, 420, 110, 80, 10, '#e6e6f0'); rect(1020, 412, 90, 10, '#c8c8d7');
-    if (A.on('copier')) glow(1060, 430, 60, '#a0ffd2', 0.4 + 0.3 * Math.sin(t * 20));
+    if (!painted) { rrect(1010, 420, 110, 80, 10, '#e6e6f0'); rect(1020, 412, 90, 10, '#c8c8d7'); }
+    if (A.on('copier') && !painted) glow(1060, 430, 60, '#a0ffd2', 0.4 + 0.3 * Math.sin(t * 20));
     if (!painted) for (let i = 0; i < 6; i++) rrect(520 + (i % 3) * 30, 480 - Math.floor(i / 3) * 6, 26, 18, 2, WHITE, 1.5);
     this.robots.forEach(r => r.drawArms());
-    for (const p of this.planes) if (p.t >= 0) this.drawPlane(p);
+    if (!painted) for (const p of this.planes) if (p.t >= 0) this.drawPlane(p);
     st.draw(0); st.draw(1);
     this.mama.draw({ reach: this.mama.is('reach') });
     st.draw(2); st.drawWords();
@@ -3010,7 +3009,7 @@ class PapaPage extends StoryPage {
     const st = this.st, t = st.t, A = this.acts;
     this.drawStreet(t);
     // a ramp or a puddle comes along the road
-    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
+    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; if (!art('bg-05-street-morning')) poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
     if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; if (!paintedPuddle(x, 660, 220)) ell(x, 660, 90, 14, '#7ab8e6', 2.5); }
     if (A.on('hello')) { const x = W + 80 - A.t('hello') * 380; this.drawDog(x, 600, t); }
     st.draw(0);
@@ -3118,39 +3117,43 @@ class MeetingPage extends OfficePage {
       drawRoom('#e8e0f5', '#d4caec', '#a89ac8', '#9488b8', 620);
       drawWindow(60, 130, 200, 180, grad(0, 130, 0, 310, ['#ffc88c', '#ffe6c0']), () => { drawCity(t, 320, '#c8a0b4', 0.3, 3); });
     }
-    // the clock, with its cuckoo
-    const ck = A.on('cuckoo') ? Math.sin(Math.PI * clamp(A.t('cuckoo') / 2, 0, 1)) : 0;
-    rrect(1130, 140, 80, 100, 16, '#a06950'); circ(1170, 200, 26, WHITE, 3);
-    line(1170, 200, 1170 + Math.sin(t * 0.1) * 16, 200 - Math.cos(t * 0.1) * 16, 3, INK, 0); line(1170, 200, 1170 + Math.sin(3.5) * 12, 200 - Math.cos(3.5) * 12, 4, INK, 0);
-    if (ck > 0) drawBird(1170, 150 - ck * 30, 0.7, null, '#ffd25a', -1);
-    // the screen, with slides
-    rrect(320, 120, 420, 250, 10, '#3c3c50'); rrect(332, 132, 396, 226, 6, '#fffaf0');
-    const ch = A.on('chart') ? A.t('chart') : 3;
-    if (this.slide === 0) { // a bar chart going up
-      for (let i = 0; i < 5; i++) { const h = (40 + i * 30) * springOut(Math.max(0, ch - i * 0.15)); rrect(372 + i * 66, 330 - h, 44, h, 6, CANDY[i]); }
-      line(360, 332, 710, 332, 3, INK, 0);
-    } else if (this.slide === 1) { // a picture of a robot cat
-      circ(530, 250, 60, '#c8c8d7'); poly([480, 210, 490, 160, 520, 200], '#c8c8d7'); poly([580, 210, 570, 160, 540, 200], '#c8c8d7');
-      rrect(500, 230, 60, 16, 6, '#8cffc8', 0); word('MEOW.EXE', 530, 340, 22, 0, '#5a5a6e');
-    } else if (this.slide === 2) { // Léo and Louis!
-      push(470, 320, 0, 0.7, 0.7); drawFace(LEO_RIG, { t, cols: LEO_COLS, hair: true, open: 0.3 }); pop();
-      push(600, 320, 0, -0.7, 0.7); drawFace(LOUIS_RIG, { t, cols: LOUIS_COLS, hair: true, open: 0.3 }); pop();
-      heart(535, 200, 18, '#ff6082');
-    } else { word('LUNCH?', 530, 245, 64, 0, '#ffa03c'); }
+    if (!bg) {
+      // the clock, with its cuckoo
+      const ck = A.on('cuckoo') ? Math.sin(Math.PI * clamp(A.t('cuckoo') / 2, 0, 1)) : 0;
+      rrect(1130, 140, 80, 100, 16, '#a06950'); circ(1170, 200, 26, WHITE, 3);
+      line(1170, 200, 1170 + Math.sin(t * 0.1) * 16, 200 - Math.cos(t * 0.1) * 16, 3, INK, 0); line(1170, 200, 1170 + Math.sin(3.5) * 12, 200 - Math.cos(3.5) * 12, 4, INK, 0);
+      if (ck > 0) drawBird(1170, 150 - ck * 30, 0.7, null, '#ffd25a', -1);
+      // the screen, with slides
+      rrect(320, 120, 420, 250, 10, '#3c3c50'); rrect(332, 132, 396, 226, 6, '#fffaf0');
+      const ch = A.on('chart') ? A.t('chart') : 3;
+      if (this.slide === 0) { // a bar chart going up
+        for (let i = 0; i < 5; i++) { const h = (40 + i * 30) * springOut(Math.max(0, ch - i * 0.15)); rrect(372 + i * 66, 330 - h, 44, h, 6, CANDY[i]); }
+        line(360, 332, 710, 332, 3, INK, 0);
+      } else if (this.slide === 1) { // a picture of a robot cat
+        circ(530, 250, 60, '#c8c8d7'); poly([480, 210, 490, 160, 520, 200], '#c8c8d7'); poly([580, 210, 570, 160, 540, 200], '#c8c8d7');
+        rrect(500, 230, 60, 16, 6, '#8cffc8', 0); word('MEOW.EXE', 530, 340, 22, 0, '#5a5a6e');
+      } else if (this.slide === 2) { // Léo and Louis!
+        push(470, 320, 0, 0.7, 0.7); drawFace(LEO_RIG, { t, cols: LEO_COLS, hair: true, open: 0.3 }); pop();
+        push(600, 320, 0, -0.7, 0.7); drawFace(LOUIS_RIG, { t, cols: LOUIS_COLS, hair: true, open: 0.3 }); pop();
+        heart(535, 200, 18, '#ff6082');
+      } else { word('LUNCH?', 530, 245, 64, 0, '#ffa03c'); }
+    }
     // the long table; robots sit behind it
     this.robots.forEach(r => r.drawBody());
-    rrect(420, 500, 820, 30, 12, '#c8965a'); line(460, 530, 460, 620, 12, '#a0703c'); line(1200, 530, 1200, 620, 12, '#a0703c');
-    for (const x of [560, 820, 1080]) { rrect(x - 30, 480, 34, 22, 4, '#fff6dc'); rrect(x + 10, 486, 30, 16, 3, WHITE, 1.5); }
+    if (!bg) rrect(420, 500, 820, 30, 12, '#c8965a'); if (!bg) line(460, 530, 460, 620, 12, '#a0703c'); if (!bg) line(1200, 530, 1200, 620, 12, '#a0703c');
+    if (!bg) for (const x of [560, 820, 1080]) { rrect(x - 30, 480, 34, 22, 4, '#fff6dc'); rrect(x + 10, 486, 30, 16, 3, WHITE, 1.5); }
     this.robots.forEach(r => r.drawArms());
-    // Mama's desk with the photo frame
-    rrect(150, 520, 200, 24, 8, '#a0703c'); line(170, 544, 170, 620, 10, '#8c5a3c'); line(330, 544, 330, 620, 10, '#8c5a3c');
-    const lift = this.mama.is('reach') ? 40 : 0;
-    push(300, 500 - lift, lift ? -8 : 0);
-    rrect(-34, -44, 68, 50, 6, '#ffd25a'); rrect(-28, -38, 56, 38, 3, '#cdeeff');
-    push(-12, -12, 0, 0.3, 0.3); drawFace(LEO_RIG, { t, cols: LEO_COLS, hair: true }); pop();
-    push(12, -12, 0, -0.3, 0.3); drawFace(LOUIS_RIG, { t, cols: LOUIS_COLS, hair: true }); pop();
-    pop();
-    if (A.on('idea')) { const k = A.t('idea'); glow(230, 400, 70, '#fff3a0', 0.7 * Math.sin(Math.PI * clamp(k / 2.4, 0, 1))); circ(230, 400, 18, '#fff3a0', 3); rrect(222, 418, 16, 10, 3, '#c8c8d7'); }
+    if (!bg) {
+      // Mama's desk with the photo frame
+      rrect(150, 520, 200, 24, 8, '#a0703c'); line(170, 544, 170, 620, 10, '#8c5a3c'); line(330, 544, 330, 620, 10, '#8c5a3c');
+      const lift = this.mama.is('reach') ? 40 : 0;
+      push(300, 500 - lift, lift ? -8 : 0);
+      rrect(-34, -44, 68, 50, 6, '#ffd25a'); rrect(-28, -38, 56, 38, 3, '#cdeeff');
+      push(-12, -12, 0, 0.3, 0.3); drawFace(LEO_RIG, { t, cols: LEO_COLS, hair: true }); pop();
+      push(12, -12, 0, -0.3, 0.3); drawFace(LOUIS_RIG, { t, cols: LOUIS_COLS, hair: true }); pop();
+      pop();
+      if (A.on('idea')) { const k = A.t('idea'); glow(230, 400, 70, '#fff3a0', 0.7 * Math.sin(Math.PI * clamp(k / 2.4, 0, 1))); circ(230, 400, 18, '#fff3a0', 3); rrect(222, 418, 16, 10, 3, '#c8c8d7'); }
+    }
     st.draw(0); st.draw(1);
     this.mama.draw({ reach: this.mama.is('reach') });
     st.draw(2); st.drawWords();
@@ -3181,7 +3184,7 @@ class PickupPage extends PapaPage {
     const sx = 900 - Math.min(this.scroll * 0.5, 1400);
     if (sx > -300 && !painted) { rrect(sx, 300, 220, 220, 10, '#ffd2e6'); word('DAYCARE', sx + 110, 330, 30, 0, '#ff6e9a'); rrect(sx + 80, 420, 60, 100, 20, '#5aa06e'); }
     const A = this.acts;
-    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
+    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; if (!painted) poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
     if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; if (!paintedPuddle(x, 660, 220)) ell(x, 660, 90, 14, '#e6a07a', 2.5); }
     st.draw(0);
     this.drawGang(t);
@@ -3245,22 +3248,24 @@ class DinnerPage extends StoryPage {
     // the table and dinner
     if (!bg) { rrect(360, 520, 640, 30, 10, '#e6b46e');
     line(400, 550, 400, 650, 12, '#c8965a'); line(960, 550, 960, 650, 12, '#c8965a'); }
-    for (const x of [500, 670]) { ell(x, 518, 44, 12, WHITE); ell(x, 510, 34, 8, '#ffe08a', 0); for (let i = 0; i < 4; i++) curve(x - 20 + i * 12, 508, x - 14 + i * 12, 500, x - 8 + i * 12, 508, 2, '#f0c860', 0); }
-    // a bowl of cherry tomatoes
-    ell(800, 516, 40, 12, '#8ad0ec');
-    for (let i = 0; i < 6; i++) { const tx = 774 + (i % 3) * 22, ty = 500 - Math.floor(i / 3) * 14; circ(tx, ty, 10, '#ff5050', 2); line(tx - 2, ty - 10, tx + 3, ty - 13, 2, '#5ab46e', 0); }
-    // the fruit bowl, fruit hopping out when Space says so
-    const fr = A.on('fruit') ? A.t('fruit') : -1;
-    const fruits = [['#ffe050', 'banana'], ['#ff7878', 'apple'], ['#a078e6', 'grape'], ['#ffa03c', 'orange']];
-    fruits.forEach(([c, k], i) => {
-      let x = 900 + (i - 1.5) * 22, y = 496 - (i % 2) * 10;
-      if (fr >= 0 && fr < 2) y -= Math.sin(Math.PI * clamp((fr - i * 0.15) / 1.4, 0, 1)) * 140;
-      if (A.on('juggle')) { const a = A.t('juggle') * 5 + i * TAU / 4; x = this.papa.x - 10 + Math.cos(a) * 40; y = 350 - Math.abs(Math.sin(a)) * 90; }
-      if (k === 'banana') curve(x - 14, y, x, y + 12, x + 14, y - 4, 8, c, 2.5);
-      else if (k === 'grape') for (let j = 0; j < 4; j++) circ(x - 6 + (j % 2) * 10, y - 6 + Math.floor(j / 2) * 9, 6, c, 2);
-      else circ(x, y, 12, c, 2.5);
-    });
-    ell(900, 516, 50, 12, '#ffb4d2');
+    if (!bg) {
+      for (const x of [500, 670]) { ell(x, 518, 44, 12, WHITE); ell(x, 510, 34, 8, '#ffe08a', 0); for (let i = 0; i < 4; i++) curve(x - 20 + i * 12, 508, x - 14 + i * 12, 500, x - 8 + i * 12, 508, 2, '#f0c860', 0); }
+      // a bowl of cherry tomatoes
+      ell(800, 516, 40, 12, '#8ad0ec');
+      for (let i = 0; i < 6; i++) { const tx = 774 + (i % 3) * 22, ty = 500 - Math.floor(i / 3) * 14; circ(tx, ty, 10, '#ff5050', 2); line(tx - 2, ty - 10, tx + 3, ty - 13, 2, '#5ab46e', 0); }
+      // the fruit bowl, fruit hopping out when Space says so
+      const fr = A.on('fruit') ? A.t('fruit') : -1;
+      const fruits = [['#ffe050', 'banana'], ['#ff7878', 'apple'], ['#a078e6', 'grape'], ['#ffa03c', 'orange']];
+      fruits.forEach(([c, k], i) => {
+        let x = 900 + (i - 1.5) * 22, y = 496 - (i % 2) * 10;
+        if (fr >= 0 && fr < 2) y -= Math.sin(Math.PI * clamp((fr - i * 0.15) / 1.4, 0, 1)) * 140;
+        if (A.on('juggle')) { const a = A.t('juggle') * 5 + i * TAU / 4; x = this.papa.x - 10 + Math.cos(a) * 40; y = 350 - Math.abs(Math.sin(a)) * 90; }
+        if (k === 'banana') curve(x - 14, y, x, y + 12, x + 14, y - 4, 8, c, 2.5);
+        else if (k === 'grape') for (let j = 0; j < 4; j++) circ(x - 6 + (j % 2) * 10, y - 6 + Math.floor(j / 2) * 9, 6, c, 2);
+        else circ(x, y, 12, c, 2.5);
+      });
+      ell(900, 516, 50, 12, '#ffb4d2');
+    }
     if (A.on('airplane')) { const k = clamp(A.t('airplane') / 1.6, 0, 1), [mx, my] = this.leo.mouth(); const x = lerp(this.papa.x - 60, mx, k), y = lerp(440, my, k) - Math.sin(k * Math.PI) * 120; push(x, y, -20); line(-20, 0, 20, 0, 5, '#c8c8d7'); ell(22, 0, 10, 6, '#c8c8d7'); ell(22, -2, 6, 4, '#ffe08a', 0); pop(); }
     this.finish();
   }
@@ -3317,28 +3322,30 @@ class WantMamaPage extends StoryPage {
         if (A.on('window')) { ctx.globalAlpha = 0.35; circ(300, 330, 22, WHITE, 0); circ(250, 334, 20, WHITE, 0); ctx.globalAlpha = 1; }
       });
     }
-    // the big clock, ticking late
-    const sw = Math.sin(t * 2.2) * 10, ck = A.on('clock') ? A.t('clock') : -1;
-    push(1100, 260, ck >= 0 ? Math.sin(ck * 14) * 4 : 0);
-    rrect(-60, -80, 120, 300, 20, '#8c5a3c'); circ(0, -10, 44, WHITE, 3);
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; circ(Math.cos(a) * 34, -10 + Math.sin(a) * 34, 2.5, INK, 0); }
-    line(0, -10, Math.sin(-0.4) * 24, -10 - Math.cos(-0.4) * 24, 5, INK, 0); line(0, -10, 0, 22, 3, INK, 0);
-    push(0, 50, sw); line(0, 0, 0, 110, 3, '#ffd250', 0); circ(0, 112, 16, '#ffd250', 3); pop();
-    if (ck >= 0) drawBird(0, -70 - Math.sin(Math.PI * clamp(ck / 2.4, 0, 1)) * 30, 0.7, null, '#ffd25a', -1);
-    pop();
+    if (!bg) {
+      // the big clock, ticking late
+      const sw = Math.sin(t * 2.2) * 10, ck = A.on('clock') ? A.t('clock') : -1;
+      push(1100, 260, ck >= 0 ? Math.sin(ck * 14) * 4 : 0);
+      rrect(-60, -80, 120, 300, 20, '#8c5a3c'); circ(0, -10, 44, WHITE, 3);
+      for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; circ(Math.cos(a) * 34, -10 + Math.sin(a) * 34, 2.5, INK, 0); }
+      line(0, -10, Math.sin(-0.4) * 24, -10 - Math.cos(-0.4) * 24, 5, INK, 0); line(0, -10, 0, 22, 3, INK, 0);
+      push(0, 50, sw); line(0, 0, 0, 110, 3, '#ffd250', 0); circ(0, 112, 16, '#ffd250', 3); pop();
+      if (ck >= 0) drawBird(0, -70 - Math.sin(Math.PI * clamp(ck / 2.4, 0, 1)) * 30, 0.7, null, '#ffd25a', -1);
+      pop();
+    }
     // the sofa
     if (!bg) rrect(660, 520, 380, 110, 30, '#8c9ce0'); if (!bg) { rrect(640, 470, 60, 160, 26, '#7a8ad2'); rrect(1000, 470, 60, 160, 26, '#7a8ad2'); }
     // teddies
     const teddy = (x, y) => { circ(x, y - 30, 16, '#c88c5a'); circ(x - 12, y - 44, 6, '#c88c5a'); circ(x + 12, y - 44, 6, '#c88c5a'); ell(x, y, 18, 20, '#c88c5a'); circ(x - 5, y - 32, 2, INK, 0); circ(x + 5, y - 32, 2, INK, 0); };
-    teddy(300, 660);
+    if (!bg) teddy(300, 660);
     this.leo.draw(); this.louis.draw(); this.papa.draw();
     if (A.on('phone')) { // Papa's phone, with Mama on the screen
       const [hx, hy] = this.papa.head();
-      rrect(hx - 64, hy + 10, 30, 50, 6, '#3c3c50');
+      if (!bg) rrect(hx - 64, hy + 10, 30, 50, 6, '#3c3c50');
       const k = clamp((A.t('phone') - 0.8) * 3, 0, 1) * clamp((4 - A.t('phone')) * 3, 0, 1);
       if (k > 0) { push(hx - 120, hy - 120, 0, k, k); rrect(-70, -60, 140, 110, 20, '#fff6ea'); push(0, 10, 0, 0.7, 0.7); drawFace(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, open: 0.3 + 0.3 * Math.sin(t * 20) }); pop(); poly([30, 50, 60, 50, 60, 80], '#fff6ea', 0); pop(); }
     }
-    if (A.on('story')) { const [hx, hy] = this.papa.head(); poly([hx - 90, hy + 50, hx - 40, hy + 40, hx - 40, hy + 80, hx - 90, hy + 86], '#fffaf0'); poly([hx - 40, hy + 40, hx + 10, hy + 50, hx + 10, hy + 86, hx - 40, hy + 80], '#fffaf0'); }
+    if (A.on('story') && !bg) { const [hx, hy] = this.papa.head(); poly([hx - 90, hy + 50, hx - 40, hy + 40, hx - 40, hy + 80, hx - 90, hy + 86], '#fffaf0'); poly([hx - 40, hy + 40, hx + 10, hy + 50, hx + 10, hy + 86, hx - 40, hy + 80], '#fffaf0'); }
     this.finish();
   }
 }
@@ -3387,11 +3394,13 @@ class StuckPage extends StoryPage {
       rect(380, 270, 540, 20, '#4a5080'); line(400, 290, 400, 640, 10, '#4a5080'); line(900, 290, 900, 640, 10, '#4a5080');
     }
     // the departures board
-    const flipping = A.on('board') && A.t('board') < 1;
-    rrect(780, 310, 240, 90, 8, '#202030');
-    const txt = flipping ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').sort(() => Math.random() - 0.5).slice(0, 7).join('') : 'DELAYED';
-    ctx.font = '700 30px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffd25a'; ctx.fillText('TRAIN HOME', 900, 336); ctx.fillStyle = flipping ? '#ffffff' : '#ff6e6e'; ctx.fillText(txt, 900, 374);
+    if (!bg) {
+      const flipping = A.on('board') && A.t('board') < 1;
+      rrect(780, 310, 240, 90, 8, '#202030');
+      const txt = flipping ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').sort(() => Math.random() - 0.5).slice(0, 7).join('') : 'DELAYED';
+      ctx.font = '700 30px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffd25a'; ctx.fillText('TRAIN HOME', 900, 336); ctx.fillStyle = flipping ? '#ffffff' : '#ff6e6e'; ctx.fillText(txt, 900, 374);
+    }
     // rails and platform, wet and shiny
     if (!bg) {
       drawRails(600);
@@ -3419,12 +3428,16 @@ class StuckPage extends StoryPage {
     st.draw(0); st.draw(1);
     this.mama.draw();
     const ux = this.mama.x - 20, uy = 410 - (this.mama.is('surprise') ? 20 : 0);
+    if (art('mama-umbrella')) { // her painted umbrella, held up over her head
+      pic(art('mama-umbrella'), ux + 10, 560, 260, true, Math.sin(um) * 0.18);
+    } else {
     line(ux, uy, ux + 10, 560, 4, INK, 0);
     push(ux, uy, Math.sin(um) * 10);
     ctx.beginPath(); ctx.arc(0, 0, 110, Math.PI, TAU); for (let i = 0; i <= 6; i++) { const x = 110 - i * 220 / 6; ctx.quadraticCurveTo(x + 18, 14, x, 0); } ctx.closePath();
     paint('#ff8cb4', 3);
     for (let i = 1; i < 6; i++) line(0, -110 + 0, -110 + i * 220 / 6, 0, 2, '#e66a96', 0);
     pop();
+    }
     if (!bg || A.on('downpour')) drawRain(t, bg ? 1.2 : A.on('downpour') ? 2.2 : 1.1); // the painting already rains
     if (flash) { ctx.globalAlpha = flash * 0.5; rect(0, 0, W, H, '#ffffff'); ctx.globalAlpha = 1; }
     st.draw(2); st.drawWords();
@@ -3478,15 +3491,15 @@ class RescuePage extends StoryPage {
       rect(0, 0, W, H, grad(0, 0, 0, H, ['#0f1440', '#232c6a', '#3a3a7c']));
       drawStars(this.stars, t);
     }
-    drawMoon(1080, 190, 62, t, A.on('wavemoon') ? 1 : 0.2);
+    if (!bg) drawMoon(1080, 190, 62, t, A.on('wavemoon') ? 1 : 0.2);
     if (A.on('shoot')) { const k = A.t('shoot') / 1.4; if (k < 1) { const x = lerp(100, 900, k), y = lerp(140, 280, k); line(x - 150, y - 26, x, y, 3, 'rgba(255,246,200,0.6)', 0); star(x, y, 12, t * 6, 5, '#fff6c8', 0); glow(x, y, 40, '#fff3a0', 0.6); } }
     // the city sliding past below, and home far away on the right
     const s = this.scroll;
     if (!bg) {
       push(-(s * 0.3) % 600, 0); for (let i = 0; i < 3; i++) { push(i * 600, 0); drawCity(t, 720, '#1c2250', 0.55, 5); pop(); } pop();
     }
-    for (let i = 0; i < 3; i++) cloud(((i * 520 - s * 0.6) % (W + 400) + W + 400) % (W + 400) - 200, 420 + i * 60, 1.6, '#3c4282', 0.8);
-    glow(1220, 640, 60, '#ffd27a', 0.7); rect(1200, 620, 40, 30, '#3a2a40'); poly([1194, 622, 1246, 622, 1220, 600], '#5a3048', 0); rect(1214, 630, 10, 10, '#ffd27a');
+    if (!bg) for (let i = 0; i < 3; i++) cloud(((i * 520 - s * 0.6) % (W + 400) + W + 400) % (W + 400) - 200, 420 + i * 60, 1.6, '#3c4282', 0.8);
+    if (!bg) glow(1220, 640, 60, '#ffd27a', 0.7); if (!bg) rect(1200, 620, 40, 30, '#3a2a40'); poly([1194, 622, 1246, 622, 1220, 600], '#5a3048', 0); bg || rect(1214, 630, 10, 10, '#ffd27a');
     st.draw(0);
     // the robots, flying in a row, with Mama holding on underneath
     const [x, y, rot] = this.pos();
@@ -3496,14 +3509,14 @@ class RescuePage extends StoryPage {
       push(0, -ROBOT_BASE + Math.sin(t * 3 + i) * 8, 0);
       // jets under the robots
       const f = 18 + Math.sin(t * 40 + i) * 6 + (A.on('boost') ? 20 : 0);
-      poly([r.x - 14, ROBOT_BASE, r.x + 14, ROBOT_BASE, r.x, ROBOT_BASE + f + 20], '#ffd25a', 0); poly([r.x - 8, ROBOT_BASE, r.x + 8, ROBOT_BASE, r.x, ROBOT_BASE + f], '#fff6be', 0);
+      if (!bg) poly([r.x - 14, ROBOT_BASE, r.x + 14, ROBOT_BASE, r.x, ROBOT_BASE + f + 20], '#ffd25a', 0); if (!bg) poly([r.x - 8, ROBOT_BASE, r.x + 8, ROBOT_BASE, r.x, ROBOT_BASE + f], '#fff6be', 0);
       r.drawBody(); r.drawArms();
-      if (A.on('wavemoon')) line(r.x + 40, ROBOT_BASE - 80, r.x + 60 + Math.sin(t * 14) * 8, ROBOT_BASE - 130, 8, '#aaaabe');
+      if (A.on('wavemoon') && !bg) line(r.x + 40, ROBOT_BASE - 80, r.x + 60 + Math.sin(t * 14) * 8, ROBOT_BASE - 130, 8, '#aaaabe');
       pop();
     });
     // Mama hangs on to Gumdrop's hands, swinging
     this.mama.x = 0; this.mama.y = 200 + Math.sin(t * 1.6) * 6;
-    line(-30, 30, -20, 200 - 140, 6, MAMA_COLS.body); line(30, 30, 20, 200 - 140, 6, MAMA_COLS.body);
+    if (!bg) { line(-30, 30, -20, 200 - 140, 6, MAMA_COLS.body); line(30, 30, 20, 200 - 140, 6, MAMA_COLS.body); }
     this.mama.rot = Math.sin(t * 1.6) * 8;
     this.mama.draw();
     pop();
@@ -3559,9 +3572,12 @@ class HomeAgainPage extends StoryPage {
       rect(0, 0, W, H, grad(0, 0, 0, 560, ['#18204e', '#2e3c7a', '#4a5490']));
       drawStars(this.stars, t);
     }
-    drawMoon(180, 180, 46, t, 0.6);
+    if (!bg) drawMoon(180, 180, 46, t, 0.6);
     // the robots fly away into the night
-    if (A.on('byebots')) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => { const x = lerp(300, 1400, k) + i * 60, y = lerp(260, 120, k) + Math.sin(t * 4 + i) * 10; glow(x, y, 26, '#a0ffd2', 0.6); rrect(x - 12, y - 12, 24, 24, 6, LOOKS[i].col, 2); line(x + 12, y - 4, x + 22 + Math.sin(t * 14) * 4, y - 22, 3, '#aaaabe', 2); }); }
+    if (A.on('byebots') && robotReady()) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => {
+      const x = lerp(300, 1400, k) + i * 70, y = lerp(300, 150, k) + Math.sin(t * 4 + i) * 10;
+      ctx.save(); ctx.filter = ROBOT_TINT[i]; pic(robotArt('body'), x, y, 46); pic(robotArt('head-happy'), x - 2, y - 36, 42); ctx.restore(); }); }
+    else if (A.on('byebots')) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => { const x = lerp(300, 1400, k) + i * 60, y = lerp(260, 120, k) + Math.sin(t * 4 + i) * 10; glow(x, y, 26, '#a0ffd2', 0.6); rrect(x - 12, y - 12, 24, 24, 6, LOOKS[i].col, 2); line(x + 12, y - 4, x + 22 + Math.sin(t * 14) * 4, y - 22, 3, '#aaaabe', 2); }); }
     else if (t < 3) { const k = t / 3; [0, 1, 2].forEach(i => { const x = lerp(200, 900, k) + i * 50, y = lerp(160, 90, k); glow(x, y, 20, '#a0ffd2', 0.5 * (1 - k)); }); }
     // the house: a warm open doorway in the middle
     if (!bg) {
@@ -3650,11 +3666,11 @@ class TuckPage extends StoryPage {
     }
     // the mobile over the beds
     const spin = A.on('mobile') ? t * 2.4 : t * 0.35;
-    line(640, 0, 640, 150, 2, INK, 0); rrect(530, 148, 220, 8, 4, '#c8965a', 2.5);
-    for (let i = 0; i < 5; i++) { const a = spin + i / 5 * TAU, px = 640 + Math.cos(a) * 100, len = 60 + (i % 2) * 30; line(px, 152, px, 152 + len, 1.5, INK, 0); push(px, 160 + len, 0, 0.8 + Math.sin(a) * 0.2, 0.8 + Math.sin(a) * 0.2); drawCandy(0, 0, Math.sin(t + i) * 0.3, 18, CANDY[i], i % 4); pop(); }
+    if (!bg) line(640, 0, 640, 150, 2, INK, 0); if (!bg) rrect(530, 148, 220, 8, 4, '#c8965a', 2.5);
+    if (!bg) for (let i = 0; i < 5; i++) { const a = spin + i / 5 * TAU, px = 640 + Math.cos(a) * 100, len = 60 + (i % 2) * 30; line(px, 152, px, 152 + len, 1.5, INK, 0); push(px, 160 + len, 0, 0.8 + Math.sin(a) * 0.2, 0.8 + Math.sin(a) * 0.2); drawCandy(0, 0, Math.sin(t + i) * 0.3, 18, CANDY[i], i % 4); pop(); }
     // the robot nightlight, a little Bolt
-    rrect(1000, 480, 90, 16, 5, '#c8965a'); glow(1045, 450, 80, '#8cffc8', 0.3 + dark * 0.3);
-    rrect(1030, 440, 30, 40, 6, '#5acdc3', 2.5); circ(1039, 455, 3, WHITE, 0); circ(1051, 455, 3, WHITE, 0);
+    if (!bg) { rrect(1000, 480, 90, 16, 5, '#c8965a'); glow(1045, 450, 80, '#8cffc8', 0.3 + dark * 0.3); }
+    if (!bg) { rrect(1030, 440, 30, 40, 6, '#5acdc3', 2.5); circ(1039, 455, 3, WHITE, 0); circ(1051, 455, 3, WHITE, 0); }
     // two little beds, Léo on the left, Louis on the right
     this.drawBed(470, LEO_COLS, '#7c8cf0', this.blinkA < 0, false);
     this.drawBed(810, LOUIS_COLS, '#ff8cb4', this.blinkB < 0, true);

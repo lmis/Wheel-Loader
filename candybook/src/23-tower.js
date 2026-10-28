@@ -49,28 +49,29 @@ class TowerPage extends StoryPage {
       }
       rect(tx - 10, 60, tw + 20, 16, '#4a5a90');
     }
-    if (A.on('blimp')) { const x = -200 + A.t('blimp') * 190, y = 230 + Math.sin(t) * 8; ell(x, y, 110, 40, '#ff9ac8'); rrect(x - 30, y + 34, 60, 22, 6, '#fff6ea'); poly([x - 110, y, x - 140, y - 30, x - 140, y + 30], '#ff78b4'); word('HELLO!', x, y, 30, 0, WHITE); }
-    // the window washer robot on its little platform
-    const wy = 330 + Math.sin(t * 0.5) * 30, ws = A.on('washer') ? Math.sin(t * 12) * 16 : Math.sin(t * 2) * 6;
-    line(tx + 40, 70, tx + 40, wy, 2, INK, 0); line(tx + 140, 70, tx + 140, wy, 2, INK, 0);
-    rrect(tx + 30, wy, 120, 12, 4, '#ffd250');
-    rrect(tx + 72, wy - 50, 34, 46, 8, '#ffa555'); circ(tx + 89, wy - 66, 16, '#ffa555'); circ(tx + 89, wy - 68, 6, WHITE, 2); circ(tx + 89, wy - 68, 2.5, INK, 0);
-    line(tx + 104, wy - 36, tx + 124 + ws, wy - 70, 5, '#aaaabe'); rect(tx + 116 + ws, wy - 84, 24, 6, '#5a5a6e');
-    // the lift shaft and the glass lift with Mama inside
-    const lx = 900, ly = this.liftY();
-    rect(lx - 6, 70, 12, 650, '#4a5a90'); line(lx + 70, 70, lx + 70, ly - 80, 2, INK, 0);
-    rrect(lx + 10, ly - 80, 120, 110, 12, 'rgba(220,240,255,0.6)'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.beginPath(); ctx.roundRect(lx + 10, ly - 80, 120, 110, 12); ctx.stroke();
-    push(lx + 70, ly + 26, 0, -0.55, 0.55);
-    drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, reach: A.on('press'), cheer: A.on('wow'), blink: false, arm: 0 });
-    pop();
-    rect(lx + 10, ly + 30, 120, 10, '#4a5a90');
+    if (!bg) {
+      if (A.on('blimp')) { const x = -200 + A.t('blimp') * 190, y = 230 + Math.sin(t) * 8; ell(x, y, 110, 40, '#ff9ac8'); rrect(x - 30, y + 34, 60, 22, 6, '#fff6ea'); poly([x - 110, y, x - 140, y - 30, x - 140, y + 30], '#ff78b4'); word('HELLO!', x, y, 30, 0, WHITE); }
+      // the window washer robot on its little platform
+      const wy = 330 + Math.sin(t * 0.5) * 30, ws = A.on('washer') ? Math.sin(t * 12) * 16 : Math.sin(t * 2) * 6;
+      line(tx + 40, 70, tx + 40, wy, 2, INK, 0); line(tx + 140, 70, tx + 140, wy, 2, INK, 0);
+      rrect(tx + 30, wy, 120, 12, 4, '#ffd250');
+      rrect(tx + 72, wy - 50, 34, 46, 8, '#ffa555'); circ(tx + 89, wy - 66, 16, '#ffa555'); circ(tx + 89, wy - 68, 6, WHITE, 2); circ(tx + 89, wy - 68, 2.5, INK, 0);
+      line(tx + 104, wy - 36, tx + 124 + ws, wy - 70, 5, '#aaaabe'); rect(tx + 116 + ws, wy - 84, 24, 6, '#5a5a6e');
+      // the lift shaft and the glass lift with Mama inside
+      const lx = 900, ly = this.liftY();
+      rect(lx - 6, 70, 12, 650, '#4a5a90'); line(lx + 70, 70, lx + 70, ly - 80, 2, INK, 0);
+      rrect(lx + 10, ly - 80, 120, 110, 12, 'rgba(220,240,255,0.6)'); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.beginPath(); ctx.roundRect(lx + 10, ly - 80, 120, 110, 12); ctx.stroke();
+      push(lx + 70, ly + 26, 0, -0.55, 0.55);
+      drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, reach: A.on('press'), cheer: A.on('wow'), blink: false, arm: 0 });
+      pop();
+      rect(lx + 10, ly + 30, 120, 10, '#4a5a90');
+    } else { // Mama, tiny, riding the lift painted on the tower
+      push(902, 214, 0, -0.16, 0.16);
+      drawFigure(MAMA_RIG, { t, cols: MAMA_COLS, bow: true, bag: true, open: A.on('hello') || A.on('wow') ? 0.6 : 0, wave: A.on('hello') ? Math.sin(t * 14) : null, cheer: A.on('wow'), blink: false, arm: 0 });
+      pop();
+    }
     // birds and the little helicopter
     if (A.on('birds')) { const k = A.t('birds') / 3; for (let i = 0; i < 4; i++) drawBird(W + 40 - k * (W + 200) + i * 50, 200 + i * 20 + Math.sin(t * 4 + i) * 10, 0.8, t * 24 + i, '#6482d2', -1); }
-    if (A.on('copter')) {
-      const k = A.t('copter') / 6, x = lerp(-100, W + 100, k), y = 300 + Math.sin(k * TAU) * 80;
-      ell(x, y, 46, 26, '#e6505a'); rrect(x - 90, y - 6, 60, 10, 4, '#e6505a'); ell(x + 18, y - 4, 16, 12, '#cdeeff', 2);
-      push(x, y - 30, 0, Math.cos(t * 40), 1); line(-60, 0, 60, 0, 5, INK, 0); pop(); line(x, y - 26, x, y - 30, 4, INK, 0);
-    }
     this.finish();
   }
 }

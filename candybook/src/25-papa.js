@@ -97,7 +97,7 @@ class PapaPage extends StoryPage {
     const st = this.st, t = st.t, A = this.acts;
     this.drawStreet(t);
     // a ramp or a puddle comes along the road
-    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
+    if (A.on('ramp')) { const x = W + 100 - A.t('ramp') * 700; if (!art('bg-05-street-morning')) poly([x, 652, x + 160, 652, x + 160, 600], '#e6b46e'); }
     if (A.on('puddle')) { const x = W + 100 - A.t('puddle') * 760; if (!paintedPuddle(x, 660, 220)) ell(x, 660, 90, 14, '#7ab8e6', 2.5); }
     if (A.on('hello')) { const x = W + 80 - A.t('hello') * 380; this.drawDog(x, 600, t); }
     st.draw(0);

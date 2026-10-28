@@ -55,22 +55,24 @@ class DinnerPage extends StoryPage {
     // the table and dinner
     if (!bg) { rrect(360, 520, 640, 30, 10, '#e6b46e');
     line(400, 550, 400, 650, 12, '#c8965a'); line(960, 550, 960, 650, 12, '#c8965a'); }
-    for (const x of [500, 670]) { ell(x, 518, 44, 12, WHITE); ell(x, 510, 34, 8, '#ffe08a', 0); for (let i = 0; i < 4; i++) curve(x - 20 + i * 12, 508, x - 14 + i * 12, 500, x - 8 + i * 12, 508, 2, '#f0c860', 0); }
-    // a bowl of cherry tomatoes
-    ell(800, 516, 40, 12, '#8ad0ec');
-    for (let i = 0; i < 6; i++) { const tx = 774 + (i % 3) * 22, ty = 500 - Math.floor(i / 3) * 14; circ(tx, ty, 10, '#ff5050', 2); line(tx - 2, ty - 10, tx + 3, ty - 13, 2, '#5ab46e', 0); }
-    // the fruit bowl, fruit hopping out when Space says so
-    const fr = A.on('fruit') ? A.t('fruit') : -1;
-    const fruits = [['#ffe050', 'banana'], ['#ff7878', 'apple'], ['#a078e6', 'grape'], ['#ffa03c', 'orange']];
-    fruits.forEach(([c, k], i) => {
-      let x = 900 + (i - 1.5) * 22, y = 496 - (i % 2) * 10;
-      if (fr >= 0 && fr < 2) y -= Math.sin(Math.PI * clamp((fr - i * 0.15) / 1.4, 0, 1)) * 140;
-      if (A.on('juggle')) { const a = A.t('juggle') * 5 + i * TAU / 4; x = this.papa.x - 10 + Math.cos(a) * 40; y = 350 - Math.abs(Math.sin(a)) * 90; }
-      if (k === 'banana') curve(x - 14, y, x, y + 12, x + 14, y - 4, 8, c, 2.5);
-      else if (k === 'grape') for (let j = 0; j < 4; j++) circ(x - 6 + (j % 2) * 10, y - 6 + Math.floor(j / 2) * 9, 6, c, 2);
-      else circ(x, y, 12, c, 2.5);
-    });
-    ell(900, 516, 50, 12, '#ffb4d2');
+    if (!bg) {
+      for (const x of [500, 670]) { ell(x, 518, 44, 12, WHITE); ell(x, 510, 34, 8, '#ffe08a', 0); for (let i = 0; i < 4; i++) curve(x - 20 + i * 12, 508, x - 14 + i * 12, 500, x - 8 + i * 12, 508, 2, '#f0c860', 0); }
+      // a bowl of cherry tomatoes
+      ell(800, 516, 40, 12, '#8ad0ec');
+      for (let i = 0; i < 6; i++) { const tx = 774 + (i % 3) * 22, ty = 500 - Math.floor(i / 3) * 14; circ(tx, ty, 10, '#ff5050', 2); line(tx - 2, ty - 10, tx + 3, ty - 13, 2, '#5ab46e', 0); }
+      // the fruit bowl, fruit hopping out when Space says so
+      const fr = A.on('fruit') ? A.t('fruit') : -1;
+      const fruits = [['#ffe050', 'banana'], ['#ff7878', 'apple'], ['#a078e6', 'grape'], ['#ffa03c', 'orange']];
+      fruits.forEach(([c, k], i) => {
+        let x = 900 + (i - 1.5) * 22, y = 496 - (i % 2) * 10;
+        if (fr >= 0 && fr < 2) y -= Math.sin(Math.PI * clamp((fr - i * 0.15) / 1.4, 0, 1)) * 140;
+        if (A.on('juggle')) { const a = A.t('juggle') * 5 + i * TAU / 4; x = this.papa.x - 10 + Math.cos(a) * 40; y = 350 - Math.abs(Math.sin(a)) * 90; }
+        if (k === 'banana') curve(x - 14, y, x, y + 12, x + 14, y - 4, 8, c, 2.5);
+        else if (k === 'grape') for (let j = 0; j < 4; j++) circ(x - 6 + (j % 2) * 10, y - 6 + Math.floor(j / 2) * 9, 6, c, 2);
+        else circ(x, y, 12, c, 2.5);
+      });
+      ell(900, 516, 50, 12, '#ffb4d2');
+    }
     if (A.on('airplane')) { const k = clamp(A.t('airplane') / 1.6, 0, 1), [mx, my] = this.leo.mouth(); const x = lerp(this.papa.x - 60, mx, k), y = lerp(440, my, k) - Math.sin(k * Math.PI) * 120; push(x, y, -20); line(-20, 0, 20, 0, 5, '#c8c8d7'); ell(22, 0, 10, 6, '#c8c8d7'); ell(22, -2, 6, 4, '#ffe08a', 0); pop(); }
     this.finish();
   }

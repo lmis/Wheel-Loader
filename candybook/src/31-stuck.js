@@ -43,11 +43,13 @@ class StuckPage extends StoryPage {
       rect(380, 270, 540, 20, '#4a5080'); line(400, 290, 400, 640, 10, '#4a5080'); line(900, 290, 900, 640, 10, '#4a5080');
     }
     // the departures board
-    const flipping = A.on('board') && A.t('board') < 1;
-    rrect(780, 310, 240, 90, 8, '#202030');
-    const txt = flipping ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').sort(() => Math.random() - 0.5).slice(0, 7).join('') : 'DELAYED';
-    ctx.font = '700 30px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffd25a'; ctx.fillText('TRAIN HOME', 900, 336); ctx.fillStyle = flipping ? '#ffffff' : '#ff6e6e'; ctx.fillText(txt, 900, 374);
+    if (!bg) {
+      const flipping = A.on('board') && A.t('board') < 1;
+      rrect(780, 310, 240, 90, 8, '#202030');
+      const txt = flipping ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').sort(() => Math.random() - 0.5).slice(0, 7).join('') : 'DELAYED';
+      ctx.font = '700 30px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffd25a'; ctx.fillText('TRAIN HOME', 900, 336); ctx.fillStyle = flipping ? '#ffffff' : '#ff6e6e'; ctx.fillText(txt, 900, 374);
+    }
     // rails and platform, wet and shiny
     if (!bg) {
       drawRails(600);
@@ -75,12 +77,16 @@ class StuckPage extends StoryPage {
     st.draw(0); st.draw(1);
     this.mama.draw();
     const ux = this.mama.x - 20, uy = 410 - (this.mama.is('surprise') ? 20 : 0);
+    if (art('mama-umbrella')) { // her painted umbrella, held up over her head
+      pic(art('mama-umbrella'), ux + 10, 560, 260, true, Math.sin(um) * 0.18);
+    } else {
     line(ux, uy, ux + 10, 560, 4, INK, 0);
     push(ux, uy, Math.sin(um) * 10);
     ctx.beginPath(); ctx.arc(0, 0, 110, Math.PI, TAU); for (let i = 0; i <= 6; i++) { const x = 110 - i * 220 / 6; ctx.quadraticCurveTo(x + 18, 14, x, 0); } ctx.closePath();
     paint('#ff8cb4', 3);
     for (let i = 1; i < 6; i++) line(0, -110 + 0, -110 + i * 220 / 6, 0, 2, '#e66a96', 0);
     pop();
+    }
     if (!bg || A.on('downpour')) drawRain(t, bg ? 1.2 : A.on('downpour') ? 2.2 : 1.1); // the painting already rains
     if (flash) { ctx.globalAlpha = flash * 0.5; rect(0, 0, W, H, '#ffffff'); ctx.globalAlpha = 1; }
     st.draw(2); st.drawWords();

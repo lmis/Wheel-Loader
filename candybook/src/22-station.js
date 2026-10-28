@@ -73,8 +73,6 @@ class StationPage extends StoryPage {
       ctx.save(); ctx.filter = ROBOT_TINT[0];
       pic(robotArt('body'), 200, 668, 104); pic(robotArt(c >= 0 ? 'head-talk' : 'head-happy'), 196, 590, 92);
       ctx.restore();
-      rrect(166, 498, 64, 14, 4, '#3c3c50'); rrect(176, 482, 44, 20, 6, '#3c3c50');
-      if (c >= 0) rrect(236, 560, 18, 8, 3, '#ffd250');
     } else {
     push(200, 660, 0);
     rrect(-24, -80, 48, 70, 10, '#5acdc3'); rrect(-26, -126, 52, 44, 10, '#78dcd2');

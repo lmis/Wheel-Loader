@@ -46,9 +46,12 @@ class HomeAgainPage extends StoryPage {
       rect(0, 0, W, H, grad(0, 0, 0, 560, ['#18204e', '#2e3c7a', '#4a5490']));
       drawStars(this.stars, t);
     }
-    drawMoon(180, 180, 46, t, 0.6);
+    if (!bg) drawMoon(180, 180, 46, t, 0.6);
     // the robots fly away into the night
-    if (A.on('byebots')) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => { const x = lerp(300, 1400, k) + i * 60, y = lerp(260, 120, k) + Math.sin(t * 4 + i) * 10; glow(x, y, 26, '#a0ffd2', 0.6); rrect(x - 12, y - 12, 24, 24, 6, LOOKS[i].col, 2); line(x + 12, y - 4, x + 22 + Math.sin(t * 14) * 4, y - 22, 3, '#aaaabe', 2); }); }
+    if (A.on('byebots') && robotReady()) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => {
+      const x = lerp(300, 1400, k) + i * 70, y = lerp(300, 150, k) + Math.sin(t * 4 + i) * 10;
+      ctx.save(); ctx.filter = ROBOT_TINT[i]; pic(robotArt('body'), x, y, 46); pic(robotArt('head-happy'), x - 2, y - 36, 42); ctx.restore(); }); }
+    else if (A.on('byebots')) { const k = A.t('byebots') / 4; [0, 1, 2].forEach(i => { const x = lerp(300, 1400, k) + i * 60, y = lerp(260, 120, k) + Math.sin(t * 4 + i) * 10; glow(x, y, 26, '#a0ffd2', 0.6); rrect(x - 12, y - 12, 24, 24, 6, LOOKS[i].col, 2); line(x + 12, y - 4, x + 22 + Math.sin(t * 14) * 4, y - 22, 3, '#aaaabe', 2); }); }
     else if (t < 3) { const k = t / 3; [0, 1, 2].forEach(i => { const x = lerp(200, 900, k) + i * 50, y = lerp(160, 90, k); glow(x, y, 20, '#a0ffd2', 0.5 * (1 - k)); }); }
     // the house: a warm open doorway in the middle
     if (!bg) {

@@ -46,15 +46,15 @@ class RescuePage extends StoryPage {
       rect(0, 0, W, H, grad(0, 0, 0, H, ['#0f1440', '#232c6a', '#3a3a7c']));
       drawStars(this.stars, t);
     }
-    drawMoon(1080, 190, 62, t, A.on('wavemoon') ? 1 : 0.2);
+    if (!bg) drawMoon(1080, 190, 62, t, A.on('wavemoon') ? 1 : 0.2);
     if (A.on('shoot')) { const k = A.t('shoot') / 1.4; if (k < 1) { const x = lerp(100, 900, k), y = lerp(140, 280, k); line(x - 150, y - 26, x, y, 3, 'rgba(255,246,200,0.6)', 0); star(x, y, 12, t * 6, 5, '#fff6c8', 0); glow(x, y, 40, '#fff3a0', 0.6); } }
     // the city sliding past below, and home far away on the right
     const s = this.scroll;
     if (!bg) {
       push(-(s * 0.3) % 600, 0); for (let i = 0; i < 3; i++) { push(i * 600, 0); drawCity(t, 720, '#1c2250', 0.55, 5); pop(); } pop();
     }
-    for (let i = 0; i < 3; i++) cloud(((i * 520 - s * 0.6) % (W + 400) + W + 400) % (W + 400) - 200, 420 + i * 60, 1.6, '#3c4282', 0.8);
-    glow(1220, 640, 60, '#ffd27a', 0.7); rect(1200, 620, 40, 30, '#3a2a40'); poly([1194, 622, 1246, 622, 1220, 600], '#5a3048', 0); rect(1214, 630, 10, 10, '#ffd27a');
+    if (!bg) for (let i = 0; i < 3; i++) cloud(((i * 520 - s * 0.6) % (W + 400) + W + 400) % (W + 400) - 200, 420 + i * 60, 1.6, '#3c4282', 0.8);
+    if (!bg) glow(1220, 640, 60, '#ffd27a', 0.7); if (!bg) rect(1200, 620, 40, 30, '#3a2a40'); poly([1194, 622, 1246, 622, 1220, 600], '#5a3048', 0); bg || rect(1214, 630, 10, 10, '#ffd27a');
     st.draw(0);
     // the robots, flying in a row, with Mama holding on underneath
     const [x, y, rot] = this.pos();
@@ -64,14 +64,14 @@ class RescuePage extends StoryPage {
       push(0, -ROBOT_BASE + Math.sin(t * 3 + i) * 8, 0);
       // jets under the robots
       const f = 18 + Math.sin(t * 40 + i) * 6 + (A.on('boost') ? 20 : 0);
-      poly([r.x - 14, ROBOT_BASE, r.x + 14, ROBOT_BASE, r.x, ROBOT_BASE + f + 20], '#ffd25a', 0); poly([r.x - 8, ROBOT_BASE, r.x + 8, ROBOT_BASE, r.x, ROBOT_BASE + f], '#fff6be', 0);
+      if (!bg) poly([r.x - 14, ROBOT_BASE, r.x + 14, ROBOT_BASE, r.x, ROBOT_BASE + f + 20], '#ffd25a', 0); if (!bg) poly([r.x - 8, ROBOT_BASE, r.x + 8, ROBOT_BASE, r.x, ROBOT_BASE + f], '#fff6be', 0);
       r.drawBody(); r.drawArms();
-      if (A.on('wavemoon')) line(r.x + 40, ROBOT_BASE - 80, r.x + 60 + Math.sin(t * 14) * 8, ROBOT_BASE - 130, 8, '#aaaabe');
+      if (A.on('wavemoon') && !bg) line(r.x + 40, ROBOT_BASE - 80, r.x + 60 + Math.sin(t * 14) * 8, ROBOT_BASE - 130, 8, '#aaaabe');
       pop();
     });
     // Mama hangs on to Gumdrop's hands, swinging
     this.mama.x = 0; this.mama.y = 200 + Math.sin(t * 1.6) * 6;
-    line(-30, 30, -20, 200 - 140, 6, MAMA_COLS.body); line(30, 30, 20, 200 - 140, 6, MAMA_COLS.body);
+    if (!bg) { line(-30, 30, -20, 200 - 140, 6, MAMA_COLS.body); line(30, 30, 20, 200 - 140, 6, MAMA_COLS.body); }
     this.mama.rot = Math.sin(t * 1.6) * 8;
     this.mama.draw();
     pop();
