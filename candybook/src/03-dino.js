@@ -419,6 +419,10 @@ const twinRig = prefix => ({
   pieces: ['body', 'tail', 'leg', 'arm', 'pj-body', 'pj-leg', 'pj-arm'],
 });
 const LEO_RIG = twinRig('leo'), LOUIS_RIG = twinRig('louis');
+// daycare friends: the twins' rig recoloured, without pyjamas
+const kidRig = prefix => Object.assign(twinRig(prefix), { pieces: ['body', 'tail', 'leg', 'arm'] });
+// the daycare teacher: Papa's rig recoloured, no helmet or skates
+const TEACHER_RIG = Object.assign({}, PAPA_RIG, { prefix: 'teacher', pieces: ['body', 'tail', 'leg', 'arm'] });
 function rigImg(rig, name) { return art(`${rig.prefix}-${name}`); }
 function rigReady(rig) {
   return rig.pieces.every(n => rigImg(rig, n)) && rig.heads.every(h => rigImg(rig, 'head-' + h));

@@ -79,25 +79,18 @@
 <div class="wrap">
   <header class="block">
     <h1>Mama Comes Home: art prompts</h1>
-    <p class="lede">What’s still missing comes first: the backgrounds for pages 1 to 14, then Mama. Everything already in the book is at the bottom. Each “Copy prompt” button copies one complete prompt, ready to paste into your image AI.</p>
+    <p class="lede">What’s still missing comes first: the props and animals the book still draws by hand. Everything already in the book is at the bottom. Each “Copy prompt” button copies one complete prompt, ready to paste into your image AI.</p>
   </header>
 
-  <section class="block" aria-labelledby="bg-h">
-    <h2 id="bg-h">Backgrounds, pages 1 to 14</h2>
+  <section class="block" aria-labelledby="props-h">
+    <h2 id="props-h">Props and animals</h2>
     <div class="steps">
-      <div class="step"><b>1. Copy and paste</b><p>Each prompt has the style and the scene in one. Make each picture 2560 × 1440; the three street and sky pages are wider strips, 5120 × 1440.</p></div>
-      <div class="step"><b>2. Only the place</b><p>The book adds the characters and everything that moves. Positions are a share of the picture’s width and height, from the top left.</p></div>
-      <div class="step"><b>3. Send them back</b><p>Name each file as shown on its card and attach it here. JPG is fine and keeps the book small.</p></div>
+      <div class="step"><b>1. One sheet each</b><p>Each card is one picture with all the pieces of that thing on it, apart from each other, on plain white. About 2048 × 2048, PNG.</p></div>
+      <div class="step"><b>2. Attach a background</b><p>Attach the background of the page it belongs on (named on the card), so it comes out in the same style and light.</p></div>
+      <div class="step"><b>3. Send them back</b><p>Name each picture as shown on its card. I cut the pieces out and move them in code, as with the family.</p></div>
     </div>
   </section>
-  <div class="pages" id="pages"></div>
-  <hr>
-
-  <section class="block" aria-labelledby="mama-h">
-    <h2 id="mama-h">Mama in parts</h2>
-    <p>The same three steps as Papa and the twins. Attach Papa’s reference picture when you make Mama’s reference, so she comes out in the same style and shape, then attach Mama’s own reference for her two sheets. She has seven heads, because she has a worried face for the rainy station and a kissing face for goodnight.</p>
-  </section>
-  <div class="pages" id="mama"></div>
+  <div class="pages" id="props"></div>
   <hr>
 
   <section class="block" aria-labelledby="done-h">
@@ -105,6 +98,12 @@
     <p>Kept here in case a piece needs redoing. The book moves each character as a puppet: a body, a head, a tail, two legs and two arms, each turning on its own joint, with one head per expression.</p>
   </section>
   <div class="pages" id="done-bg"></div>
+  <div class="pages" id="pages"></div>
+
+  <section class="block" aria-labelledby="mama-h">
+    <h3 id="mama-h">Mama in parts <span class="tag first">In the book</span></h3>
+  </section>
+  <div class="pages" id="mama"></div>
 
   <section class="block" aria-labelledby="papa-h">
     <h3 id="papa-h">Papa in parts <span class="tag first">In the book</span></h3>
@@ -276,7 +275,7 @@
     const c = el('article', 'card');
     c.innerHTML = `
       <header><span class="num">${String(p.n).padStart(2, '0')}</span><h3>${esc(p.name)}</h3>
-        ${p.n === 0 ? '<span class="tag first">In the book</span>' : ''}${p.wide ? '<span class="tag wide">Wide strip</span>' : ''}</header>
+        <span class="tag first">In the book</span>${p.wide ? '<span class="tag wide">Wide strip</span>' : ''}</header>
       <p class="story">${esc(p.story)}</p>
       <div class="prompt">${esc(texts[id])}</div>
       <div class="notes">
@@ -294,7 +293,7 @@
       texts[id] = p.text;
       const c = el('article', 'card');
       c.innerHTML = `
-        <header><span class="num">${p.n}</span><h3>${esc(p.name)}</h3>${p.first && key === 'mama' ? '<span class="tag first">Start here</span>' : ''}</header>
+        <header><span class="num">${p.n}</span><h3>${esc(p.name)}</h3></header>
         <div class="prompt">${esc(p.text)}</div>
         <div class="notes">
           <div><strong>HOW THE BOOK USES IT</strong>${esc(p.adds)}</div>
@@ -305,6 +304,38 @@
       box.appendChild(c);
     }
   }
+  const PROP = `${CHAR_STYLE} Cut-out sheet: ${SHEET.replace('Every piece', 'Every piece below')}`;
+  const PROPS = [
+    { name: 'Breakfast table and chairs', file: 'prop-table.png', page: 'Page 1, morning kitchen',
+      what: 'a small round wooden breakfast table seen from the side at eye level, with a cream tablecloth; separately, two little wooden high chairs for baby dinosaurs, seen from the side; separately, two white plates with a pancake on each, and a glass of orange juice',
+      use: 'The twins sit in the chairs behind the table; the plates and juice stand on it.' },
+    { name: 'The dino train', file: 'prop-train.png', page: 'Page 2, station',
+      what: 'a friendly little red steam engine with a big smiling face on its front, seen exactly from the side facing right, with no wheels; separately, one blue passenger carriage with three square windows, seen from the side, with no wheels and the windows empty and see-through; separately, one round black train wheel with yellow spokes, seen from the side; separately, a small puff of white steam',
+      use: 'The engine and two carriages ride the rails, the wheels spin, and Mama looks out of a window.' },
+    { name: 'Bolt the robot', file: 'robot-bolt.png', page: 'Page 4, office',
+      what: 'a tall, friendly teal office robot called Bolt, in pieces: 1) the box body with a small screen on the tummy and no head or arms; 2) one bendy grey arm with a round hand; 3) four copies of the same square head with two big round eyes and an antenna with a red light on top: happy, blinking, mouth open, surprised',
+      use: 'Bolt bobs, waves, dances, chomps and boings his head on a spring.' },
+    { name: 'Gumdrop the robot', file: 'robot-gumdrop.png', page: 'Page 4, office',
+      what: 'a round, friendly orange office robot called Gumdrop, in pieces: 1) the round body with a heart on the tummy and no head or arms; 2) one bendy grey arm with a round hand; 3) four copies of the same round head with one big eye and a little propeller on top: happy, blinking, mouth open, surprised',
+      use: 'Gumdrop bobs, waves, dances and burps bubbles.' },
+    { name: 'Tinny the robot', file: 'robot-tinny.png', page: 'Page 4, office',
+      what: 'a small, friendly lilac office robot called Tinny, in pieces: 1) the small box body with no head or arms; 2) one bendy grey arm with a yellow claw hand; 3) a short metal spring for a neck; 4) four copies of the same TV-set head whose dark screen shows a face made of glowing green pixels: smiling, blinking, mouth open, surprised',
+      use: 'Tinny bobs, waves, dances and pops his head up on the spring.' },
+    { name: 'Birds and pigeons', file: 'prop-birds.png', page: 'Page 2, station',
+      what: 'a plump grey city pigeon seen from the side facing right, in pieces: 1) the body with legs and no wings; 2) the head; 3) one wing spread open; 4) one wing folded; and separately, a small round blue songbird, the same pieces',
+      use: 'They peck about, and flap away when startled.' },
+    { name: 'Frog and puddle', file: 'prop-frog.png', page: 'Page 11, rainy station',
+      what: 'a small round green frog sitting, seen from the side facing right, in pieces: 1) the frog sitting, eyes open; 2) the same frog mid-jump with legs stretched out; 3) the same frog with a puffed-up throat, croaking; and separately, a wet puddle on the ground seen from slightly above, reflecting warm lamp light',
+      use: 'The frog hops between puddles and croaks.' },
+    { name: 'The kitty', file: 'prop-cat.png', page: 'Page 11, rainy station',
+      what: 'a small fluffy orange cat seen from the side facing right, in pieces: 1) the body curled up lying down, with no head and no tail; 2) the tail; 3) three copies of the same head: sleepy with eyes closed, awake, meowing with mouth open',
+      use: 'The kitty shelters under the bench, wakes and meows.' },
+    { name: 'The dog', file: 'prop-dog.png', page: 'Page 5, Papa’s street',
+      what: 'a happy little brown dog seen from the side facing left, in pieces: 1) the body with four legs and no head or tail; 2) the wagging tail; 3) two copies of the same head with floppy ears: happy with mouth closed, barking with mouth open',
+      use: 'The dog trots past Papa and barks hello.' },
+  ];
+  PROPS.forEach((c, i) => { c.n = 'ABCDEFGHI'[i]; c.size = '2048 × 2048'; c.text = `${PROP} The pieces: ${c.what}. Match the colours and light of the attached background. Plain flat white background, no shadow on the ground, nothing cropped at the edges.`; c.adds = c.use; c.clear = 'Attach: ' + c.page + '. Gaps between all pieces.'; });
+  charCards('props', PROPS, 'props');
   charCards('papa', PAPA, 'papa');
   charCards('mama', MAMA, 'mama');
   charCards('twins', TWINS, 'twins');
