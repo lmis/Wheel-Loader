@@ -3,10 +3,10 @@ class CoverPage extends StoryPage {
   constructor() {
     super({ name: 'cover', text: null, floor: 660, tricks: [['letters'], ['cheer'], ['familywave']],
       who: ['Title', 'Léo & Louis', 'Mama & Papa'], durs: { letters: 1.6, cheer: 1.6, familywave: 2 } });
-    this.mama = mama(this.st, { x: 520, y: 650, face: 1 });
-    this.papa = papa(this.st, { x: 790, y: 650, face: -1, look: { helmet: true, skates: true } });
-    this.leo = leo(this.st, { x: 610, y: 660, face: 1 });
-    this.louis = louis(this.st, { x: 690, y: 660, face: -1 });
+    this.mama = mama(this.st, { x: 500, y: 690, face: 1 });
+    this.papa = papa(this.st, { x: 800, y: 694, face: -1, look: { helmet: true, skates: true } });
+    this.leo = leo(this.st, { x: 600, y: 698, face: 1 });
+    this.louis = louis(this.st, { x: 680, y: 698, face: -1 });
     this.cast = [this.mama, this.papa, this.leo, this.louis];
     this.stars = makeStars(40, 0, W, 20, 300);
     this.flies = makeFlies(12, 40, W - 40, 470, 690);
@@ -14,7 +14,7 @@ class CoverPage extends StoryPage {
   act(a) {
     if (a === 'letters') { sfx('boing', 0.7, 1.3); this.st.sparkles(640, 200, 16, 300); }
     if (a === 'cheer') { this.leo.do('cheer'); this.louis.do('cheer'); this.leo.jump(); setTimeout(() => this.louis.jump(), 150); sfx('giggle', 1); }
-    if (a === 'familywave') { this.mama.do('wave', 2); this.papa.do('wave', 2); sfx('hug', 0.8); this.st.hearts(655, 470, 4); }
+    if (a === 'familywave') { this.mama.do('wave', 2); this.papa.do('wave', 2); sfx('hug', 0.8); this.st.hearts(655, 500, 4); }
   }
   draw() {
     const t = this.st.t, A = this.acts;

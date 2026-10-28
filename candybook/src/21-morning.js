@@ -60,7 +60,7 @@ class MorningPage extends StoryPage {
     this.papa.draw({ reach: this.papa.is('reach') });
     const pk = A.on('pancake') ? A.t('pancake') : -1;
     const [px, py] = [this.papa.x - 74, 470];
-    line(this.papa.x - 30, 520, px, py + 6, 6, '#5a5a6e'); ell(px, py + 6, 30, 8, '#3c3c50');
+    line(this.papa.x - 58, 548, px + 14, py + 6, 6, '#5a5a6e'); ell(px, py + 6, 30, 8, '#3c3c50');
     const ph = pk >= 0 && pk < 1.6 ? Math.sin(pk / 1.6 * Math.PI) * 230 : 0;
     push(px, py - ph, pk >= 0 && pk < 1.6 ? pk / 1.6 * 360 : 0); ell(0, 0, 24, 7, '#f0c070'); pop();
     // kettle on the back of the stove

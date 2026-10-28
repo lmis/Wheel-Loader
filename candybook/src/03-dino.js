@@ -380,7 +380,85 @@ class Puppet {
     if (!this.noShadow) ell(this.x, gy + 4, 50 * this.scale, 9 * this.scale, 'rgba(70,40,47,0.2)', 0);
     push(this.x, gy + this.jy + bob, 0, this.face * sx * this.scale, sy * this.scale);
     if (rot) { ctx.translate(0, -55); ctx.rotate(rot * Math.PI / 180); ctx.translate(0, 55); }
-    drawDino(o);
+    if (this.rig && rigReady(this.rig)) drawRig(this.rig, o); else drawDino(o);
     pop();
   }
+}
+
+// ---------- painted puppets ----------
+// A rig is a set of painted pieces (art/<prefix>-<piece>.png) laid out in
+// the painting's own pixels, with the ground under the feet at 0,0 and the
+// character facing right. Each limb turns on its joint, and the face is
+// changed by swapping the whole head.
+const PAPA_RIG = {
+  prefix: 'papa', k: 0.29, // painting pixels -> dino units
+  at: { body: [-200, -470], tail: [-400, -200], backLeg: [10, -140], frontLeg: [-40, -150],
+    arm: [25, -265, 0.85], farArm: [85, -275, 0.85], head: [-55, -600, 1.25], helmet: [-34, -626, 1.22] },
+  // joints, as fractions of each piece's size
+  pivot: { tail: [0.95, 0.3], leg: [0.42, 0.12], arm: [0.25, 0.2], head: [0.42, 0.92] },
+  heads: ['happy', 'blink', 'talk', 'wide', 'sleepy'],
+};
+function rigImg(rig, name) { return art(`${rig.prefix}-${name}`); }
+function rigReady(rig) {
+  return ['body', 'tail', 'leg', 'arm', 'helmet', 'boot', 'wheel'].every(n => rigImg(rig, n)) && rig.heads.every(h => rigImg(rig, 'head-' + h));
+}
+// rigPiece draws one piece at its place, turned by rot degrees about its joint
+function rigPiece(rig, img, key, pivotKey, rot = 0, dx = 0, dy = 0, alpha = 1, dark = 0) {
+  const [x, y, s = 1] = rig.at[key], w = img.naturalWidth * s, h = img.naturalHeight * s;
+  const [px, py] = rig.pivot[pivotKey] || [0.5, 0.5];
+  ctx.save();
+  ctx.translate(x + dx + w * px, y + dy + h * py);
+  if (rot) ctx.rotate(rot * Math.PI / 180);
+  if (dark) ctx.filter = `brightness(${1 - dark})`;
+  ctx.globalAlpha *= alpha;
+  ctx.drawImage(img, -w * px, -h * py, w, h);
+  ctx.restore();
+}
+function drawRig(rig, o) {
+  const t = o.t, k = rig.k;
+  ctx.save();
+  ctx.scale(k, k);
+  const lift = o.skates ? 56 : 0;
+  ctx.translate(0, -lift);
+  const walk = (o.walk || 0) * 2.2, wag = Math.sin(t * 5) * 5;
+  // arms: resting sway, waving, reaching forward, or both up to cheer
+  let armRot = Math.sin(t * 4) * 4 + (o.arm || 0) * 0.6, farRot = Math.sin(t * 4 + 1) * 4;
+  if (o.cheer) { armRot = -125 + Math.cos(t * 14) * 10; farRot = -115 + Math.sin(t * 14) * 10; }
+  else if (o.wave !== null && o.wave !== undefined) armRot = -115 + o.wave * 22;
+  else if (o.reach) armRot = -55;
+  let face = 'happy';
+  if (o.roaring || (o.open || 0) > 0.55) face = 'wide';
+  else if ((o.open || 0) > 0.12) face = 'talk';
+  else if (o.blink || o.sleepy > 0.9) face = 'blink';
+  else if (o.sleepy > 0.3) face = 'sleepy';
+  const bob = o.roaring ? -18 : Math.sin(t * 3) * 6;
+  const leg = rigImg(rig, 'leg'), arm = rigImg(rig, 'arm');
+  rigPiece(rig, arm, 'farArm', 'arm', farRot, 0, 0, 1, 0.22);
+  rigPiece(rig, leg, 'backLeg', 'leg', -walk, 0, 0, 1, 0.22);
+  rigPiece(rig, rigImg(rig, 'tail'), 'tail', 'tail', wag);
+  rigPiece(rig, rigImg(rig, 'body'), 'body', null);
+  if (o.skates) drawRigSkate(rig, 'backLeg', t, o.skateSpin, 0.22);
+  rigPiece(rig, leg, 'frontLeg', 'leg', walk);
+  if (o.skates) drawRigSkate(rig, 'frontLeg', t, o.skateSpin, 0);
+  rigPiece(rig, rigImg(rig, 'head-' + face), 'head', 'head', (o.noseUp || 0) + Math.sin(t * 1.3) * 2, 0, bob);
+  if (o.helmet) rigPiece(rig, rigImg(rig, 'helmet'), 'helmet', 'head', (o.noseUp || 0) + Math.sin(t * 1.3) * 2, 0, bob);
+  rigPiece(rig, arm, 'arm', 'arm', armRot);
+  ctx.restore();
+}
+// a painted rollerblade under one foot, with three spinning, glowing wheels
+function drawRigSkate(rig, legKey, t, spin = t * 12, dark = 0) {
+  const boot = rigImg(rig, 'boot'), wheel = rigImg(rig, 'wheel');
+  const [lx] = rig.at[legKey], bw = boot.naturalWidth * 0.95, bh = boot.naturalHeight * 0.95;
+  const bx = lx - 8, by = -bh + 22;
+  for (let i = 0; i < 3; i++) {
+    const wx = bx + 20 + i * (bw - 40) / 2, wy = 30, r = 19;
+    ctx.save(); ctx.translate(wx, wy);
+    glow(0, 0, 70, '#ff3c3c', 0.3 + 0.15 * Math.sin(t * 20 + i));
+    ctx.rotate(spin + i); if (dark) ctx.filter = `brightness(${1 - dark})`;
+    ctx.drawImage(wheel, -r, -r, r * 2, r * 2);
+    ctx.restore();
+  }
+  ctx.save(); if (dark) ctx.filter = `brightness(${1 - dark})`;
+  ctx.drawImage(boot, bx, by, bw, bh);
+  ctx.restore();
 }

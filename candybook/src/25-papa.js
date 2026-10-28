@@ -79,7 +79,7 @@ class PapaPage extends StoryPage {
     ], this.scroll / 9);
     p.rot = -wheelie * 14;
     p.draw({ reach: !p.is('spin') && !p.is('talk'), skateSpin: this.scroll / 6 });
-    if (p.is('talk')) line(p.x + 30, p.y - 160, p.x + 46, p.y - 196, 7, PAPA_COLS.body);
+    if (p.is('talk') && !rigReady(PAPA_RIG)) line(p.x + 30, p.y - 160, p.x + 46, p.y - 196, 7, PAPA_COLS.body);
     pop();
   }
   draw() {
