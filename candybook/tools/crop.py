@@ -23,7 +23,8 @@ for (page, trick), frames in sorted(groups.items()):
     best_pts, best_n = [], None
     for n in sorted(k for k in frames if k):
         jf = frames[n][:-4] + '.json'
-        pts = json.load(open(jf)) if os.path.exists(jf) else []
+        d = json.load(open(jf)) if os.path.exists(jf) else {}
+        pts = d.get('pts', []) if isinstance(d, dict) else d   # words alone don't show the trick
         if len(pts) > len(best_pts): best_pts, best_n = pts, n
     if best_pts:
         im = Image.open(frames[best_n]).convert('RGB'); W, H = im.size; k = W / PAGE_W

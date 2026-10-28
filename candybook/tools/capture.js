@@ -44,7 +44,8 @@ const FRAMES = [0.35, 0.7, 1.1, 1.6, 2.3]; // seconds after the press
         const focus = await p.evaluate(() => {
           const pg = Book.page(), pts = [];
           pg.st.bits.forEach(b => { if (!window.__seen.has(b)) pts.push([b.x, b.y]); });
-          pg.st.words.forEach(w => { if (!window.__seenW.has(w)) pts.push([w.x, w.y]); });
+          const words = [];
+          pg.st.words.forEach(w => { if (!window.__seenW.has(w)) words.push([w.x, w.y]); });
           (pg.cast || []).forEach((c, i) => {
             const [x0, y0, j0] = window.__pos[i] || [];
             if (c.a || c.tx != null || c.jy !== j0 || Math.abs(c.x - x0) > 2) {
@@ -52,7 +53,7 @@ const FRAMES = [0.35, 0.7, 1.1, 1.6, 2.3]; // seconds after the press
             }
           });
           if (pg.kiss) { pts.push([pg.mama.x, pg.mama.y - 200]); const [hx, hy] = pg.kiss.target.head(); pts.push([hx, hy]); }
-          return pts;
+          return { pts, words };
         });
         require('fs').writeFileSync(`${base}__${f + 1}.json`, JSON.stringify(focus));
       }

@@ -25,3 +25,12 @@ page edges turn pages, the middle cycles through the three buttons.
 `index.html` is built from `head.html`, `body.html` and `src/*.js` by
 `./build.sh` and is a single self-contained file. `legacy/` holds the pages
 of the earlier "Little Dino Comes Home" version, which are not built.
+
+## Button pictures
+
+`tools/thumbs.sh` rebuilds the picture on every button from the book itself:
+it presses each button in a headless browser, keeps the frame where the
+trick shows most, crops around where the book reports the action (new
+hearts, moving characters), and saves `art/btn-<page>-<trick>.webp`. Run it
+after changing tricks; `tools/thumbs.sh morning dinner` redoes only those
+pages.
