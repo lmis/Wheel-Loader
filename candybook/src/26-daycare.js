@@ -34,10 +34,14 @@ class DaycarePage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    drawRoom('#fff0c8', '#ffe2b4', '#a8dcc8', '#8cc8b4', 610);
-    // alphabet bunting and a sunny window
-    ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((ch, i) => { const x = 420 + i * 70, y = 150 + Math.sin(i * 0.9) * 6; poly([x - 26, y, x + 26, y, x, y + 46], CANDY[i], 2.5); word(ch, x, y + 16, 22, 0, WHITE); });
-    drawWindow(940, 150, 220, 170, grad(0, 150, 0, 320, ['#8ccdff', '#e0f2ff']), () => { glow(1120, 190, 60, '#fff0a0', 0.7); circ(1120, 190, 26, '#ffdc5a', 2); cloud(980 + (t * 8) % 200, 240, 0.7); });
+    const bg = art('bg-06-daycare');
+    if (bg) drawArt(bg);
+    else {
+      drawRoom('#fff0c8', '#ffe2b4', '#a8dcc8', '#8cc8b4', 610);
+      // alphabet bunting and a sunny window
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((ch, i) => { const x = 420 + i * 70, y = 150 + Math.sin(i * 0.9) * 6; poly([x - 26, y, x + 26, y, x, y + 46], CANDY[i], 2.5); word(ch, x, y + 16, 22, 0, WHITE); });
+      drawWindow(940, 150, 220, 170, grad(0, 150, 0, 320, ['#8ccdff', '#e0f2ff']), () => { glow(1120, 190, 60, '#fff0a0', 0.7); circ(1120, 190, 26, '#ffdc5a', 2); cloud(980 + (t * 8) % 200, 240, 0.7); });
+    }
     // the easel with paint
     line(150, 600, 210, 280, 8, '#c8965a'); line(310, 600, 250, 280, 8, '#c8965a');
     rrect(140, 300, 180, 150, 6, WHITE);

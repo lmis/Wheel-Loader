@@ -45,6 +45,17 @@ class PapaPage extends StoryPage {
   }
   drawStreet(t) {
     const s = this.scroll;
+    const bg = this.name === 'papa' && art('bg-05-street-morning');
+    if (bg) { // the painting scrolls past, every other copy mirrored so the edges meet
+      const sc = H / bg.naturalHeight, w = bg.naturalWidth * sc, off = (s * 0.6) % (2 * w);
+      for (let i = -1; i < 3; i++) {
+        const x = i * w - off;
+        if (x > W || x + w < 0) continue;
+        ctx.save(); ctx.translate(x + (i & 1 ? w : 0), 0); ctx.scale(i & 1 ? -1 : 1, 1);
+        ctx.drawImage(bg, 0, 0, w, H); ctx.restore();
+      }
+      return;
+    }
     rect(0, 0, W, H, grad(0, 0, 0, 560, this.sky));
     for (let i = 0; i < 4; i++) cloud(((i * 360 - s * 0.05) % (W + 300) + W + 300) % (W + 300) - 150, 160 + (i % 2) * 60, 1.1, this.cloudCol || WHITE);
     // houses roll past, slower than the road
