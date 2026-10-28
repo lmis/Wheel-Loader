@@ -19,7 +19,7 @@ function audioStart() {
   }
   AU.verb.buffer = imp;
   const vg = C.createGain(); vg.gain.value = 0.32; AU.verb.connect(vg); vg.connect(AU.master);
-  AU.music = C.createGain(); AU.music.gain.value = 0.55; AU.music.connect(AU.master); AU.music.connect(AU.verb);
+  AU.music = C.createGain(); AU.music.gain.value = 0.25; AU.music.connect(AU.master); AU.music.connect(AU.verb);
   AU.amb = C.createGain(); AU.amb.gain.value = 0.7; AU.amb.connect(AU.master);
   AU.fx = C.createGain(); AU.fx.gain.value = 0.85; AU.fx.connect(AU.master);
   const fs = C.createGain(); fs.gain.value = 0.25; AU.fx.connect(fs); fs.connect(AU.verb);
