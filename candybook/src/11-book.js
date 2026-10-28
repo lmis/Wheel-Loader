@@ -43,6 +43,9 @@ const Book = {
   init() {
     this.pages = [new CoverPage(), new MorningPage(), new StationPage(), new TowerPage(), new OfficePage(), new PapaPage(), new DaycarePage(), new MeetingPage(), new PickupPage(), new DinnerPage(), new WantMamaPage(), new StuckPage(), new RescuePage(), new HomeAgainPage(), new TuckPage()];
     this.pages.forEach(p => { p.shown = 0; });
+    // indoors the rooms are close up, so the family is drawn bigger there
+    const INDOOR = { morning: 1.35, office: 1.35, daycare: 1.3, meeting: 1.3, dinner: 1.3, wantmama: 1.35, tuck: 1.3 };
+    this.pages.forEach(p => { const k = INDOOR[p.name]; if (k && p.cast) p.cast.forEach(c => { c.scale *= k; }); });
   },
   page() { return this.pages[this.cur]; },
   // what each of the three buttons does next on this page
