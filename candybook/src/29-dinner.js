@@ -30,10 +30,13 @@ class DinnerPage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    drawRoom('#ffe2c0', '#ffcfa8', '#c88c64', '#b07850');
-    drawWindow(120, 150, 240, 180, grad(0, 150, 0, 330, ['#5a5aa0', '#c88cb4']), () => { drawStars(this.stars || (this.stars = makeStars(14, 130, 350, 160, 250)), t); });
-    // a warm lamp over the table
-    line(640, 0, 640, 120, 3, INK, 0); poly([590, 160, 690, 160, 660, 120, 620, 120], '#ff8c6e'); glow(640, 200, 300, '#ffd27a', 0.35);
+    const bg = art('bg-09-dinner'); if (bg) drawArt(bg);
+    if (!bg) {
+      drawRoom('#ffe2c0', '#ffcfa8', '#c88c64', '#b07850');
+      drawWindow(120, 150, 240, 180, grad(0, 150, 0, 330, ['#5a5aa0', '#c88cb4']), () => { drawStars(this.stars || (this.stars = makeStars(14, 130, 350, 160, 250)), t); });
+      // a warm lamp over the table
+      line(640, 0, 640, 120, 3, INK, 0); poly([590, 160, 690, 160, 660, 120, 620, 120], '#ff8c6e'); glow(640, 200, 300, '#ffd27a', 0.35);
+    }
     // Mama's empty chair, with her place set
     line(820, 600, 820, 430, 10, '#a0703c'); rrect(790, 400, 60, 50, 10, '#b48ce6');
     heart(820, 425, 9, '#ffb4d2', 2);

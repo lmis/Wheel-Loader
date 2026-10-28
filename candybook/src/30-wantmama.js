@@ -34,19 +34,22 @@ class WantMamaPage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    drawRoom('#5a5a9a', '#6e6aa8', '#8c6a5a', '#74584a', 610);
-    ctx.globalAlpha = 0.18; for (let x = 40; x < W; x += 100) for (let y = 160; y < 560; y += 100) star(x + (y % 200 ? 50 : 0), y, 7, 0, 5, '#fff3c8', 0); ctx.globalAlpha = 1;
-    // the window the twins look out of
-    const moonK = A.on('moon') ? Math.sin(Math.PI * clamp(A.t('moon') / 3, 0, 1)) : 0;
-    const raining = A.on('rain') ? Math.min(1, A.t('rain')) * Math.min(1, (6 - A.t('rain')) * 2) : 0.15;
-    drawWindow(100, 150, 240, 230, '#1e2456', () => {
-      drawStars(this.stars, t);
-      drawMoon(280, 220 + (1 - moonK) * 30, 34, t, moonK);
-      cloud(220 + Math.sin(t * 0.3) * 30, 250 - moonK * 40, 1, '#4a4a7a');
-      if (raining) { ctx.save(); ctx.globalAlpha = raining; drawRain(t, 1.2); ctx.restore(); }
-      // fog where noses press on the glass
-      if (A.on('window')) { ctx.globalAlpha = 0.35; circ(300, 330, 22, WHITE, 0); circ(250, 334, 20, WHITE, 0); ctx.globalAlpha = 1; }
-    });
+    const bg = art('bg-10-want-mama'); if (bg) drawArt(bg);
+    if (!bg) {
+      drawRoom('#5a5a9a', '#6e6aa8', '#8c6a5a', '#74584a', 610);
+      ctx.globalAlpha = 0.18; for (let x = 40; x < W; x += 100) for (let y = 160; y < 560; y += 100) star(x + (y % 200 ? 50 : 0), y, 7, 0, 5, '#fff3c8', 0); ctx.globalAlpha = 1;
+      // the window the twins look out of
+      const moonK = A.on('moon') ? Math.sin(Math.PI * clamp(A.t('moon') / 3, 0, 1)) : 0;
+      const raining = A.on('rain') ? Math.min(1, A.t('rain')) * Math.min(1, (6 - A.t('rain')) * 2) : 0.15;
+      drawWindow(100, 150, 240, 230, '#1e2456', () => {
+        drawStars(this.stars, t);
+        drawMoon(280, 220 + (1 - moonK) * 30, 34, t, moonK);
+        cloud(220 + Math.sin(t * 0.3) * 30, 250 - moonK * 40, 1, '#4a4a7a');
+        if (raining) { ctx.save(); ctx.globalAlpha = raining; drawRain(t, 1.2); ctx.restore(); }
+        // fog where noses press on the glass
+        if (A.on('window')) { ctx.globalAlpha = 0.35; circ(300, 330, 22, WHITE, 0); circ(250, 334, 20, WHITE, 0); ctx.globalAlpha = 1; }
+      });
+    }
     // the big clock, ticking late
     const sw = Math.sin(t * 2.2) * 10, ck = A.on('clock') ? A.t('clock') : -1;
     push(1100, 260, ck >= 0 ? Math.sin(ck * 14) * 4 : 0);

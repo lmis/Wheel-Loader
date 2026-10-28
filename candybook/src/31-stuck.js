@@ -31,12 +31,17 @@ class StuckPage extends StoryPage {
   draw() {
     const st = this.st, t = st.t, A = this.acts;
     const flash = A.on('thunder') ? Math.max(0, 1 - A.t('thunder') * 3) * (Math.sin(A.t('thunder') * 40) > 0 ? 1 : 0.4) : 0;
-    rect(0, 0, W, H, grad(0, 0, 0, H, ['#1a1e40', '#2c3260', '#3a3f6e']));
-    drawCity(t, 520, '#262a52', 0.4, 4);
+    const bg = art('bg-11-stuck'); if (bg) drawArt(bg);
+    if (!bg) {
+      rect(0, 0, W, H, grad(0, 0, 0, H, ['#1a1e40', '#2c3260', '#3a3f6e']));
+      drawCity(t, 520, '#262a52', 0.4, 4);
+    }
     // a few twinkles in the sky... could those be robots?
     if (t > 8) for (let i = 0; i < 3; i++) { const k = clamp((t - 8) / 20, 0, 1); glow(200 + i * 40 + k * 300, 200 - k * 40 + Math.sin(t * 3 + i) * 6, 14, '#a0ffd2', 0.5 * k); }
     // the shelter roof
-    rect(380, 270, 540, 20, '#4a5080'); line(400, 290, 400, 640, 10, '#4a5080'); line(900, 290, 900, 640, 10, '#4a5080');
+    if (!bg) {
+      rect(380, 270, 540, 20, '#4a5080'); line(400, 290, 400, 640, 10, '#4a5080'); line(900, 290, 900, 640, 10, '#4a5080');
+    }
     // the departures board
     const flipping = A.on('board') && A.t('board') < 1;
     rrect(780, 310, 240, 90, 8, '#202030');
@@ -44,11 +49,15 @@ class StuckPage extends StoryPage {
     ctx.font = '700 30px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffd25a'; ctx.fillText('TRAIN HOME', 900, 336); ctx.fillStyle = flipping ? '#ffffff' : '#ff6e6e'; ctx.fillText(txt, 900, 374);
     // rails and platform, wet and shiny
-    drawRails(600);
-    rect(0, 620, W, H - 620, grad(0, 620, 0, H, ['#5a5e80', '#484c6e'])); rect(0, 616, W, 8, '#ffd25a');
-    ctx.globalAlpha = 0.25; for (let i = 0; i < 6; i++) ell(100 + i * 220, 670 + (i % 2) * 20, 70, 8, '#a0b4ff', 0); ctx.globalAlpha = 1;
+    if (!bg) {
+      drawRails(600);
+      rect(0, 620, W, H - 620, grad(0, 620, 0, H, ['#5a5e80', '#484c6e'])); rect(0, 616, W, 8, '#ffd25a');
+      ctx.globalAlpha = 0.25; for (let i = 0; i < 6; i++) ell(100 + i * 220, 670 + (i % 2) * 20, 70, 8, '#a0b4ff', 0); ctx.globalAlpha = 1;
+    }
     // the bench, with a cat sheltering underneath
-    rrect(860, 600, 180, 14, 5, '#8c6450'); line(880, 614, 880, 650, 6, '#3c3c50'); line(1020, 614, 1020, 650, 6, '#3c3c50');
+    if (!bg) {
+      rrect(860, 600, 180, 14, 5, '#8c6450'); line(880, 614, 880, 650, 6, '#3c3c50'); line(1020, 614, 1020, 650, 6, '#3c3c50');
+    }
     const cat = A.on('cat') ? A.t('cat') : -1;
     ell(960, 640, 26, 14, '#ff9a46'); circ(985, 628 - (cat >= 0 ? 6 : 0), 11, '#ff9a46');
     poly([978, 620 - (cat >= 0 ? 6 : 0), 980, 608, 986, 618], '#ff9a46', 2); poly([988, 618, 994, 608, 994, 622], '#ff9a46', 2);

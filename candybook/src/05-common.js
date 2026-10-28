@@ -101,3 +101,14 @@ function drawArt(im) {
   const s = Math.max(W / im.naturalWidth, H / im.naturalHeight), w = im.naturalWidth * s, h = im.naturalHeight * s;
   ctx.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
 }
+// drawArtScroll fills the page with a picture sliding left by off pixels,
+// every other copy mirrored so the edges always meet
+function drawArtScroll(im, off) {
+  const w = im.naturalWidth * H / im.naturalHeight; off %= 2 * w;
+  for (let i = -1; i < 3; i++) {
+    const x = i * w - off;
+    if (x > W || x + w < 0) continue;
+    ctx.save(); ctx.translate(x + (i & 1 ? w : 0), 0); ctx.scale(i & 1 ? -1 : 1, 1);
+    ctx.drawImage(im, 0, 0, w, H); ctx.restore();
+  }
+}

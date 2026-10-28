@@ -41,13 +41,18 @@ class RescuePage extends StoryPage {
   }
   draw() {
     const st = this.st, t = st.t, A = this.acts;
-    rect(0, 0, W, H, grad(0, 0, 0, H, ['#0f1440', '#232c6a', '#3a3a7c']));
-    drawStars(this.stars, t);
+    const bg = art('bg-12-night-sky'); if (bg) drawArtScroll(bg, this.scroll * 0.3);
+    if (!bg) {
+      rect(0, 0, W, H, grad(0, 0, 0, H, ['#0f1440', '#232c6a', '#3a3a7c']));
+      drawStars(this.stars, t);
+    }
     drawMoon(1080, 190, 62, t, A.on('wavemoon') ? 1 : 0.2);
     if (A.on('shoot')) { const k = A.t('shoot') / 1.4; if (k < 1) { const x = lerp(100, 900, k), y = lerp(140, 280, k); line(x - 150, y - 26, x, y, 3, 'rgba(255,246,200,0.6)', 0); star(x, y, 12, t * 6, 5, '#fff6c8', 0); glow(x, y, 40, '#fff3a0', 0.6); } }
     // the city sliding past below, and home far away on the right
     const s = this.scroll;
-    push(-(s * 0.3) % 600, 0); for (let i = 0; i < 3; i++) { push(i * 600, 0); drawCity(t, 720, '#1c2250', 0.55, 5); pop(); } pop();
+    if (!bg) {
+      push(-(s * 0.3) % 600, 0); for (let i = 0; i < 3; i++) { push(i * 600, 0); drawCity(t, 720, '#1c2250', 0.55, 5); pop(); } pop();
+    }
     for (let i = 0; i < 3; i++) cloud(((i * 520 - s * 0.6) % (W + 400) + W + 400) % (W + 400) - 200, 420 + i * 60, 1.6, '#3c4282', 0.8);
     glow(1220, 640, 60, '#ffd27a', 0.7); rect(1200, 620, 40, 30, '#3a2a40'); poly([1194, 622, 1246, 622, 1220, 600], '#5a3048', 0); rect(1214, 630, 10, 10, '#ffd27a');
     st.draw(0);
