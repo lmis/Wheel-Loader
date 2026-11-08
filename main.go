@@ -105,6 +105,7 @@ func main() {
 	g.initGPU()
 	g.out = rl.LoadRenderTexture(screenW, screenH)
 	rl.SetTextureFilter(g.out.Texture, rl.FilterBilinear)
+	g.layer = rl.LoadRenderTexture(screenW, screenH)
 
 	// fixed 60 Hz simulation; screenshot runs step once per frame so every
 	// scheduled shot is drawn

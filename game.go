@@ -40,6 +40,7 @@ type Game struct {
 	art    *Art
 	gpu    *GPU               // renderer, once a window is open (gpu.go)
 	out    rl.RenderTexture2D // the finished 1280×720 frame
+	layer  rl.RenderTexture2D // scratch layer for see-through 2D drawing (hud.go)
 
 	frame int
 
